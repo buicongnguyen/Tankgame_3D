@@ -40,3 +40,26 @@ button.primary{padding:13px 16px;font-size:12px}.briefing details{margin-top:12p
 }
 /* Three actions fit between touch sticks without covering the hull readout. */
 @media(pointer:coarse) and (max-width:600px) and (orientation:portrait){.abilities{top:calc(100% + 8px);gap:3px}.abilities button{min-height:30px;padding:6px 8px;font-size:9px}}
+/* Mobile review: accessible actions and physical screen safe areas. */
+@media(pointer:coarse){
+ #pause,.abilities button{min-width:44px;min-height:44px}
+ .mission-hud{top:calc(10px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left))}
+ .top-actions{top:calc(10px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right))}
+ .radio{top:calc(110px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left))}
+ .command-screen{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));padding-top:max(16px,env(safe-area-inset-top));padding-bottom:max(16px,env(safe-area-inset-bottom))}
+ .settings button,.quiet,summary{min-height:36px;display:inline-flex;align-items:center}.difficulty button{min-height:40px}
+}
+@media(pointer:coarse) and (orientation:portrait){
+ .bottom-hud{bottom:calc(174px + env(safe-area-inset-bottom))}.abilities{top:calc(100% + 8px);gap:4px}.abilities button{min-height:44px;width:72px;padding:8px 4px;font-size:10px}
+ .move-pad,.aim-pad{bottom:calc(26px + env(safe-area-inset-bottom))}
+}
+@media(pointer:coarse) and (orientation:landscape) and (max-height:600px){
+ .bottom-hud{left:calc(135px + env(safe-area-inset-left));right:calc(135px + env(safe-area-inset-right));bottom:calc(10px + env(safe-area-inset-bottom))}
+ .move-pad{left:calc(16px + env(safe-area-inset-left))}.aim-pad{right:calc(16px + env(safe-area-inset-right))}
+ .abilities{top:auto;gap:4px}.abilities button{min-height:44px;font-size:10px;padding:8px}
+}
+@media(pointer:coarse) and (orientation:landscape) and (max-width:680px){
+ .command-screen{grid-template-columns:1fr 260px;gap:8px 12px}.hero h1{font-size:33px}.route-list{grid-template-columns:repeat(3,1fr)}
+ .mission-hud{max-width:235px}.mission-hud h2{font-size:18px}.mission-hud p{font-size:10px}.radio{max-width:220px;font-size:10px}
+ .bottom-hud{left:125px;right:125px}.weapon-block>span,.weapon-block>strong{font-size:9px}.hull-block>div:first-child{font-size:9px}.hull-block strong{font-size:10px}.abilities button{font-size:9px;padding:6px}
+}

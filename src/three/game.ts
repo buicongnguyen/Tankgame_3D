@@ -15,7 +15,7 @@ export class Game {
   root:HTMLElement; world:World; input:Input; save:Save=freshSave(); phase:Phase='menu'; mission=0;
   player!:Unit; enemies:Unit[]=[]; shots:Shot[]=[]; pickups:Pickup[]=[];
   elapsed=0; capture=0; spawnTimer=0; kills=0; shotsFired=0; lastReward=0;
-  weapon=0; reload=0; shieldTime=0; shieldCooldown=0; repairs=1; relayHealth=300; convoyHealth=260; convoy:T.Group|null=null;
+  weapon=0; reload=0; shieldTime=0; shieldCooldown=0; repairs=1; relayHealth=300; convoyHealth=260; convoy:T.Group|null=null;convoyBlocked=false;
   overlay:HTMLElement; hud:HTMLElement; radio:HTMLElement; mini:HTMLCanvasElement;
   radioTimer=0; hudTimer=0; last=0; accumulator=0; hurtTimer=0;
   ray=new T.Raycaster(); plane=new T.Plane(new T.Vector3(0,1,0),0); aimPoint=new T.Vector3(0,0,-15);
@@ -41,11 +41,24 @@ export class Game {
     this.overlay=this.el('overlay');this.hud=this.el('hud');this.radio=this.el('radio');this.mini=this.el('minimap') as HTMLCanvasElement;
     this.world=new World(this.el('battlefield'));this.input=new Input(this.world.renderer.domElement);
     this.input.onPause=()=>{if(this.phase==='playing')this.pause();else if(this.phase==='paused'&&!document.hidden&&document.hasFocus())this.resume();};
+    this.input.onBackground=()=>{if(this.phase==='playing')this.pause();};
     this.input.onAction=a=>this.action(a);
-    this.el('artillery').onclick=()=>this.action('artillery');this.el('pause').onclick=()=>this.pause();this.el('weapon').onclick=()=>this.action('switch');this.el('shield').onclick=()=>this.action('shield');this.el('repair').onclick=()=>this.action('repair');
+    this.bindActions(this.hud,button=>{if(button.id==='pause')this.pause();else this.action(button.id==='weapon'?'switch':button.id);});
     this.input.bindStick(this.el('move-pad'),'move');this.input.bindStick(this.el('aim-pad'),'aim');
-    this.overlay.addEventListener('click',e=>{const button=(e.target as HTMLElement).closest<HTMLButtonElement>('button[data-action]');if(button&&!button.disabled)this.menuAction(button.dataset.action!,button.dataset.value);});
+    this.bindActions(this.overlay,button=>this.menuAction(button.dataset.action!,button.dataset.value),'button[data-action]');
     this.world.renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();if(this.phase==='playing')this.pause();this.overlay.innerHTML='<section class="panel"><h1>Graphics connection lost</h1><p>Your mission checkpoint is saved. Reload to reconnect.</p><button onclick="location.reload()">Reload game</button></section>';});
+  }
+  private bindActions(root:HTMLElement,run:(button:HTMLButtonElement)=>void,selector='button'){
+    const presses=new Map<number,{button:HTMLButtonElement;x:number;y:number}>();let lastTouch=-Infinity;
+    const buttonAt=(target:EventTarget|null)=>target instanceof Element?target.closest<HTMLButtonElement>(selector):null;
+    root.addEventListener('pointerdown',e=>{const button=buttonAt(e.target);if(e.pointerType==='touch'&&button&&!button.disabled){presses.set(e.pointerId,{button,x:e.clientX,y:e.clientY});button.setPointerCapture(e.pointerId);}});
+    root.addEventListener('pointercancel',e=>presses.delete(e.pointerId));
+    root.addEventListener('pointerup',e=>{
+      const press=presses.get(e.pointerId);presses.delete(e.pointerId);if(!press||press.button.disabled||!root.contains(press.button))return;
+      const r=press.button.getBoundingClientRect();if(Math.hypot(e.clientX-press.x,e.clientY-press.y)>12||e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)return;
+      lastTouch=performance.now();e.preventDefault();run(press.button);
+    });
+    root.addEventListener('click',e=>{const button=buttonAt(e.target);if(!button||button.disabled||(e.detail!==0&&performance.now()-lastTouch<700))return;run(button);});
   }
   el(id:string){return document.getElementById(id)!;}
   async init(){
@@ -89,7 +102,7 @@ export class Game {
     return {visual,hp,max:hp,heading:player?Math.PI:0,aim:player?Math.PI:0,cooldown:2+(this.enemies.length%3)*.8,role,dead:false};
   }
   prepare(index:number){
-    this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.strikes=[];this.mission=index;this.world.build(index,MISSIONS[index].kind);this.shots=[];this.pickups=[];this.enemies=[];this.convoy=null;
+    this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.strikes=[];this.mission=index;this.world.build(index,MISSIONS[index].kind);this.shots=[];this.pickups=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;
     this.elapsed=0;this.capture=0;this.spawnTimer=0;this.kills=0;this.shotsFired=0;this.reload=0;this.weapon=0;this.shieldTime=0;this.shieldCooldown=0;this.repairs=1;this.relayHealth=300;this.convoyHealth=260;
     this.player=this.makeUnit(-4,22,'player');this.player.visual.hull.rotation.y=Math.PI;this.player.visual.turret.rotation.y=Math.PI;
     const points=[[-17,-17],[17,-21],[25,0],[-28,0],[8,-25],[-6,-23]];
@@ -98,7 +111,7 @@ export class Game {
     this.world.shield.visible=false;this.world.cursor.visible=false;
     this.syncVisual(this.player);this.enemies.forEach(e=>this.syncVisual(e));this.updateHud();
   }
-  start(index:number){this.prepare(index);this.setPhase('playing');this.overlay.innerHTML='';this.radioMessage(MISSIONS[index].radio,9);this.last=performance.now();this.accumulator=0;this.tone(360,.12,.05);}
+  start(index:number){this.prepare(index);this.setPhase('playing');this.world.target.copy(this.player.visual.root.position);this.world.target.z+=this.world.camera.aspect<1?8:-8;this.world.update(0,this.player.visual.root.position);this.updateHud();this.overlay.innerHTML='';this.radioMessage(MISSIONS[index].radio,9);this.last=performance.now();this.accumulator=0;this.tone(360,.12,.05);}
   action(action:string){
     if(this.phase!=='playing')return;
     if(action==='artillery'&&this.artilleryCooldown<=0)this.callArtillery();
@@ -112,13 +125,13 @@ export class Game {
   reloadDuration(){return this.weaponStats().reload*(1-this.save.upgrades.reload*.13);}
   moveUnit(unit:Unit,dx:number,dz:number){
     const p=unit.visual.root.position,r=unit.role==='boss'?2:1.25;
-    const blocked=(x:number,z:number)=>this.world.covers.some(c=>c.hp>0&&circleBox({x,z},r,c))||[this.player,...this.enemies].some(other=>other!==unit&&!other.dead&&distance({x,z},other.visual.root.position)<(other.role==='boss'?2:1.25)+r)||!!(this.convoy&&distance({x,z},this.convoy.position)<2.3&&unit.role!=='player');
+    const blocked=(x:number,z:number)=>this.world.covers.some(c=>c.hp>0&&circleBox({x,z},r,c))||[this.player,...this.enemies].some(other=>other!==unit&&!other.dead&&distance({x,z},other.visual.root.position)<(other.role==='boss'?2:1.25)+r)||!!(this.convoy&&distance({x,z},this.convoy.position)<2.3);
     const x=clamp(p.x+dx,-BOUNDS.x,BOUNDS.x);if(!blocked(x,p.z))p.x=x;
     const z=clamp(p.z+dz,-BOUNDS.z,BOUNDS.z);if(!blocked(p.x,z))p.z=z;
   }
   syncVisual(unit:Unit){
     unit.visual.hull.rotation.y=unit.heading;unit.visual.turret.rotation.y=unit.aim;
-    unit.visual.bar.scale.x=Math.max(.001,unit.hp/unit.max);unit.visual.bar.visible=!unit.dead&&unit.role!=='player';
+    unit.visual.bar.scale.x=Math.max(.001,unit.hp/unit.max);unit.visual.bar.visible=!unit.dead;
     unit.visual.root.visible=!unit.dead;
   }
   shoot(unit:Unit,friendly:boolean){
@@ -167,7 +180,7 @@ export class Game {
         const dx=(Math.sin(direction)*advance+Math.cos(direction)*side)*speed*dt,dz=(Math.cos(direction)*advance-Math.sin(direction)*side)*speed*dt;
         this.moveUnit(e,dx,dz);if(Math.abs(dx)+Math.abs(dz)>.001)e.heading=turnToward(e.heading,Math.atan2(dx,dz),dt*2);
       }
-      e.cooldown-=dt;
+      if(dist<38)e.cooldown-=dt;else e.cooldown=Math.max(e.cooldown,.85);
       const beam=e.visual.beam;beam.visible=e.cooldown<.85&&dist<38;beam.scale.z=dist;beam.position.set(p.x+Math.sin(e.aim)*dist/2,.12,p.z+Math.cos(e.aim)*dist/2);beam.rotation.y=e.aim;
       this.syncVisual(e);
       if(e.cooldown<=0&&dist<38){this.shoot(e,false);e.cooldown=e.role==='boss'?(e.hp<e.max*.5?1.05:1.9):e.role==='sentry'?2.6:3.1;}
@@ -222,6 +235,7 @@ export class Game {
     this.radioMessage('IVO / Strike inbound. Clear the amber circles.',3);
   }
   updateActivities(dt:number){
+    if(this.player.dead)return;
     this.artilleryCooldown=Math.max(0,this.artilleryCooldown-dt);this.powerBoost=Math.max(0,this.powerBoost-dt);
     const p=this.player.visual.root.position;
     this.dustClock-=dt;
@@ -234,7 +248,7 @@ export class Game {
     for(const activity of this.world.activities){
       if(activity.spent)continue;
       const near=distance(p,activity);
-      if(activity.kind==='repair'&&near<3&&this.player.hp<this.player.max){
+      if(activity.kind==='repair'&&!this.player.dead&&near<3&&this.player.hp<this.player.max){
         const heal=Math.min(32*dt,this.player.max-this.player.hp,activity.remaining);this.player.hp+=heal;activity.remaining-=heal;
         if(this.trailClock<=0)this.world.fx.emit(p.clone().setY(1),'flash',0x81ffbf,2,.25);
         if(activity.remaining<=0){activity.spent=true;activity.mesh.visible=false;}
@@ -258,13 +272,18 @@ export class Game {
     this.syncVisual(this.player);
     const m=MISSIONS[this.mission],p=this.player.visual.root.position;
     if(m.kind==='capture'&&distance(p,{x:0,z:-13})<6.7&&!this.enemies.some(e=>!e.dead&&distance(e.visual.root.position,{x:0,z:-13})<6.7))this.capture+=dt;
-    if(this.convoy&&distance(p,this.convoy.position)<12)this.convoy.position.z=Math.max(-50,this.convoy.position.z-dt*3.4);
+    this.convoyBlocked=false;
+    if(this.convoy&&distance(p,this.convoy.position)<12){
+      const next={x:this.convoy.position.x,z:Math.max(-50,this.convoy.position.z-dt*3.4)};
+      this.convoyBlocked=[this.player,...this.enemies].some(u=>!u.dead&&distance(next,u.visual.root.position)<2.6&&distance(next,u.visual.root.position)<distance(this.convoy!.position,u.visual.root.position));
+      if(!this.convoyBlocked)this.convoy.position.z=next.z;
+    }
     if(['capture','defense'].includes(m.kind)){
       this.spawnTimer+=dt;
       if(this.spawnTimer>12&&this.enemies.filter(e=>!e.dead).length<7){this.spawnTimer=0;this.enemies.push(this.makeUnit(this.enemies.length%2?30:-30,-24,'raider'));this.radioMessage('IVO / New hostile signature on the perimeter.',3);}
     }
     for(let i=this.pickups.length-1;i>=0;i--){const pickup=this.pickups[i];pickup.life-=dt;pickup.mesh.rotation.y+=dt;if(distance(p,pickup.mesh.position)<2.4){this.player.hp=Math.min(this.player.max,this.player.hp+45);pickup.life=0;this.tone(800,.12,.03);}if(pickup.life<=0){pickup.mesh.removeFromParent();pickup.mesh.geometry.dispose();(pickup.mesh.material as T.Material).dispose();this.pickups.splice(i,1);}}
-    if(this.player.hp<=0||this.convoyHealth<=0||this.relayHealth<=0){this.fail();return;}
+    if(this.player.dead||this.player.hp<=0||this.convoyHealth<=0||this.relayHealth<=0){this.fail();return;}
     if(this.objectiveProgress()>=1){this.complete();return;}
     this.hudTimer+=dt;if(this.hudTimer>.1){this.hudTimer=0;this.updateHud();}
     this.radioTimer-=dt;this.radio.classList.toggle('visible',this.radioTimer>0);
@@ -277,9 +296,9 @@ export class Game {
     if(m.kind==='assault')objective=`${this.kills} / ${m.count} hostiles eliminated`;
     if(m.kind==='capture')objective=`UPLINK ${Math.min(18,Math.floor(this.capture))} / 18s · ${this.enemies.some(e=>!e.dead&&distance(e.visual.root.position,{x:0,z:-13})<6.7)?'CONTESTED':'HOLD THE AMBER RING'}`;
     if(m.kind==='defense')objective=`${Math.max(0,Math.ceil(m.duration-this.elapsed))}s remaining · RELAY ${Math.max(0,Math.ceil(this.relayHealth/3))}%`;
-    if(m.kind==='escort')objective=`TRANSPORT ${Math.max(0,Math.ceil(this.convoyHealth/2.6))}% · ${this.convoy&&distance(this.player.visual.root.position,this.convoy.position)<12?'MOVING TO EXTRACTION':'MOVE CLOSER TO ESCORT'}`;
+    if(m.kind==='escort')objective=`TRANSPORT ${Math.max(0,Math.ceil(this.convoyHealth/2.6))}% · ${this.convoy&&distance(this.player.visual.root.position,this.convoy.position)<12?(this.convoyBlocked?'CLEAR THE ROAD':'MOVING TO EXTRACTION'):'MOVE CLOSER TO ESCORT'}`;
     if(m.kind==='boss'){const b=this.enemies.find(e=>e.role==='boss');objective=`WARDEN ${Math.max(0,Math.ceil((b?.hp||0)/(b?.max||1)*100))}% · ${b&&b.hp<b.max*.5?'OVERDRIVE — KEEP MOVING':'WATCH THE TARGETING LINE'}`;}
-    this.el('objective').textContent=objective;this.el('objective-fill').style.width=`${clamp(this.objectiveProgress()*100,0,100)}%`;
+    this.el('objective').textContent=objective;this.radio.style.top=(this.el('mission-name').parentElement!.getBoundingClientRect().bottom+8)+'px';this.el('objective-fill').style.width=`${clamp(this.objectiveProgress()*100,0,100)}%`;
     this.el('health-label').textContent=`${Math.ceil(this.player.hp)} / ${Math.ceil(this.player.max)}`;this.el('health-fill').style.width=`${this.player.hp/this.player.max*100}%`;
     this.el('status-line').textContent=this.shieldTime>0?'PROTECTIVE FIELD ACTIVE':this.player.hp<this.player.max*.3?'HULL CRITICAL — SEEK COVER':'FRONT ARMOR ONLINE';
     this.el('weapon-label').textContent=weaponNames[this.weapon];this.el('reload-label').textContent=this.reload>0?`${this.reload.toFixed(1)}s`:'READY';this.el('reload-fill').style.width=`${(1-clamp(this.reload/this.reloadDuration(),0,1))*100}%`;

@@ -188,7 +188,7 @@ export class World {
     const p=root.position.clone();p.y=1;this.fx.impact(p,true);
   }
   update(dt:number,focus:T.Vector3,menu=false){
-    const desired=menu?scratch.copy(focus):scratch.set(T.MathUtils.clamp(focus.x,-BOUNDS.x,BOUNDS.x),0,focus.z-8);
+    const desired=menu?scratch.copy(focus):scratch.set(T.MathUtils.clamp(focus.x,-BOUNDS.x,BOUNDS.x),0,focus.z+(this.camera.aspect<1?8:-8));
     this.target.lerp(desired,1-Math.exp(-dt*3));
     const portrait=this.camera.aspect<1;
     this.camera.position.set(this.target.x+(menu?16:0),menu?18:portrait?62:54,this.target.z+(menu?24:portrait?51:43));

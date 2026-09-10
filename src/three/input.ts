@@ -4,6 +4,8 @@ export class Input {
   move={x:0,z:0}; aim={x:0,z:-1}; touchFiring=false; touchAiming=false; hasTouchAim=false;
   onAction: (action:string)=>void=()=>{};
   onPause: ()=>void=()=>{};
+  onBackground: ()=>void=()=>{};
+  private resetters:(()=>void)[]=[];
   active=false;
   constructor(canvas:HTMLCanvasElement){
     window.addEventListener('keydown',e=>{
@@ -21,10 +23,10 @@ export class Input {
     canvas.addEventListener('pointerup',()=>this.firing=false);
     canvas.addEventListener('pointercancel',()=>this.firing=false);
     canvas.addEventListener('contextmenu',e=>e.preventDefault());
-    window.addEventListener('blur',()=>{this.reset();this.onPause();});
-    document.addEventListener('visibilitychange',()=>{if(document.hidden){this.reset();this.onPause();}});
+    window.addEventListener('blur',()=>{this.reset();this.onBackground();});
+    document.addEventListener('visibilitychange',()=>{if(document.hidden){this.reset();this.onBackground();}});
   }
-  reset(){this.hasTouchAim=false;this.keys.clear();this.firing=false;this.touchFiring=false;this.touchAiming=false;this.move={x:0,z:0};document.querySelectorAll<HTMLElement>('.stick-nub').forEach(n=>n.style.transform='translate(0px, 0px)');}
+  reset(){for(const reset of this.resetters)reset();this.hasTouchAim=false;this.hasMouse=false;this.keys.clear();this.firing=false;this.touchFiring=false;this.touchAiming=false;this.move={x:0,z:0};document.querySelectorAll<HTMLElement>('.stick-nub').forEach(n=>n.style.transform='translate(0px, 0px)');}
   movement(){return {x:(this.keys.has('KeyD')||this.keys.has('ArrowRight')?1:0)-(this.keys.has('KeyA')||this.keys.has('ArrowLeft')?1:0)+this.move.x,z:(this.keys.has('KeyS')||this.keys.has('ArrowDown')?1:0)-(this.keys.has('KeyW')||this.keys.has('ArrowUp')?1:0)+this.move.z};}
   bindStick(element:HTMLElement,type:'move'|'aim'){
     let owner:number|null=null;
@@ -34,11 +36,12 @@ export class Input {
       let x=(e.clientX-r.left-r.width/2)/max,z=(e.clientY-r.top-r.height/2)/max;
       const length=Math.hypot(x,z);if(length>1){x/=length;z/=length;}
       nub.style.transform=`translate(${x*max}px,${z*max}px)`;
-      if(type==='move')this.move={x,z};else{this.aim={x,z};this.touchAiming=length>.15;if(length>.15)this.hasTouchAim=true;this.touchFiring=length>.25;}
+      if(type==='move')this.move={x,z};else{this.touchAiming=length>.15;if(this.touchAiming){const magnitude=Math.hypot(x,z);this.aim={x:x/magnitude,z:z/magnitude};this.hasTouchAim=true;}this.touchFiring=length>.25;}
     };
     element.addEventListener('pointerdown',e=>{if(owner!==null||!this.active)return;owner=e.pointerId;element.setPointerCapture(owner);update(e);e.preventDefault();});
-    element.addEventListener('pointermove',e=>{if(e.pointerId===owner)update(e);});
+    element.addEventListener('pointermove',e=>{if(this.active&&e.pointerId===owner)update(e);});
     const release=(e:PointerEvent)=>{if(e.pointerId!==owner)return;owner=null;nub.style.transform='translate(0px, 0px)';if(type==='move')this.move={x:0,z:0};else{this.touchFiring=false;this.touchAiming=false;}};
+    this.resetters.push(()=>{const pointerId=owner;owner=null;if(pointerId!==null&&element.hasPointerCapture(pointerId))element.releasePointerCapture(pointerId);nub.style.transform='translate(0px, 0px)';});
     element.addEventListener('pointerup',release);element.addEventListener('pointercancel',release);element.addEventListener('lostpointercapture',release);
   }
 }
