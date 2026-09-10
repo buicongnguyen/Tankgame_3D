@@ -41,7 +41,7 @@ The browser tests use controlled integration fixtures for mission edge cases, al
 | --- | --- | --- |
 | Drive | WASD or arrow keys | Left stick |
 | Aim/fire | Mouse + hold primary click, or Space | Right stick |
-| Switch weapon | 1 / 2 / 3 | Tap weapon panel |
+| Switch weapon | 1 / 2 / 3 | Tap weapon panel, then choose a gun |
 | Protective shield | Q | Shield button |
 | Repair | E | Repair button |
 | Pause | Escape | Pause button |

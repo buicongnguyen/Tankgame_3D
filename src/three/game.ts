@@ -16,6 +16,7 @@ export class Game {
   root:HTMLElement; world:World; input:Input; save:Save=freshSave(); phase:Phase='menu'; mission=0;
   player!:Unit; enemies:Unit[]=[]; shots:Shot[]=[]; pickups:Pickup[]=[];
   elapsed=0; capture=0; spawnTimer=0; kills=0; shotsFired=0; lastReward=0;
+  weaponPickerOpen=false;
   weapon=0; reload=0; shieldTime=0; shieldCooldown=0; repairs=1; relayHealth=300; convoyHealth=260; convoy:T.Group|null=null;convoyBlocked=false;
   overlay:HTMLElement; hud:HTMLElement; radio:HTMLElement; mini:HTMLCanvasElement;
   radioTimer=0; hudTimer=0; last=0; accumulator=0; hurtTimer=0;
@@ -26,7 +27,7 @@ export class Game {
   projectileGeometry=new T.CylinderGeometry(.10,.16,1.6,8).rotateX(Math.PI/2);
   trailGeometry=new T.ConeGeometry(.22,2.8,8).rotateX(-Math.PI/2);
   trailMaterial=new T.MeshBasicMaterial({color:0xffa147,transparent:true,opacity:.4,blending:T.AdditiveBlending,depthWrite:false});
-  projectileMaterials=[new T.MeshBasicMaterial({color:0xffe7a2}),new T.MeshBasicMaterial({color:0xff7552})];
+  projectileMaterials=[new T.MeshBasicMaterial({color:0xffe7a2}),new T.MeshBasicMaterial({color:0xff7552}),new T.MeshBasicMaterial({color:0x82faff}),new T.MeshBasicMaterial({color:0xff9538})];
   constructor(root:HTMLElement){
     this.root=root;
     try{this.save=parseSave(localStorage.getItem(SAVE_KEY));}catch{this.saveWarning=true;}
@@ -34,17 +35,17 @@ export class Game {
       <div class="mission-hud"><span class="eyebrow" id="mission-number"></span><h2 id="mission-name"></h2><p id="objective"></p><div class="objective-track"><i id="objective-fill"></i></div></div>
       <div class="top-actions"><button id="pause" aria-label="Pause game">Ⅱ <span>PAUSE</span></button><canvas id="minimap" width="176" height="132" aria-label="Tactical map"></canvas></div>
       <div class="bottom-hud"><div class="hull-block"><div><span>HULL</span><strong id="health-label"></strong></div><div class="hull-track"><i id="health-fill"></i></div><small id="status-line">ARMOR ONLINE</small></div>
-      <button class="weapon-block" id="weapon"><span id="weapon-label"></span><strong id="reload-label"></strong><div class="reload-track"><i id="reload-fill"></i></div><small>1 / 2 / 3 · SWITCH</small></button>
+      <button class="weapon-block" id="weapon"><span id="weapon-label"></span><strong id="reload-label"></strong><div class="reload-track"><i id="reload-fill"></i></div><small>CHOOSE WEAPON ▴</small></button>
       <div class="abilities"><button id="artillery"><kbd>R</kbd><span id="artillery-label">STRIKE</span></button><button id="shield"><kbd>Q</kbd><span id="shield-label">SHIELD</span></button><button id="repair"><kbd>E</kbd><span id="repair-label">REPAIR ×1</span></button></div></div>
       <div class="touch-pad move-pad" id="move-pad" aria-label="Drive joystick"><span class="stick-nub"></span><small>DRIVE</small></div><div class="touch-pad aim-pad" id="aim-pad" aria-label="Aim and fire joystick"><span class="stick-nub"></span><small>AIM / FIRE</small></div>
-      <div class="radio" id="radio" role="status"></div><div class="desktop-hint">WASD <span>drive</span> · MOUSE <span>aim</span> · HOLD CLICK <span>fire</span></div>
+      <div id="weapon-picker" class="weapon-picker" hidden role="group" aria-label="Choose weapon"></div><div class="radio" id="radio" role="status"></div><div class="desktop-hint">WASD <span>drive</span> · MOUSE <span>aim</span> · HOLD CLICK <span>fire</span></div>
     </div><div id="overlay"></div><div class="loading" id="loading"><span class="eyebrow">KESTREL // CONNECTING</span><h1>Establishing uplink<span class="blink">_</span></h1><p>Loading the valley and armored units.</p></div>`;
     this.overlay=this.el('overlay');this.hud=this.el('hud');this.radio=this.el('radio');this.mini=this.el('minimap') as HTMLCanvasElement;
     this.world=new World(this.el('battlefield'));this.input=new Input(this.world.renderer.domElement);
     this.input.onPause=()=>{if(this.phase==='playing')this.pause();else if(this.phase==='paused'&&!document.hidden&&document.hasFocus())this.resume();};
     this.input.onBackground=()=>{if(this.phase==='playing')this.pause();};
     this.input.onAction=a=>this.action(a);
-    this.bindActions(this.hud,button=>{if(button.id==='pause')this.pause();else this.action(button.id==='weapon'?'switch':button.id);});
+    this.bindActions(this.hud,button=>{if(button.id==='pause')this.pause();else this.action(button.dataset.weapon??(button.id==='weapon'?'switch':button.id));});
     this.input.bindStick(this.el('move-pad'),'move');this.input.bindStick(this.el('aim-pad'),'aim');
     this.bindActions(this.overlay,button=>this.menuAction(button.dataset.action!,button.dataset.value),'button[data-action]');
     this.world.renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();if(this.phase==='playing')this.pause();this.overlay.innerHTML='<section class="panel"><h1>Graphics connection lost</h1><p>Your mission checkpoint is saved. Reload to reconnect.</p><button onclick="location.reload()">Reload game</button></section>';});
@@ -68,14 +69,14 @@ export class Game {
     if(import.meta.env.DEV && new URLSearchParams(location.search).has('e2e'))(window as unknown as {__steel:Game}).__steel=this;
   }
   persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(this.save));}catch{this.saveWarning=true;}}
-  setPhase(phase:Phase){this.phase=phase;document.body.dataset.phase=phase;this.hud.hidden=!['playing','paused'].includes(phase);this.input.active=phase==='playing';this.input.reset();this.overlay.hidden=phase==='playing';if(phase!=='playing')this.world.cursor.visible=false;}
+  setPhase(phase:Phase){this.phase=phase;document.body.dataset.phase=phase;this.hud.hidden=!['playing','paused'].includes(phase);this.input.active=phase==='playing';this.input.reset();this.weaponPickerOpen=false;this.el('weapon-picker').hidden=true;this.overlay.hidden=phase==='playing';if(phase!=='playing')this.world.cursor.visible=false;}
   focusPrimary(){requestAnimationFrame(()=>this.overlay.querySelector<HTMLButtonElement>('.primary')?.focus({preventScroll:true}));}
   route(){const frontier=this.save.cleared.indexOf(false);return MISSIONS.map((m,i)=>`<button class="route-item ${i===this.mission?'selected':''}" data-action="mission" data-value="${i}" ${frontier>=0&&i>frontier?'disabled':''}><span class="route-index">${this.save.cleared[i]?'✓':String(i+1).padStart(2,'0')}</span><span><small>${m.kind.toUpperCase()}</small><strong>${m.name}</strong></span><span class="route-state">${frontier>=0&&i>frontier?'LOCKED':i===this.mission?'◂':'↗'}</span></button>`).join('');}
   settings(){return `<div class="settings"><button data-action="sound">SOUND <b>${this.save.sound?'ON':'OFF'}</b></button><button data-action="quality">GRAPHICS <b>${this.save.low?'LOW':'HIGH'}</b></button><a href="./legacy.html">Original 2D ↗</a></div>`;}
-  controls(){return '<div class="control-guide"><span><kbd>W A S D</kbd> Drive</span><span><kbd>MOUSE</kbd> Aim + hold click to fire</span><span><kbd>1 2 3</kbd> Weapon</span><span><kbd>Q</kbd> Shield</span><span><kbd>E</kbd> Repair</span><span><kbd>R</kbd> Artillery</span><span><kbd>ESC</kbd> Pause</span><p class="touch-guide">On touch: left stick drives; right stick aims and fires. Tap weapon, strike, shield or repair.</p></div>';}
+  controls(){return '<div class="control-guide"><span><kbd>W A S D</kbd> Drive</span><span><kbd>MOUSE</kbd> Aim + hold click to fire</span><span><kbd>1 2 3</kbd> Weapon</span><span><kbd>Q</kbd> Shield</span><span><kbd>E</kbd> Repair</span><span><kbd>R</kbd> Artillery</span><span><kbd>ESC</kbd> Pause</span><p class="touch-guide">On touch: left stick drives; right stick aims and fires. Tap the weapon panel to choose a gun. Strike, shield and repair have separate buttons.</p></div>';}
   showMenu(){
     this.setPhase('menu');this.world.target.copy(this.player.visual.root.position);const m=MISSIONS[this.mission];
-    this.overlay.innerHTML=`<main class="command-screen"><header class="brand"><span class="brand-mark">◈</span><span>KESTREL DIVISION<small>MERIDIAN RECOVERY COMMAND</small></span><span class="build-label">3D CAMPAIGN / 01</span></header><section class="hero"><span class="eyebrow">MERIDIAN CAMPAIGN</span><h1>STEEL<br><em>FRONT</em><span>LAST SIGNAL</span></h1></section><aside class="briefing panel"><div class="panel-top"><span class="eyebrow">OPERATION ${String(this.mission+1).padStart(2,'0')} / ${MISSIONS.length}</span></div><h2>${m.name}</h2><div class="mission-task"><span>OBJECTIVE</span><strong>${m.objective}</strong></div><div class="difficulty" aria-label="Difficulty">${(['story','standard','veteran'] as Difficulty[]).map(d=>`<button data-action="difficulty" data-value="${d}" aria-pressed="${this.save.difficulty===d}" class="${this.save.difficulty===d?'active':''}">${d}</button>`).join('')}</div><button class="primary deploy" data-action="deploy">DEPLOY <span>→</span></button><details><summary>Briefing & controls</summary><p class="briefing-copy">${m.briefing}</p>${this.controls()}<p class="manual">Front armor absorbs damage. Flank for stronger hits. Red lines warn of incoming fire. Amber marks the objective. Red drums explode. Green pads repair. Blue caches give rockets and supplies. R calls artillery at your aim point.</p></details></aside><section class="campaign-route"><div class="route-heading"><span class="eyebrow">THE ROAD HOME</span><span>${this.save.cleared.filter(Boolean).length} / ${MISSIONS.length} COMPLETE</span></div><div class="route-list">${this.route()}</div></section><footer>${this.settings()}<button class="quiet" data-action="reset-prompt">Reset campaign</button></footer>${this.saveWarning?'<p class="storage-warning">Browser storage is unavailable. Progress will last only for this session.</p>':''}</main>`;
+    this.overlay.innerHTML=`<main class="command-screen"><header class="brand"><span class="brand-mark">◈</span><span>KESTREL DIVISION<small>MERIDIAN RECOVERY COMMAND</small></span><span class="build-label">3D CAMPAIGN / 01</span></header><section class="hero"><span class="eyebrow">MERIDIAN CAMPAIGN</span><h1>STEEL<br><em>FRONT</em><span>LAST SIGNAL</span></h1></section><aside class="briefing panel"><div class="panel-top"><span class="eyebrow">OPERATION ${String(this.mission+1).padStart(2,'0')} / ${MISSIONS.length}</span></div><h2>${m.name}</h2><div class="mission-task"><span>OBJECTIVE</span><strong>${m.objective}</strong></div><div class="difficulty" aria-label="Difficulty">${(['story','standard','veteran'] as Difficulty[]).map(d=>`<button data-action="difficulty" data-value="${d}" aria-pressed="${this.save.difficulty===d}" class="${this.save.difficulty===d?'active':''}">${d}</button>`).join('')}</div><button class="primary deploy" data-action="deploy">DEPLOY <span>→</span></button><details><summary>Briefing & controls</summary><p class="briefing-copy">${m.briefing}</p>${this.controls()}<p class="manual">Front armor absorbs damage. Flank for stronger hits. Red lines warn of incoming fire. Amber marks the objective. Red drums explode. Green pads repair. Blue caches give rockets and supplies. Cannon is available immediately; clear First Light for autocannon and Homeward for rockets. Tap the weapon panel to choose. R calls a wide five-round barrage at your aim point; amber circles show danger to both sides.</p></details></aside><section class="campaign-route"><div class="route-heading"><span class="eyebrow">THE ROAD HOME</span><span>${this.save.cleared.filter(Boolean).length} / ${MISSIONS.length} COMPLETE</span></div><div class="route-list">${this.route()}</div></section><footer>${this.settings()}<button class="quiet" data-action="reset-prompt">Reset campaign</button></footer>${this.saveWarning?'<p class="storage-warning">Browser storage is unavailable. Progress will last only for this session.</p>':''}</main>`;
     this.focusPrimary();
   }
   pause(){if(this.phase!=='playing')return;this.setPhase('paused');this.renderPause();}
@@ -115,14 +116,14 @@ export class Game {
     this.world.shield.visible=false;this.world.cursor.visible=false;
     this.syncVisual(this.player);this.enemies.forEach(e=>this.syncVisual(e));this.updateHud();
   }
-  start(index:number){this.prepare(index);this.setPhase('playing');this.world.target.copy(this.player.visual.root.position);this.world.target.z+=this.world.camera.aspect<1?8:-8;this.world.update(0,this.player.visual.root.position);this.updateHud();this.overlay.innerHTML='';this.radioMessage(MISSIONS[index].radio,9);this.last=performance.now();this.accumulator=0;this.tone(360,.12,.05);}
+  start(index:number){this.prepare(index);this.setPhase('playing');this.world.target.copy(this.player.visual.root.position);this.world.target.z+=this.world.camera.aspect<1?8:-8;this.world.update(0,this.player.visual.root.position);this.updateHud();this.overlay.innerHTML='';this.radioMessage(index===0?'IVO / Tap CANNON to see weapons. Clear this patrol to unlock autocannon.':MISSIONS[index].radio,9);this.last=performance.now();this.accumulator=0;this.tone(360,.12,.05);}
   action(action:string){
     if(this.phase!=='playing')return;
     if(action==='artillery'&&this.artilleryCooldown<=0)this.callArtillery();
     if(action==='shield'&&this.shieldCooldown<=0){this.shieldTime=3;this.shieldCooldown=14;this.radioMessage('KESTREL / Protective field active. Three seconds of cover.',3);this.tone(620,.2,.04);}
     if(action==='repair'&&this.repairs>0&&this.player.hp<this.player.max){this.repairs--;this.player.hp=Math.min(this.player.max,this.player.hp+110);this.world.burst(this.player.visual.root.position,3);this.tone(720,.15,.05);}
-    if(action==='switch')this.weapon=(this.weapon+1)%Math.max(this.fieldWeaponCount,weaponCount(this.save));
-    if(['1','2','3'].includes(action)){const w=Number(action)-1;if(w<Math.max(this.fieldWeaponCount,weaponCount(this.save)))this.weapon=w;else this.radioMessage(`ARMORY / ${w===1?'Autocannon unlocks after First Light.':'Rockets unlock after Homeward.'}`,3);}
+    if(action==='switch')this.weaponPickerOpen=!this.weaponPickerOpen;
+    if(['1','2','3'].includes(action)){const w=Number(action)-1;if(w<Math.max(this.fieldWeaponCount,weaponCount(this.save))){this.weapon=w;this.weaponPickerOpen=false;}else this.radioMessage(`ARMORY / ${w===1?'Autocannon unlocks after First Light.':'Rockets unlock after Homeward.'}`,3);}
     this.updateHud();
   }
   weaponStats(){return [{damage:44,speed:48,reload:.85,splash:0},{damage:13,speed:58,reload:.19,splash:0},{damage:70,speed:30,reload:1.6,splash:4.5}][this.weapon];}
@@ -142,9 +143,9 @@ export class Game {
   shoot(unit:Unit,friendly:boolean){
     const stats=friendly?this.weaponStats():{damage:unit.role==='boss'?33:unit.role==='heavy'?24:15,speed:unit.role==='boss'?32:25,splash:0};
     const direction=new T.Vector3(Math.sin(unit.aim),0,Math.cos(unit.aim));
-    const mesh=new T.Mesh(this.projectileGeometry,this.projectileMaterials[friendly?0:1]);
+    const mesh=new T.Mesh(this.projectileGeometry,this.projectileMaterials[friendly?(this.weapon===1?2:this.weapon===2?3:0):1]);
     mesh.rotation.y=unit.aim;const trail=new T.Mesh(this.trailGeometry,this.trailMaterial);trail.position.z=-1.6;mesh.add(trail);
-    if(friendly&&this.weapon===2){mesh.scale.set(1.7,1.7,1.1);mesh.userData.rocket=true;}else if(friendly&&this.weapon===1)mesh.scale.set(.65,.65,1.4);
+    if(friendly&&this.weapon===2){mesh.scale.set(1.7,1.7,1.1);mesh.userData.rocket=true;}else if(friendly&&this.weapon===1)mesh.scale.set(.5,.5,.6);
     unit.visual.root.updateMatrixWorld(true);unit.visual.muzzle.getWorldPosition(mesh.position);
     this.world.entities.add(mesh);
     const p=unit.visual.root.position;
@@ -157,7 +158,7 @@ export class Game {
     const movement=this.input.movement(),length=Math.hypot(movement.x,movement.z);
     if(length>.06){const dx=movement.x/Math.max(1,length),dz=movement.z/Math.max(1,length);this.moveUnit(this.player,dx*9*dt,dz*9*dt);this.player.heading=turnToward(this.player.heading,Math.atan2(dx,dz),dt*4.5);}
     const p=this.player.visual.root.position;
-    if(this.input.touchAiming||this.input.hasTouchAim)this.aimPoint.set(p.x+this.input.aim.x*18,0,p.z+this.input.aim.z*18);
+    if(this.input.touchAiming||this.input.hasTouchAim)this.aimPoint.set(p.x+this.input.aim.x*28,0,p.z+this.input.aim.z*28);
     else if(this.input.hasMouse){this.ray.setFromCamera(this.input.mouse,this.world.camera);this.ray.ray.intersectPlane(this.plane,this.aimPoint);}
     else this.aimPoint.set(p.x,0,p.z-15);
     this.player.aim=turnToward(this.player.aim,Math.atan2(this.aimPoint.x-p.x,this.aimPoint.z-p.z),dt*9);
@@ -234,15 +235,16 @@ if(cover.kind==='barrel'){this.world.fx.impact(cover.mesh.position.clone().setY(
   }
   callArtillery(){
     const p=this.player.visual.root.position;
-    const delta=this.aimPoint.clone().sub(p);delta.y=0;if(delta.length()>34)delta.setLength(34);
+    const delta=this.aimPoint.clone().sub(p);delta.y=0;if(delta.length()>52)delta.setLength(52);
     const target=p.clone().add(delta);target.x=clamp(target.x,-BOUNDS.x,BOUNDS.x);target.z=clamp(target.z,-BOUNDS.z,BOUNDS.z);
     this.artilleryCooldown=28;
-    for(let i=0;i<3;i++){
-      const x=clamp(target.x+(i-1)*3,-BOUNDS.x,BOUNDS.x),z=clamp(target.z+(i%2)*3,-BOUNDS.z,BOUNDS.z);
-      const marker=new T.Mesh(new T.RingGeometry(4.6,4.9,48),new T.MeshBasicMaterial({color:0xffb458,side:T.DoubleSide,transparent:true,opacity:.8}));marker.rotation.x=-Math.PI/2;marker.position.set(x,.1,z);marker.userData.owned=true;this.world.entities.add(marker);
-      this.strikes.push({x,z,time:1.1+i*.3,marker});
+    for(let i=0;i<5;i++){
+      const [dx,dz]=[[0,0],[-8,-5],[8,5],[-8,5],[8,-5]][i];
+      const x=clamp(target.x+dx,-BOUNDS.x,BOUNDS.x),z=clamp(target.z+dz,-BOUNDS.z,BOUNDS.z);
+      const marker=new T.Mesh(new T.RingGeometry(8.8,9,64),new T.MeshBasicMaterial({color:0xffb458,side:T.DoubleSide,transparent:true,opacity:.8}));marker.rotation.x=-Math.PI/2;marker.position.set(x,.1,z);marker.userData.owned=true;this.world.entities.add(marker);
+      this.strikes.push({x,z,time:1.2+i*.3,marker});
     }
-    this.radioMessage('IVO / Strike inbound. Clear the amber circles.',3);
+    this.radioMessage('IVO / Five-round barrage inbound. Clear the amber circles.',3);
   }
   updateActivities(dt:number){
     if(this.player.dead)return;
@@ -269,9 +271,9 @@ if(cover.kind==='barrel'){this.world.fx.impact(cover.mesh.position.clone().setY(
       }
     }
     for(let i=this.strikes.length-1;i>=0;i--){
-      const strike=this.strikes[i];strike.time-=dt;strike.marker.scale.setScalar(1+Math.sin(this.elapsed*18)*.035);
+      const strike=this.strikes[i];strike.time-=dt;(strike.marker.material as T.MeshBasicMaterial).opacity=.65+Math.sin(this.elapsed*12)*.2;
       if(strike.time<.35&&strike.time>0&&this.trailClock<=0)this.world.fx.emit(new T.Vector3(strike.x,Math.max(1,strike.time*55),strike.z),'flash',0xffd494,1.8,.12,new T.Vector3(0,-40,0));
-      if(strike.time<=0){this.world.fx.impact(new T.Vector3(strike.x,.8,strike.z),true);this.explode(strike,7,110);this.tone(38,.3,.08);strike.marker.removeFromParent();strike.marker.geometry.dispose();(strike.marker.material as T.Material).dispose();this.strikes.splice(i,1);}
+      if(strike.time<=0){this.world.fx.impact(new T.Vector3(strike.x,.8,strike.z),true);this.explode(strike,9,85);this.tone(38,.3,.08);strike.marker.removeFromParent();strike.marker.geometry.dispose();(strike.marker.material as T.Material).dispose();this.strikes.splice(i,1);}
     }
   }
   objectiveProgress(){const m=MISSIONS[this.mission];if(m.kind==='capture')return this.capture/m.duration;if(m.kind==='defense')return this.elapsed/m.duration;if(m.kind==='escort')return this.convoy?(48-this.convoy.position.z)/98:0;if(m.kind==='boss'){const b=this.enemies.find(e=>e.role==='boss');return b?1-b.hp/b.max:0;}return this.kills/m.count;}
@@ -311,7 +313,13 @@ if(cover.kind==='barrel'){this.world.fx.impact(cover.mesh.position.clone().setY(
     this.el('objective').textContent=objective;this.radio.style.top=(this.el('mission-name').parentElement!.getBoundingClientRect().bottom+8)+'px';this.el('objective-fill').style.width=`${clamp(this.objectiveProgress()*100,0,100)}%`;
     this.el('health-label').textContent=`${Math.ceil(this.player.hp)} / ${Math.ceil(this.player.max)}`;this.el('health-fill').style.width=`${this.player.hp/this.player.max*100}%`;
     this.el('status-line').textContent=this.shieldTime>0?'PROTECTIVE FIELD ACTIVE':this.player.hp<this.player.max*.3?'HULL CRITICAL — SEEK COVER':terrainSpeed(this.world.environment.biome,this.player.visual.root.position.x,this.player.visual.root.position.z)<1?'ROUGH GROUND · REDUCED SPEED':'FRONT ARMOR ONLINE';
-    this.el('weapon-label').textContent=weaponNames[this.weapon];this.el('reload-label').textContent=this.reload>0?`${this.reload.toFixed(1)}s`:'READY';this.el('reload-fill').style.width=`${(1-clamp(this.reload/this.reloadDuration(),0,1))*100}%`;
+    const available=Math.max(this.fieldWeaponCount,weaponCount(this.save));
+    this.el('weapon').setAttribute('aria-expanded',String(this.weaponPickerOpen));
+    const picker=this.el('weapon-picker');picker.hidden=!this.weaponPickerOpen;
+    // Rebuild only when selection/unlocks change so held touch buttons retain pointer ownership.
+    const state=`${available}:${this.weapon}`;
+    if(picker.dataset.state!==state){picker.dataset.state=state;picker.innerHTML=['CANNON','AUTOCANNON','ROCKETS'].map((name,i)=>`<button data-weapon="${i+1}" aria-pressed="${this.weapon===i}" ${i>=available?'disabled':''}><strong>${i+1} · ${name}</strong><small>${i>=available?(i===1?'Clear First Light':'Clear Homeward'):['Heavy single shot','Rapid fire','Area damage'][i]}</small></button>`).join('');}
+    this.el('weapon-label').textContent=weaponNames[this.weapon]+' ▴';this.el('weapon').setAttribute('aria-label','Choose weapon: '+weaponNames[this.weapon]);this.el('reload-label').textContent=this.reload>0?`${this.reload.toFixed(1)}s`:'READY';this.el('reload-fill').style.width=`${(1-clamp(this.reload/this.reloadDuration(),0,1))*100}%`;
     this.el('shield-label').textContent=this.shieldCooldown>0?`SHIELD ${Math.ceil(this.shieldCooldown)}s`:'SHIELD';this.el('repair-label').textContent=`REPAIR ×${this.repairs}`;
     (this.el('shield') as HTMLButtonElement).disabled=this.shieldCooldown>0;(this.el('repair') as HTMLButtonElement).disabled=this.repairs===0||this.player.hp>=this.player.max;
     this.el('artillery-label').textContent=this.artilleryCooldown>0?`STRIKE ${Math.ceil(this.artilleryCooldown)}s`:'STRIKE';(this.el('artillery') as HTMLButtonElement).disabled=this.artilleryCooldown>0;

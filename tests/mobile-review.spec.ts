@@ -45,7 +45,7 @@ test('long mobile objectives leave radio space and the convoy waits for blocking
 
 test('touch weapon selection executes once and abilities work while driving',async({browser})=>{
  const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});const page=await context.newPage();await page.goto('http://127.0.0.1:5178/?e2e');await page.getByRole('button',{name:'DEPLOY'}).tap();
- await page.evaluate(()=>{const g=(window as any).__steel;g.fieldWeaponCount=3;});await page.locator('#weapon').tap();expect(await page.evaluate(()=>(window as any).__steel.weapon)).toBe(1);
+ await page.evaluate(()=>{const g=(window as any).__steel;g.fieldWeaponCount=3;});await page.locator('#weapon').tap();await page.locator('[data-weapon="2"]').tap();expect(await page.evaluate(()=>(window as any).__steel.weapon)).toBe(1);
  const l=(await page.locator('#move-pad').boundingBox())!,b=(await page.locator('#shield').boundingBox())!;const cdp=await context.newCDPSession(page);
  const drive={x:l.x+l.width/2,y:l.y+l.height/2-25,id:1};await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[drive]});await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[drive,{x:b.x+b.width/2,y:b.y+b.height/2,id:2}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[{x:b.x+b.width/2,y:b.y+b.height/2,id:2}]});
  await expect.poll(()=>page.evaluate(()=>{const g=(window as any).__steel;return g.shieldTime>0&&g.input.move.z<0;})).toBe(true);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await context.close();

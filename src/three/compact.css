@@ -76,3 +76,10 @@ button.primary{padding:13px 16px;font-size:12px}.briefing details{margin-top:12p
 /* Expanded route stays compact on phones and wraps on desktop. */
 .route-list{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(min-width:1000px){.route-list{grid-template-columns:repeat(9,minmax(0,1fr))}}
+
+.weapon-picker{position:absolute;bottom:96px;left:50%;transform:translateX(-50%);display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:min(440px,calc(100vw - 20px));padding:7px;background:#102328f5;border:1px solid #b5f0cb66;pointer-events:auto;z-index:10}
+.weapon-picker button{padding:10px 5px;min-height:54px;text-align:center;font-size:10px;letter-spacing:0}
+.weapon-picker button[aria-pressed=true]{border-color:#b5f0cb;background:#365349}
+.weapon-picker small{display:block;font-size:9px;letter-spacing:0;margin-top:5px}.weapon-picker button:disabled{opacity:.6}
+@media(pointer:coarse) and (orientation:portrait){.weapon-picker{bottom:calc(235px + env(safe-area-inset-bottom))}}
+@media(pointer:coarse) and (orientation:landscape){.weapon-picker{bottom:calc(110px + env(safe-area-inset-bottom))}}
