@@ -27,5 +27,6 @@ for(const viewport of [{width:1440,height:900},{width:390,height:844}])test(`win
  // Any underlying scenery within 1 cm of the snow can compete for the same depth values.
  for(const mesh of g.world.arena.children){if(!mesh.isMesh||!mesh.userData.owned)continue;const p=mesh.geometry.attributes.position;for(let i=0;i<p.count;i++){const v=g.player.visual.root.position.clone().set(p.getX(i),p.getY(i),p.getZ(i)).applyMatrix4(mesh.matrixWorld);if(Math.abs(v.x)>8.5&&Math.abs(v.x)<71.5&&Math.abs(v.z)<60&&v.y>.015&&v.y<.0249)conflicts.push(v.y);}}
  return {conflicts,weatherDepthWrite:g.world.environment.weather.material.depthWrite};});expect(result.conflicts).toEqual([]);expect(result.weatherDepthWrite).toBe(false);
- for(const low of [false,true]){await page.evaluate(low=>{const g=(window as any).__steel;g.world.settings(low);for(let i=0;i<90;i++){g.player.visual.root.position.set(-22+i*.12,0,22-i*.16);g.world.update(1/60,g.player.visual.root.position);}},low);await page.screenshot({path:`test-results/snow-stable-${viewport.width}-${low?'low':'high'}.png`});}
+ for(const low of [false,true]){await page.evaluate(low=>{const g=(window as any).__steel;g.world.settings(low);// Sample the same camera path without queuing 90 full software-GPU frames.
+ for(let i=0;i<90;i+=15){g.player.visual.root.position.set(-22+i*.12,0,22-i*.16);g.world.update(.25,g.player.visual.root.position);}},low);await page.screenshot({path:`test-results/snow-stable-${viewport.width}-${low?'low':'high'}.png`});}
 });
