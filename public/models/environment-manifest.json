@@ -1,0 +1,26 @@
+[
+  {
+    "asset": "pine",
+    "bytes": 7420
+  },
+  {
+    "asset": "house",
+    "bytes": 14588
+  },
+  {
+    "asset": "stonewall",
+    "bytes": 22932
+  },
+  {
+    "asset": "steelwall",
+    "bytes": 9656
+  },
+  {
+    "asset": "bridge",
+    "bytes": 40560
+  },
+  {
+    "asset": "hill",
+    "bytes": 11568
+  }
+]

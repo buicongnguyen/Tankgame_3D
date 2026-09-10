@@ -6,17 +6,19 @@ A playable 3D tank rescue campaign built with **Three.js + TypeScript**, using o
 
 ## The campaign
 
-Lead Kestrel through six operations to reopen the Meridian evacuation route: clear patrols, capture a relay, escort a rescue transport, defend an uplink, break a siege battery, and defeat Warden. Each operation includes a story briefing and debrief. First-clear credits buy persistent armor, damage and reload upgrades.
+Lead Kestrel through nine operations to reopen the Meridian evacuation route: clear patrols, capture a relay, escort a rescue transport, defend an uplink, break a siege battery, and defeat Warden, then reclaim river villages, escort a winter relief convoy, and defend the ridge transmitter. Each operation includes a story briefing and debrief. First-clear credits buy persistent armor, damage and reload upgrades.
 
 - Independently aimed turret, directional armor and real projectile travel.
-- Hard cover, destructible supply crates and explosive fuel drums.
+- Blender trees, houses, stone/steel walls, bridges and rocky hills.
+- Water, off-road snow and mud change tank speed; bridge and road routes preserve speed.
+- Destructible cover, house medical salvage, supply crates and explosive fuel drums.
 - Cannon, unlockable autocannon and siege rockets.
 - Shield, consumable repair and field repair pickups.
 - Three difficulty modes; mission checkpoints, retries and replay.
 - Responsive command screen, minimap, objective HUD and simultaneous touch sticks.
 - Optional synthesized combat audio; low graphics mode; locally bundled fonts.
 
-This release is a new six-mission adaptation. The original fifteen-stage campaign, infantry shelters, complete arsenal and chassis shop remain in the separate 2D reference; they are not all ported into this release.
+This release is a nine-mission adaptation. The original fifteen-stage campaign, infantry shelters, complete arsenal and chassis shop remain in the separate 2D reference; they are not all ported into this release.
 
 ## Run and verify
 
@@ -27,7 +29,7 @@ npm ci
 npm run dev
 npm run build
 npm run test:assets
-npx playwright install chromium
+npx playwright install chromium webkit
 npm test
 ```
 
@@ -85,3 +87,5 @@ Game models and narrative are authored for this project. Barlow and Barlow Conde
 Explore a 144 × 120 m combat zone with flank cover, green repair pads, blue supply caches and proximity mines. **R / STRIKE** calls three artillery shells at your aim point; stay clear of the marked circles. Supplies provide a repair kit, sortie-only rockets, 25 seconds of boosted damage and a fresh strike.
 
 Shell tracers, rocket exhaust, muzzle flashes, debris, shock rings, smoke, dust and persistent scorched wrecks replace the original simple hit/death effects. The escort route is now 98 m long. Effects are capped and reduced in low graphics mode.
+
+Environment selection, behavior, source art and scope: [Environment expansion](docs/ENVIRONMENT_EXPANSION.md).

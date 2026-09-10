@@ -8,16 +8,22 @@ export const MISSIONS: Mission[] = [
   { name: 'Long Night', sector: 'EVACUATION UPLINK', kind: 'defense', briefing: 'Hold the uplink alive for 45 seconds while Ivo routes the remaining transports. Intercept enemies before they break the relay. Watch both the relay and your hull.', radio: 'IVO / Protect the relay for 45s.', debrief: 'The uplink holds. Every transport has a route home. One siege battery still covers the final crossing.', objective: 'Defend the uplink · 45 seconds', count: 4, duration: 45, reward: 280 },
   { name: 'Glass Road', sector: 'WARDEN PERIMETER', kind: 'assault', briefing: 'Heavy armor is holding the final crossing. Use rockets to break clustered enemies and circle their fronts. The supply drums can turn their own position against them.', radio: 'MARA / Flank the heavies. Aim for their rear armor.', debrief: 'The crossing is open. The command machine has left its bunker. This is our chance to end the siege.', objective: 'Break the siege battery', count: 6, duration: 0, reward: 320 },
   { name: 'Last Signal', sector: 'WARDEN COMMAND', kind: 'boss', briefing: 'Warden is the machine coordinating the siege. Destroy its command tank. Its guns accelerate below half armor; watch the red targeting line and move before it fires.', radio: 'IVO / Destroy Warden. Dodge when its targeting line appears.', debrief: 'The red lights go dark. Across Meridian, radios come alive. The last transport crosses the bridge. For the first time tonight, the road is quiet.', objective: 'Destroy the Warden command tank', count: 3, duration: 0, reward: 400 },
+  { name:'River Run', sector:'FLOODED VILLAGES', kind:'assault', briefing:'The valley is safe, but isolated settlements still need supplies. Clear the river patrol. Bridges keep your speed; crossing the water slows both sides. Brick houses can reveal medical supplies.', radio:'IVO / Use the bridges. Water slows your tracks.', debrief:'The river villages have supplies again. A transport is waiting below the snow line.', objective:'Clear the river patrol', count:6, duration:0, reward:340 },
+  { name:'Frozen Pass', sector:'NORTHERN HIGHLANDS', kind:'escort', briefing:'Guide the last relief transport through the winter pass. Stay on the cleared road for full speed. Trees and stone walls can be destroyed; steel barriers and rocky hills stop shells.', radio:'MARA / The road is clear. Snow slows movement off-road.', debrief:'The transport reaches the mountain shelters. Restore the ridge transmitter to reconnect them.', objective:'Escort the mountain relief convoy', count:5, duration:0, reward:360 },
+  { name:'Ridge Watch', sector:'HIGHLAND TRANSMITTER', kind:'defense', briefing:'Protect the transmitter for 45 seconds. Use the rocky hills to break firing lanes and avoid the muddy eastern approach. Destroy stone cover to open a flank.', radio:'IVO / Hold the uplink. The eastern mud slows armor.', debrief:'The ridge signal joins the valley network. From river villages to mountain shelters, Meridian is connected again.', objective:'Defend the ridge uplink · 45 seconds', count:5, duration:45, reward:420 },
+
 ];
 export const SAVE_KEY = 'steel-front-3d-v1';
 export type Difficulty = 'story' | 'standard' | 'veteran';
 export interface Save { version: 1; mission: number; cleared: boolean[]; credits: number; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; }
-export const freshSave = (): Save => ({ version: 1, mission: 0, cleared: Array(6).fill(false), credits: 0, upgrades: { armor: 0, power: 0, reload: 0 }, difficulty: 'standard', sound: false, low: false });
+export const freshSave = (): Save => ({ version: 1, mission: 0, cleared: Array(MISSIONS.length).fill(false), credits: 0, upgrades: { armor: 0, power: 0, reload: 0 }, difficulty: 'standard', sound: false, low: false });
 export function parseSave(raw: string | null): Save {
   try {
     const s = JSON.parse(raw || 'null');
-    if (!s || s.version !== 1 || !Number.isInteger(s.mission) || s.mission < 0 || s.mission > 5 || !Array.isArray(s.cleared) || s.cleared.length !== 6 || s.cleared.some((v: unknown) => typeof v !== 'boolean') || !Number.isInteger(s.credits) || s.credits < 0 || s.credits > 100000 || !['story','standard','veteran'].includes(s.difficulty)) return freshSave();
+    if (!s || s.version !== 1 || !Number.isInteger(s.mission) || s.mission < 0 || s.mission >= s.cleared?.length || !Array.isArray(s.cleared) || ![6,MISSIONS.length].includes(s.cleared.length) || s.cleared.some((v: unknown) => typeof v !== 'boolean') || !Number.isInteger(s.credits) || s.credits < 0 || s.credits > 100000 || !['story','standard','veteran'].includes(s.difficulty)) return freshSave();
     if (!s.upgrades || ['armor','power','reload'].some(k => !Number.isInteger(s.upgrades[k]) || s.upgrades[k] < 0 || s.upgrades[k] > 3)) return freshSave();
+    // Extend old six-operation saves without changing earned progress or purchases.
+    if(s.cleared.length===6){const finished=s.cleared.every(Boolean);s.cleared.push(...Array(MISSIONS.length-6).fill(false));if(finished)s.mission=6;}
     // A checkpoint cannot unlock past a gap in the campaign.
     const firstUncleared = s.cleared.indexOf(false);
     if (firstUncleared >= 0 && (s.mission > firstUncleared || s.cleared.slice(firstUncleared).some(Boolean))) return freshSave();
@@ -29,7 +35,7 @@ export function rewardClear(save: Save, mission: number): number {
   save.cleared[mission] = true;
   const reward = MISSIONS[mission].reward;
   save.credits += reward;
-  save.mission = Math.min(5, mission + 1);
+  save.mission = Math.min(MISSIONS.length-1, mission + 1);
   return reward;
 }
 export const weaponNames = ['120 mm cannon', '30 mm autocannon', 'Siege rockets'];

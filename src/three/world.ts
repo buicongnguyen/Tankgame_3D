@@ -2,15 +2,17 @@ import * as T from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Box } from './rules';
+import { Environment } from './environment';
 import { CombatEffects } from './effects';
 import { BOUNDS, buildActivities } from './activities';
 import type { Activity } from './activities';
 export interface TankVisual { root: T.Group; hull: T.Object3D; turret: T.Object3D; muzzle: T.Object3D; bar: T.Mesh; beam: T.Mesh; }
-export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel'; hp: number; mesh: T.Group; }
+export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill'; hp: number; mesh: T.Group; }
 interface Effect { mesh: T.Mesh; life: number; max: number; velocity: T.Vector3; }
 const scratch = new T.Vector3();
 export class World {
   scene = new T.Scene();
+  environment=new Environment();
   fx=new CombatEffects(this.scene); activities:Activity[]=[]; wrecks:{root:T.Group;age:number;emit:number}[]=[];
   burnt=new T.MeshStandardMaterial({color:0x292b28,roughness:.96});
   scorchGeometry=new T.CircleGeometry(3,24); scorchMaterial=new T.MeshBasicMaterial({color:0x28251e,transparent:true,opacity:.6,depthWrite:false});
@@ -58,7 +60,7 @@ export class World {
   }
   async load() {
     const loader=new GLTFLoader();
-    await Promise.all(['tank','transport','barricade','crate','barrel','relay'].map(async name=>{
+    await Promise.all(['tank','transport','barricade','crate','barrel','relay','pine','house','stonewall','steelwall','bridge','hill'].map(async name=>{
       const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/${name}.glb`);
       const root=gltf.scene;
       root.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true; o.receiveShadow=true;}});
@@ -67,8 +69,8 @@ export class World {
     // Tank pieces become a handful of material batches while the turret pivot and muzzle remain independent.
     const tank=this.templates.get('tank')!;
     tank.updateMatrixWorld(true);
-    for (const name of ['Hull','Turret']) {
-      const part=tank.getObjectByName(name)!;
+    for (const part of [tank.getObjectByName('Hull')!,tank.getObjectByName('Turret')!,...['pine','house','stonewall','steelwall','bridge','hill'].map(name=>this.templates.get(name)!)]) {
+      part.updateMatrixWorld(true);
       const inverse=part.matrixWorld.clone().invert();
       const buckets=new Map<T.Material,T.BufferGeometry[]>();
       const meshes:T.Mesh[]=[];
@@ -103,7 +105,7 @@ export class World {
     return {root,hull:root.getObjectByName('Hull')!,turret:root.getObjectByName('Turret')!,muzzle:root.getObjectByName('Muzzle')!,bar,beam};
   }
   enemyMaterials=new Map<string,T.MeshStandardMaterial>();
-  clear() { this.fx.clear();this.wrecks=[];this.activities=[];
+  clear() { this.environment.clear();this.fx.clear();this.wrecks=[];this.activities=[];
     for(const effect of this.effects){effect.mesh.removeFromParent();(effect.mesh.material as T.Material).dispose();}
     this.effects=[];
     // Only dispose runtime-created resources; GLB geometry/materials are shared templates.
@@ -164,7 +166,7 @@ export class World {
     }
     // Extraction pylons frame the road.
     for(const x of [-4,4]){this.box(.45,3.2,.45,0x3e5751,x,1.6,-51);this.box(.65,.2,.65,0x98f3bf,x,3.3,-51);}
-    this.batchScenery();this.activities=buildActivities(this.arena);
+    this.environment.build(this,index);this.batchScenery();this.activities=buildActivities(this.arena);
     this.target.set(0,0,0);
   }
   settings(low:boolean){this.low=low;this.fx.low=low;this.renderer.setPixelRatio(Math.min(devicePixelRatio,low?1:1.6));this.renderer.shadowMap.enabled=!low;this.resize();}
@@ -196,7 +198,7 @@ export class World {
     for(let i=this.effects.length-1;i>=0;i--){const e=this.effects[i];e.life-=dt;if(e.life<=0){e.mesh.removeFromParent();(e.mesh.material as T.Material).dispose();this.effects.splice(i,1);continue;}e.mesh.position.addScaledVector(e.velocity,dt);e.velocity.y-=dt*9;(e.mesh.material as T.MeshBasicMaterial).opacity=e.life/e.max;}
     this.sun.position.set(focus.x-28,48,focus.z+20);this.sun.target.position.set(focus.x,0,focus.z);
     for(const wreck of this.wrecks){wreck.age+=dt;wreck.emit-=dt;if(wreck.age<12&&wreck.emit<=0){wreck.emit=this.low?.4:.18;const p=wreck.root.position.clone();p.y=1.3;this.fx.smoke(p,1.8);if(wreck.age<4)this.fx.emit(p,'flash',0xff6b23,1.4,.35);}}
-    this.fx.update(dt,this.camera);
+    this.environment.update(dt,this.low);this.fx.update(dt,this.camera);
     this.renderer.render(this.scene,this.camera);
   }
 }

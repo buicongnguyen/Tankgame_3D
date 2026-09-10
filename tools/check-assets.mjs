@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-const names=['tank','transport','barricade','crate','barrel','relay'];
+const names=['tank','transport','barricade','crate','barrel','relay','pine','house','stonewall','steelwall','bridge','hill'];
 let total=0;
 for(const name of names){
   const b=fs.readFileSync(`public/models/${name}.glb`);total+=b.length;

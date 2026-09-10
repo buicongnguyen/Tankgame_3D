@@ -3,7 +3,7 @@ test('real assets, desktop controls, pause, cover and UI',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   const models=new Set<string>();page.on('response',r=>{if(r.url().endsWith('.glb')&&r.status()===200)models.add(r.url());});
   await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();
-  expect(models.size).toBe(6);await page.screenshot({path:'test-results/command-desktop.png'});
+  expect(models.size).toBe(12);await page.screenshot({path:'test-results/command-desktop.png'});
   await page.getByRole('button',{name:'DEPLOY'}).click();await expect(page.locator('#hud')).toBeVisible();
   const before=await page.evaluate(()=> (window as any).__steel.player.visual.root.position.z);
   await page.keyboard.down('KeyW');await expect.poll(()=>page.evaluate(()=>(window as any).__steel.player.visual.root.position.z),{timeout:10000}).toBeLessThan(before-1);await page.keyboard.up('KeyW');
@@ -31,7 +31,7 @@ test('campaign mission conditions, workshop, checkpoint, failure and ending',asy
   await page.getByRole('button',{name:/RETRY LONG NIGHT/}).click();expect(await page.evaluate(()=>(window as any).__steel.relayHealth)).toBe(300);
   await page.evaluate(()=>{const g=(window as any).__steel;g.elapsed=44.99;g.step(.02);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
   await page.evaluate(()=>{const g=(window as any).__steel;g.start(4);for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(.02);g.start(5);for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(.02);});await expect(page.getByRole('heading',{name:'Everyone comes home.'})).toBeVisible();await page.screenshot({path:'test-results/ending-desktop.png'});
-  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('steel-front-3d-v1')!).cleared.every(Boolean))).toBe(true);
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('steel-front-3d-v1')!).cleared.slice(0,6).every(Boolean))).toBe(true);
 });
 test('phone layout and simultaneous captured touch sticks',async({browser})=>{
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const page=await context.newPage();
