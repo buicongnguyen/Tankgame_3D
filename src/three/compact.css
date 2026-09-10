@@ -1,0 +1,40 @@
+/* Compact interface: keep details available without covering the battlefield. */
+.command-screen{padding:20px 28px 16px;grid-template-columns:1fr 300px;gap:18px 28px}
+.brand{font-size:10px}.brand small,.build-label{display:none}.brand-mark{font-size:25px}
+.hero{align-self:start;padding:8px 0}.hero>.eyebrow{display:none}
+.hero h1{font-size:58px;line-height:.95;margin:0}.hero h1 br{display:none}.hero h1 em{margin-left:10px}.hero h1>span{font-size:13px;letter-spacing:.22em;margin-top:9px}
+.briefing{padding:17px;align-self:end}.briefing h2{font-size:29px;margin:10px 0}
+.mission-task{padding:8px 10px;margin:12px 0}.mission-task span{display:none}.mission-task strong{font-size:12px}
+.difficulty{margin:12px 0;gap:5px}.difficulty button{padding:8px;font-size:10px}
+button.primary{padding:13px 16px;font-size:12px}.briefing details{margin-top:12px}.briefing-copy{font-size:12px;margin:12px 0}.manual{font-size:12px}
+.route-heading{padding-bottom:8px}.route-list{margin-top:8px;gap:6px}.route-item{padding:9px 10px;gap:9px}.route-item small,.route-state{display:none}.route-item strong{font-size:12px}.route-index{font-size:21px}
+.mission-hud{left:16px;top:max(16px,env(safe-area-inset-top));padding:9px 13px;min-width:0;max-width:350px}.mission-hud .eyebrow{font-size:9px;letter-spacing:.07em}.mission-hud h2{font-size:23px;margin:3px 0}.mission-hud p{font-size:12px;line-height:1.25}.objective-track{margin-top:7px}
+.top-actions{right:16px;top:max(16px,env(safe-area-inset-top));gap:8px}#pause{padding:10px 12px}#minimap{width:122px;height:91px}
+.radio{left:16px;top:115px;max-width:290px;padding:8px 11px;font-size:12px;line-height:1.4}
+.bottom-hud{left:16px;right:16px;bottom:max(16px,env(safe-area-inset-bottom));gap:8px}.hull-block,.weapon-block{padding:10px 12px;width:190px}.hull-block>div:first-child{font-size:10px}.hull-block strong{font-size:12px}.hull-track,.reload-track{margin:7px 0 0;height:4px}.hull-block small,.weapon-block small,.desktop-hint{display:none}.weapon-block>span,.weapon-block>strong{font-size:10px}.abilities{padding:0}.abilities button{padding:10px 12px;font-size:10px}.abilities kbd{font-size:9px}
+.pause-panel{max-width:450px;padding:22px;gap:13px}.panel h1{font-size:36px}.pause-panel .control-guide{margin-top:10px}.pause-panel details{margin-top:0}.pause-panel .settings{margin-top:4px}
+.depot-panel{max-width:750px;padding:22px}.debrief-title{margin:12px 0}.depot-panel>p{font-size:13px;line-height:1.45}.result-stats{margin:16px 0;padding:12px 0}.result-stats strong{font-size:24px}.credit-total{font-size:30px}.upgrade-grid{gap:8px;margin-bottom:16px}.upgrade-card{padding:13px}.upgrade-card h3{font-size:15px;margin:8px 0}.upgrade-card p{min-height:0;font-size:12px;margin-bottom:12px}.depot-heading{margin-bottom:10px}.unlock{margin-bottom:12px}
+@media(max-width:760px){
+ .command-screen{padding:16px;grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto auto;gap:14px;min-height:100dvh}
+ .hero{padding:0}.hero h1{font-size:42px}.hero h1>span{font-size:11px;margin-top:5px}
+ .briefing{padding:14px;align-self:end}.briefing h2{font-size:27px;margin:8px 0}.briefing .panel-top .eyebrow{font-size:9px}
+ .mission-task{margin:9px 0}.difficulty{margin:10px 0}.route-item{padding:9px 7px;gap:6px}.route-item strong{font-size:11px}.route-index{font-size:18px}
+ .command-screen footer{gap:8px}.settings{gap:12px}.quiet{font-size:10px;padding:5px}
+ .mission-hud{left:10px;top:10px;padding:8px 10px;max-width:calc(100% - 62px)}.mission-hud .eyebrow{font-size:8px}.mission-hud h2{font-size:21px}.mission-hud p{font-size:11px}
+ .top-actions{right:10px;top:10px}#minimap{width:85px;height:64px}.radio{left:10px;top:106px;max-width:240px;font-size:11px;padding:7px 10px}
+ .depot-panel{padding:16px}.panel h1{font-size:30px}.result-stats{gap:20px}.upgrade-card{padding:11px}.upgrade-card h3{margin:0}.upgrade-card p{margin:0}.upgrade-card button{font-size:10px}
+}
+@media(pointer:coarse){
+ .bottom-hud{bottom:max(145px,calc(env(safe-area-inset-bottom) + 120px))}.hull-block,.weapon-block{width:auto;min-width:0;padding:10px}
+ .abilities button{min-height:40px}.weapon-block>span,.weapon-block>strong{font-size:10px}
+}
+@media(pointer:coarse) and (max-width:600px){
+ .bottom-hud{left:10px;right:10px;bottom:142px;grid-template-columns:1fr 1fr}.abilities{top:calc(100% + 20px)}.abilities button{padding:9px 10px;font-size:10px}
+ .top-actions #minimap{margin-top:49px;width:82px;height:61px}.radio{max-width:calc(100% - 110px);top:106px}
+}
+@media(orientation:landscape) and (max-height:600px){
+ .command-screen{grid-template-columns:1fr 290px;grid-template-rows:auto 1fr auto auto;padding:12px 20px;gap:10px 20px}.hero h1{font-size:44px}.briefing{grid-column:2;grid-row:2;padding:12px}.hero{grid-column:1;grid-row:2}.briefing h2{font-size:24px}.hero h1>span{font-size:11px}.route-list{grid-template-columns:repeat(6,1fr)}.route-item strong{font-size:10px}.route-item{padding:7px}.route-heading{display:none}.mission-task{margin:8px 0;padding:5px 8px}.difficulty{margin:8px 0}.briefing details{margin-top:9px}
+}
+@media(pointer:coarse) and (orientation:landscape) and (max-height:600px){
+ .bottom-hud{left:145px;right:145px;bottom:12px;gap:6px}.hull-block,.weapon-block{padding:8px 10px}.abilities{top:auto;bottom:calc(100% + 7px);right:0;left:auto;transform:none}.abilities button{min-height:34px;padding:8px 10px;font-size:10px}.radio{top:103px;max-width:255px;font-size:11px}.mission-hud{top:10px;left:16px;padding:8px 11px}.mission-hud h2{font-size:21px}.top-actions{top:10px;right:16px}#minimap{width:92px;height:69px}
+}

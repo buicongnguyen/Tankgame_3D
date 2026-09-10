@@ -142,4 +142,9 @@ Implemented the six-mission 3D campaign, all five objective types, three weapons
 
 Browser integration fixtures intentionally set up specific mission boundary states; they do not establish difficulty balance through human playtesting. Physical-device performance and all-original-content parity are not claimed. The current release uses the shared flat Meridian arena with different objectives/opposition, local enemy steering, synthesized effects and text dialogue. Those are the explicit limits of this release.
 
-Deployment evidence will be recorded after GitHub Actions completes. Public repository creation requires the explicit visibility approval requested in the task.
+Public GitHub and GitHub Pages publication was explicitly approved by the user. Deployment evidence follows once Actions completes.
+
+
+### Compact UI revision
+
+Reduced title scale, briefing width and padding, route cards, combat HUD height and radio copy. Moved extended story and instructions into a closed disclosure. Retained readable combat text and touch action targets. All eight regression tests and the production build passed after this revision; desktop, portrait and landscape screenshots were inspected.

@@ -1,4 +1,5 @@
 import './three/style.css';
+import './three/compact.css';
 import { Game } from './three/game';
 const app=document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML='<div class="loading"><span class="eyebrow">KESTREL // CONNECTING</span><h1>Establishing uplink<span class="blink">_</span></h1><p>Preparing the valley and armored units.</p></div>';
