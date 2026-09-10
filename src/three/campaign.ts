@@ -15,13 +15,15 @@ export const MISSIONS: Mission[] = [
 ];
 export const SAVE_KEY = 'steel-front-3d-v1';
 export type Difficulty = 'story' | 'standard' | 'veteran';
-export interface Save { version: 1; mission: number; cleared: boolean[]; credits: number; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; }
-export const freshSave = (): Save => ({ version: 1, mission: 0, cleared: Array(MISSIONS.length).fill(false), credits: 0, upgrades: { armor: 0, power: 0, reload: 0 }, difficulty: 'standard', sound: false, low: false });
+export interface Save { version: 1; mission: number; cleared: boolean[]; credits: number; weapons: number[]; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; }
+export const freshSave = (): Save => ({ version: 1, mission: 0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], upgrades: { armor: 0, power: 0, reload: 0 }, difficulty: 'standard', sound: false, low: false });
 export function parseSave(raw: string | null): Save {
   try {
     const s = JSON.parse(raw || 'null');
     if (!s || s.version !== 1 || !Number.isInteger(s.mission) || s.mission < 0 || s.mission >= s.cleared?.length || !Array.isArray(s.cleared) || ![6,MISSIONS.length].includes(s.cleared.length) || s.cleared.some((v: unknown) => typeof v !== 'boolean') || !Number.isInteger(s.credits) || s.credits < 0 || s.credits > 100000 || !['story','standard','veteran'].includes(s.difficulty)) return freshSave();
     if (!s.upgrades || ['armor','power','reload'].some(k => !Number.isInteger(s.upgrades[k]) || s.upgrades[k] < 0 || s.upgrades[k] > 3)) return freshSave();
+    s.weapons ??= [];
+    if(!Array.isArray(s.weapons)||s.weapons.some((w:unknown)=>!Number.isInteger(w)||Number(w)<1||Number(w)>4)||new Set(s.weapons).size!==s.weapons.length)return freshSave();
     // Extend old six-operation saves without changing earned progress or purchases.
     if(s.cleared.length===6){const finished=s.cleared.every(Boolean);s.cleared.push(...Array(MISSIONS.length-6).fill(false));if(finished)s.mission=6;}
     // A checkpoint cannot unlock past a gap in the campaign.
@@ -39,4 +41,8 @@ export function rewardClear(save: Save, mission: number): number {
   return reward;
 }
 export const weaponNames = ['120 mm cannon', '30 mm autocannon', 'Siege rockets','Pulse laser','Arc rockets'];
-export function weaponCount(save: Save): number { return save.cleared[2] ? 3 : save.cleared[0] ? 2 : 1; }
+export function weaponCount(save: Save): number { return Math.max(save.cleared[2]?3:save.cleared[0]?2:1,...save.weapons.filter(w=>w<3).map(w=>w+1)); }
+
+export const weaponPrices:Record<number,number>={1:120,2:180,3:360,4:420};
+export function ownsWeapon(save:Save,id:number){return id<3?id<weaponCount(save):save.weapons.includes(id);}
+export function buyWeapon(save:Save,id:number){const cost=weaponPrices[id];if(!cost||ownsWeapon(save,id)||save.credits<cost)return false;save.credits-=cost;save.weapons.push(id);return true;}

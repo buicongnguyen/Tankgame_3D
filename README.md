@@ -99,3 +99,7 @@ Boss model kit, encounters and counterplay: [Boss variety](docs/BOSS_VARIETY.md)
 ## Explosives and rocket artwork
 
 Mines hurt both sides. Gasoline crates damage nearby tanks, soldiers and destructible cover, and can set off nearby fuel containers. Rockets use a Blender model with fins, a nozzle and trailing smoke. See [combat rules and asset rebuilding](docs/EXPLOSIVES_AND_ROCKETS.md).
+
+## Between-stage shop
+
+Every stage completion, including the two campaign endings, offers **Shop · Upgrades & Weapons**. The command screen also opens the shop. Spend supply credits on permanent armor, damage and reload upgrades or weapon ownership. Autocannon costs 120 CR and siege rockets 180 CR; their existing free campaign unlocks still apply. Pulse laser costs 360 CR and starts each mission with 12 shots; arc rockets cost 420 CR and start with 6 rounds. Map caches supply extra ammo. Purchases persist across reloads and retries, and owned weapons cannot be purchased twice. Older saves migrate with their earned credits and upgrades intact.

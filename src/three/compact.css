@@ -88,3 +88,7 @@ button.primary{padding:13px 16px;font-size:12px}.briefing details{margin-top:12p
 @media(pointer:coarse) and (orientation:portrait){.weapon-picker{grid-template-columns:repeat(3,minmax(0,1fr));width:min(440px,calc(100vw - 20px))}}
 @media(pointer:coarse) and (orientation:landscape){.weapon-picker{width:min(620px,calc(100vw - 20px))}.weapon-picker button{font-size:9px}}
 #boss-readout{font-size:10px;line-height:1.4;color:#ffc995;margin-top:5px}
+
+.weapon-shop{grid-template-columns:repeat(2,minmax(0,1fr))}.command-screen footer{flex-wrap:wrap}.depot-panel .upgrade-card button{min-height:44px}.depot-panel>[data-action=shop-back]{margin-bottom:8px}
+
+.weapon-shop .upgrade-card{display:flex;flex-direction:column;gap:8px}.weapon-shop .upgrade-card p{flex:1}.weapon-shop .upgrade-card button{width:100%;margin:0}.weapon-shop .upgrade-card h3{margin:0}

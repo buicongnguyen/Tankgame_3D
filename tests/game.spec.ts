@@ -21,7 +21,7 @@ test('real assets, desktop controls, pause, cover and UI',async({page})=>{
 test('campaign mission conditions, workshop, checkpoint, failure and ending',async({page})=>{
   await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();await page.getByRole('button',{name:'DEPLOY'}).click();
   await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(1/60);});
-  await expect(page.getByRole('heading',{name:'A road reclaimed.'})).toBeVisible();await page.locator('[data-action=buy][data-value=armor]').click();
+  await expect(page.getByRole('heading',{name:'A road reclaimed.'})).toBeVisible();await page.locator('[data-action=shop]').click();await page.locator('[data-action=buy][data-value=armor]').click();
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('steel-front-3d-v1')!).upgrades.armor)).toBe(1);
   await page.screenshot({path:'test-results/depot-desktop.png'});await page.reload();await expect(page.locator('.briefing h2')).toHaveText('Open Frequency');
   await page.getByRole('button',{name:'DEPLOY'}).click();
