@@ -26,7 +26,7 @@ test('campaign mission conditions, workshop, checkpoint, failure and ending',asy
   await page.screenshot({path:'test-results/depot-desktop.png'});await page.reload();await expect(page.locator('.briefing h2')).toHaveText('Open Frequency');
   await page.getByRole('button',{name:'DEPLOY'}).click();
   const capture=await page.evaluate(()=>{const g=(window as any).__steel;g.player.visual.root.position.set(0,0,-13);g.enemies[0].visual.root.position.set(3,0,-13);g.step(.1);const contested=g.capture===0;for(const e of g.enemies)e.dead=true;g.capture=17.99;g.step(.02);return {contested,phase:g.phase};});expect(capture).toEqual({contested:true,phase:'depot'});
-  await page.evaluate(()=>{const g=(window as any).__steel;g.start(2);for(const e of g.enemies)e.dead=true;g.player.visual.root.position.set(0,0,-24);g.convoy.position.z=-25.99;g.step(.1);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
+  await page.evaluate(()=>{const g=(window as any).__steel;g.start(2);for(const e of g.enemies)e.dead=true;g.player.visual.root.position.set(0,0,-48);g.convoy.position.z=-49.99;g.step(.1);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
   await page.evaluate(()=>{const g=(window as any).__steel;g.start(3);g.elapsed=44.99;g.relayHealth=0;g.step(.02);});await expect(page.getByRole('heading',{name:'We go again.'})).toBeVisible();
   await page.getByRole('button',{name:/RETRY LONG NIGHT/}).click();expect(await page.evaluate(()=>(window as any).__steel.relayHealth)).toBe(300);
   await page.evaluate(()=>{const g=(window as any).__steel;g.elapsed=44.99;g.step(.02);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
@@ -51,5 +51,21 @@ test('real cannon destroys an exposed enemy; shield, repair and escort rules',as
  await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();
  const combat=await page.evaluate(()=>{const g=(window as any).__steel;g.start(0);g.player.visual.root.position.set(0,0,10);const e=g.enemies[0];e.visual.root.position.set(0,0,-5);e.heading=0;g.player.aim=Math.PI;g.syncVisual(g.player);for(let shot=0;shot<4;shot++){g.shoot(g.player,true);for(let i=0;i<30;i++)g.updateShots(1/60);}const killed=e.dead;const health=g.player.hp;g.action('shield');g.damageUnit(g.player,30,{x:0,z:0});const protectedHull=g.player.hp===health;g.shieldTime=0;g.damageUnit(g.player,80,{x:0,z:0});const damaged=g.player.hp;g.action('repair');return {killed,protectedHull,repaired:g.player.hp>damaged,kits:g.repairs};});
  expect(combat).toEqual({killed:true,protectedHull:true,repaired:true,kits:0});
- const escort=await page.evaluate(()=>{const g=(window as any).__steel;g.start(2);g.player.visual.root.position.set(30,0,22);const z=g.convoy.position.z;g.step(.1);const stopped=g.convoy.position.z===z;g.player.visual.root.position.set(5,0,22);g.step(.1);return {stopped,moved:g.convoy.position.z<z};});expect(escort).toEqual({stopped:true,moved:true});
+ const escort=await page.evaluate(()=>{const g=(window as any).__steel;g.start(2);g.player.visual.root.position.set(30,0,22);const z=g.convoy.position.z;g.step(.1);const stopped=g.convoy.position.z===z;g.player.visual.root.position.set(5,0,48);g.step(.1);return {stopped,moved:g.convoy.position.z<z};});expect(escort).toEqual({stopped:true,moved:true});
+});
+
+test('expanded terrain, field activities, artillery and wreck cleanup',async({page})=>{
+ await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();await page.getByRole('button',{name:'DEPLOY'}).click();
+ const result=await page.evaluate(()=>{
+  const g=(window as any).__steel;g.player.visual.root.position.set(61,0,50);g.moveUnit(g.player,4,0);const expanded=g.player.visual.root.position.x>62;
+  const pad=g.world.activities.find((a:any)=>a.kind==='repair');g.player.hp-=70;g.player.visual.root.position.set(pad.x,0,pad.z);const hp=g.player.hp;g.updateActivities(.5);const healed=g.player.hp>hp;
+  const supply=g.world.activities.find((a:any)=>a.kind==='supply');g.player.visual.root.position.set(supply.x,0,supply.z);g.updateActivities(.1);const supplied=supply.spent&&g.weapon===2&&g.repairs===2&&g.powerBoost>0;
+  const mine=g.world.activities.find((a:any)=>a.kind==='mine');g.player.visual.root.position.set(mine.x,0,mine.z);const before=g.player.hp;g.updateActivities(.1);const mined=mine.spent&&g.player.hp<before;
+  g.player.visual.root.position.set(0,0,15);g.aimPoint.set(0,0,0);g.action('artillery');const telegraphed=g.strikes.length===3&&g.artilleryCooldown>0;
+  for(let i=0;i<110;i++)g.updateActivities(1/60);const detonated=g.strikes.length===0;
+  const enemy=g.enemies[0];enemy.visual.root.position.set(3,0,8);g.damageUnit(enemy,9999,g.player.visual.root.position);const wreck=g.world.wrecks.length===1;
+  return {expanded,healed,supplied,mined,telegraphed,detonated,wreck};
+ });expect(result).toEqual({expanded:true,healed:true,supplied:true,mined:true,telegraphed:true,detonated:true,wreck:true});
+ await page.waitForTimeout(350);await page.screenshot({path:'test-results/expanded-effects.png'});
+ const cleanup=await page.evaluate(()=>{const g=(window as any).__steel;for(let i=0;i<500;i++)g.world.fx.smoke(g.player.visual.root.position);const bounded=g.world.fx.particles.length<=230;g.start(0);return {bounded,particles:g.world.fx.particles.length,wrecks:g.world.wrecks.length,strikes:g.strikes.length,activities:g.world.activities.filter((a:any)=>a.spent).length};});expect(cleanup).toEqual({bounded:true,particles:0,wrecks:0,strikes:0,activities:0});
 });

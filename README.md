@@ -79,3 +79,9 @@ Flat gameplay plane with 3D models; no terrain climbing or rigid-body simulation
 ## Asset attribution
 
 Game models and narrative are authored for this project. Barlow and Barlow Condensed are bundled under the SIL Open Font License; licenses are in `public/fonts/`. Three.js, Phaser and other dependencies retain their own package licenses.
+
+## Battlefield update
+
+Explore a 144 × 120 m combat zone with flank cover, green repair pads, blue supply caches and proximity mines. **R / STRIKE** calls three artillery shells at your aim point; stay clear of the marked circles. Supplies provide a repair kit, sortie-only rockets, 25 seconds of boosted damage and a fresh strike.
+
+Shell tracers, rocket exhaust, muzzle flashes, debris, shock rings, smoke, dust and persistent scorched wrecks replace the original simple hit/death effects. The escort route is now 98 m long. Effects are capped and reduced in low graphics mode.

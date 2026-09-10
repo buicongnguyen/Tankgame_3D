@@ -158,3 +158,18 @@ Reduced title scale, briefing width and padding, route cards, combat HUD height 
 - Android debug APK build succeeded: https://github.com/buicongnguyen/Tankgame_3D/actions/runs/34473414827 (artifact: steel-front-3d-debug-apk).
 - Public-browser verification: HTTP 200; all six GLB assets loaded; compact briefing collapsed by default; deploy, movement and fire reached the playing state; legacy canvas loaded; no page errors or failed requests.
 - The original Tank_game repository remains unchanged.
+
+## Expanded battlefield and effects update
+
+The playable region is now 144 × 120 meters (previously 70 × 55), approximately 4.5 times the area. The camera follows the player throughout the larger map and the minimap covers its full extent. Added flank cover positions and a longer 98-meter escort route; later assault/boss units are spread farther apart.
+
+Combat now includes elongated glowing tracers, distinct autocannon/rocket scales, muzzle flash and sparks, rocket exhaust, impact sparks, expanding shock rings, rising smoke, debris, movement dust, damaged-engine smoke, and capped smoking tank wrecks with scorch marks. Shared geometry and limits of 230 high-quality / 85 low-quality particles keep transient effects bounded; mission restarts clean them up.
+
+Activities adapted from the 2D game:
+
+- Green repair pads restore 32 HP/s, with 160 HP total capacity per pad per sortie.
+- Blue supply caches grant a repair kit, temporary access to rockets for that sortie, a 25-second damage boost, and refreshed artillery.
+- Proximity mines explode when a tank approaches; they damage nearby units and destructible cover.
+- R / STRIKE launches three marked artillery impacts at the current aim point (34-meter targeting range, 28-second cooldown). Impact circles warn the player; blast damage can also hurt friendly units.
+
+Keyboard/mouse and touch controls remain complete. Touch aiming now retains its last direction after releasing the aim stick. New browser coverage verifies the larger boundaries, repair/supply/mine behavior, delayed artillery, wreck creation and cleanup, alongside the existing combat and mission tests. Physical Android performance still requires device testing.

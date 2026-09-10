@@ -38,3 +38,5 @@ button.primary{padding:13px 16px;font-size:12px}.briefing details{margin-top:12p
 @media(pointer:coarse) and (orientation:landscape) and (max-height:600px){
  .bottom-hud{left:145px;right:145px;bottom:12px;gap:6px}.hull-block,.weapon-block{padding:8px 10px}.abilities{top:auto;bottom:calc(100% + 7px);right:0;left:auto;transform:none}.abilities button{min-height:34px;padding:8px 10px;font-size:10px}.radio{top:103px;max-width:255px;font-size:11px}.mission-hud{top:10px;left:16px;padding:8px 11px}.mission-hud h2{font-size:21px}.top-actions{top:10px;right:16px}#minimap{width:92px;height:69px}
 }
+/* Three actions fit between touch sticks without covering the hull readout. */
+@media(pointer:coarse) and (max-width:600px) and (orientation:portrait){.abilities{top:calc(100% + 8px);gap:3px}.abilities button{min-height:30px;padding:6px 8px;font-size:9px}}
