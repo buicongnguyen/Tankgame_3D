@@ -2,7 +2,7 @@ import * as T from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Box } from './rules';
-import { Environment } from './environment';
+import { BIOMES, Environment } from './environment';
 import { CombatEffects } from './effects';
 import { BOUNDS, buildActivities } from './activities';
 import type { Activity } from './activities';
@@ -150,7 +150,8 @@ export class World {
     const ground=this.box(164,.7,144,index===3?0x74776c:0xa69c78,0,-.4,0);ground.castShadow=false;
     this.box(8,.035,130,0x817e65,0,-.02,0);
     for(let z=-60;z<62;z+=5)this.box(.15,.025,2,0xc3b993,0,.01,z);
-    for(let i=0;i<86;i++){
+    // Winter snow replaces dirt detail; nearly coplanar patches underneath can shimmer.
+    for(let i=0;i<(BIOMES[index]==='snow'?0:86);i++){
       const x=Math.sin(i*19.73)*72,z=Math.cos(i*8.2)*60;
       const patch=this.box(1.2+(i%4),.035,1.3+(i%3),i%2?0x98936f:0xb1a680,x,.005,z);patch.rotation.y=i;patch.castShadow=false;
     }

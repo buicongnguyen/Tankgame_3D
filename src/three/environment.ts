@@ -40,7 +40,7 @@ export class Environment{
   if(this.biome==='ridge'){const mud=new T.Mesh(new T.CircleGeometry(10,24),new T.MeshStandardMaterial({color:0x65503d}));mud.rotation.x=-Math.PI/2;mud.position.set(36,.04,17);mud.userData.owned=true;world.arena.add(mud);}
   if(snow||river){
    const coords=new Float32Array(96*3);for(let i=0;i<96;i++){coords[i*3]=Math.sin(i*17)*72;coords[i*3+1]=(i*7%25)+3;coords[i*3+2]=Math.cos(i*13)*60;}
-   const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(coords,3));this.weather=new T.Points(geo,new T.PointsMaterial({color:snow?0xffffff:0xa0dfe3,size:snow?.23:.12,transparent:true,opacity:.65}));world.arena.add(this.weather);
+   const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(coords,3));this.weather=new T.Points(geo,new T.PointsMaterial({color:snow?0xffffff:0xa0dfe3,size:snow?.23:.12,transparent:true,opacity:.65,depthWrite:false}));world.arena.add(this.weather);
   }
  }
  update(dt:number,low:boolean){this.time+=dt;if(this.water)(this.water.material as T.MeshStandardMaterial).color.setHSL(.52,.42,.37+Math.sin(this.time*1.5)*.025);if(this.weather){this.weather.visible=!low;const p=this.weather.geometry.attributes.position;for(let i=0;i<p.count;i++){let y=p.getY(i)-dt*(this.biome==='snow'?2:12);if(y<0)y=26;p.setY(i,y);}p.needsUpdate=true;}}

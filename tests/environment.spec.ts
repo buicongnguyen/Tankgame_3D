@@ -20,3 +20,12 @@ test('river and winter scenes render and nine-stage menu fits mobile',async({bro
  for(const [i,name] of [[6,'river'],[7,'snow'],[8,'ridge']] as const){await page.evaluate(i=>{const g=(window as any).__steel;g.start(i);g.player.visual.root.position.set(0,0,i===6?39:22);g.world.target.set(0,0,i===6?47:30);g.world.update(0,g.player.visual.root.position);},i);await page.screenshot({path:`test-results/environment-${name}.png`});}
  await page.evaluate(()=>{const g=(window as any).__steel;g.showMenu();});expect(await page.locator('.route-item').count()).toBe(9);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.locator('.route-item').last().scrollIntoViewIfNeeded();await page.screenshot({path:'test-results/environment-menu-mobile.png'});expect(errors).toEqual([]);await context.close();
 });
+
+for(const viewport of [{width:1440,height:900},{width:390,height:844}])test(`winter surface separation while moving the camera ${viewport.width}`,async({page})=>{
+ await page.setViewportSize(viewport);await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
+ const result=await page.evaluate(()=>{const g=(window as any).__steel;g.start(7);g.frame=()=>{};g.world.arena.updateMatrixWorld(true);const conflicts:number[]=[];
+ // Any underlying scenery within 1 cm of the snow can compete for the same depth values.
+ for(const mesh of g.world.arena.children){if(!mesh.isMesh||!mesh.userData.owned)continue;const p=mesh.geometry.attributes.position;for(let i=0;i<p.count;i++){const v=g.player.visual.root.position.clone().set(p.getX(i),p.getY(i),p.getZ(i)).applyMatrix4(mesh.matrixWorld);if(Math.abs(v.x)>8.5&&Math.abs(v.x)<71.5&&Math.abs(v.z)<60&&v.y>.015&&v.y<.0249)conflicts.push(v.y);}}
+ return {conflicts,weatherDepthWrite:g.world.environment.weather.material.depthWrite};});expect(result.conflicts).toEqual([]);expect(result.weatherDepthWrite).toBe(false);
+ for(const low of [false,true]){await page.evaluate(low=>{const g=(window as any).__steel;g.world.settings(low);for(let i=0;i<90;i++){g.player.visual.root.position.set(-22+i*.12,0,22-i*.16);g.world.update(1/60,g.player.visual.root.position);}},low);await page.screenshot({path:`test-results/snow-stable-${viewport.width}-${low?'low':'high'}.png`});}
+});
