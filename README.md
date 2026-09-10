@@ -42,7 +42,7 @@ The browser tests use controlled integration fixtures for mission edge cases, al
 | Action | Desktop | Touch |
 | --- | --- | --- |
 | Drive | WASD or arrow keys | Left stick |
-| Aim/fire | Mouse + hold primary click, or Space | Right stick |
+| Aim/fire | Mouse or I/J/K/L aim; hold click, Space or F to fire | Right stick |
 | Switch weapon | 1 / 2 / 3 / 4 / 5 | Tap weapon panel, then choose a gun |
 | Protective shield | Q | Shield button |
 | Repair | E | Repair button |
@@ -103,3 +103,9 @@ Mines hurt both sides. Gasoline crates damage nearby tanks, soldiers and destruc
 ## Between-stage shop
 
 Every stage completion, including the two campaign endings, offers **Shop · Upgrades & Weapons**. The command screen also opens the shop. Spend supply credits on permanent armor, damage and reload upgrades or weapon ownership. Autocannon costs 120 CR and siege rockets 180 CR; their existing free campaign unlocks still apply. Pulse laser costs 360 CR and starts each mission with 12 shots; arc rockets cost 420 CR and start with 6 rounds. Map caches supply extra ammo. Purchases persist across reloads and retries, and owned weapons cannot be purchased twice. Older saves migrate with their earned credits and upgrades intact.
+
+## Combat usability update
+
+Shop upgrades have shield, damage and reload icons. Every second enemy tank destroyed drops a labeled weapon box, alternating 12 laser shots and 6 arc rockets; drive over it to collect. These field drops last for the sortie and do not purchase permanent ownership. Infantry do not trigger tank drops, and existing repair drops remain.
+
+Both defense missions start Kestrel near the uplink. Initial opposition and reinforcements spawn at map corners and approach the center; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, strike with R, shield with Q and repair with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
