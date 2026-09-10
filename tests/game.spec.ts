@@ -3,7 +3,7 @@ test('real assets, desktop controls, pause, cover and UI',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   const models=new Set<string>();page.on('response',r=>{if(r.url().endsWith('.glb')&&r.status()===200)models.add(r.url());});
   await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();
-  expect(models.size).toBe(12);await page.screenshot({path:'test-results/command-desktop.png'});
+  expect(models.size).toBe(14);await page.screenshot({path:'test-results/command-desktop.png'});
   await page.getByRole('button',{name:'DEPLOY'}).click();await expect(page.locator('#hud')).toBeVisible();
   const before=await page.evaluate(()=> (window as any).__steel.player.visual.root.position.z);
   await page.keyboard.down('KeyW');await expect.poll(()=>page.evaluate(()=>(window as any).__steel.player.visual.root.position.z),{timeout:10000}).toBeLessThan(before-1);await page.keyboard.up('KeyW');

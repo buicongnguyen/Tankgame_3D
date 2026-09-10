@@ -60,7 +60,7 @@ export class World {
   }
   async load() {
     const loader=new GLTFLoader();
-    await Promise.all(['tank','transport','barricade','crate','barrel','relay','pine','house','stonewall','steelwall','bridge','hill'].map(async name=>{
+    await Promise.all(['tank','transport','barricade','crate','barrel','relay','pine','house','stonewall','steelwall','bridge','hill','rifleman','rocketeer'].map(async name=>{
       const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/${name}.glb`);
       const root=gltf.scene;
       root.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true; o.receiveShadow=true;}});
@@ -86,8 +86,8 @@ export class World {
     }
   }
   clone(name:string):T.Group { return this.templates.get(name)!.clone(true); }
-  tank(enemy=false,boss=false):TankVisual {
-    const root=this.clone('tank');
+  tank(enemy=false,boss=false,model='tank'):TankVisual {
+    const root=this.clone(model);
     if(enemy) root.traverse(o=>{if(o instanceof T.Mesh && o.material instanceof T.MeshStandardMaterial){
       const name=o.material.name;
       // Reuse one enemy material per original material across all tanks.

@@ -12,13 +12,14 @@ Lead Kestrel through nine operations to reopen the Meridian evacuation route: cl
 - Blender trees, houses, stone/steel walls, bridges and rocky hills.
 - Water, off-road snow and mud change tank speed; bridge and road routes preserve speed.
 - Destructible cover, house medical salvage, supply crates and explosive fuel drums.
-- Cannon, unlockable autocannon and siege rockets.
+- Cannon, unlockable autocannon and siege rockets, plus collectible pulse laser and arc rockets.
+- Blender riflemen and rocketeers support enemy armor across the campaign.
 - Shield, consumable repair and field repair pickups.
 - Three difficulty modes; mission checkpoints, retries and replay.
 - Responsive command screen, minimap, objective HUD and simultaneous touch sticks.
 - Optional synthesized combat audio; low graphics mode; locally bundled fonts.
 
-This release is a nine-mission adaptation. The original fifteen-stage campaign, infantry shelters, complete arsenal and chassis shop remain in the separate 2D reference; they are not all ported into this release.
+This release is a nine-mission adaptation. The original fifteen-stage campaign, enterable infantry shelters, complete arsenal and chassis shop remain in the separate 2D reference; they are not all ported into this release.
 
 ## Run and verify
 
@@ -41,7 +42,7 @@ The browser tests use controlled integration fixtures for mission edge cases, al
 | --- | --- | --- |
 | Drive | WASD or arrow keys | Left stick |
 | Aim/fire | Mouse + hold primary click, or Space | Right stick |
-| Switch weapon | 1 / 2 / 3 | Tap weapon panel, then choose a gun |
+| Switch weapon | 1 / 2 / 3 / 4 / 5 | Tap weapon panel, then choose a gun |
 | Protective shield | Q | Shield button |
 | Repair | E | Repair button |
 | Pause | Escape | Pause button |
@@ -89,3 +90,5 @@ Explore a 144 × 120 m combat zone with flank cover, green repair pads, blue sup
 Shell tracers, rocket exhaust, muzzle flashes, debris, shock rings, smoke, dust and persistent scorched wrecks replace the original simple hit/death effects. The escort route is now 98 m long. Effects are capped and reduced in low graphics mode.
 
 Environment selection, behavior, source art and scope: [Environment expansion](docs/ENVIRONMENT_EXPANSION.md).
+
+Infantry roles, weapon caches and ammunition: [Infantry and special weapons](docs/INFANTRY_AND_SPECIAL_WEAPONS.md).

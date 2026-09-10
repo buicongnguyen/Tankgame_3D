@@ -38,5 +38,5 @@ export function rewardClear(save: Save, mission: number): number {
   save.mission = Math.min(MISSIONS.length-1, mission + 1);
   return reward;
 }
-export const weaponNames = ['120 mm cannon', '30 mm autocannon', 'Siege rockets'];
+export const weaponNames = ['120 mm cannon', '30 mm autocannon', 'Siege rockets','Pulse laser','Arc rockets'];
 export function weaponCount(save: Save): number { return save.cleared[2] ? 3 : save.cleared[0] ? 2 : 1; }

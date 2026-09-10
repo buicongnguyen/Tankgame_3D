@@ -83,3 +83,7 @@ button.primary{padding:13px 16px;font-size:12px}.briefing details{margin-top:12p
 .weapon-picker small{display:block;font-size:9px;letter-spacing:0;margin-top:5px}.weapon-picker button:disabled{opacity:.6}
 @media(pointer:coarse) and (orientation:portrait){.weapon-picker{bottom:calc(235px + env(safe-area-inset-bottom))}}
 @media(pointer:coarse) and (orientation:landscape){.weapon-picker{bottom:calc(110px + env(safe-area-inset-bottom))}}
+/* Five weapon choices: special cache weapons occupy a second row on portrait phones. */
+.weapon-picker{grid-template-columns:repeat(5,minmax(0,1fr));width:min(620px,calc(100vw - 20px))}
+@media(pointer:coarse) and (orientation:portrait){.weapon-picker{grid-template-columns:repeat(3,minmax(0,1fr));width:min(440px,calc(100vw - 20px))}}
+@media(pointer:coarse) and (orientation:landscape){.weapon-picker{width:min(620px,calc(100vw - 20px))}.weapon-picker button{font-size:9px}}
