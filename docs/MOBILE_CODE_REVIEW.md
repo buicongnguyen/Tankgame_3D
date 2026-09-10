@@ -35,3 +35,15 @@ Reviewed the Three.js simulation, pointer input ownership, pause/resume, mission
 
 All 21 Playwright tests passed locally, including the seven viewport checks and WebKit smoke test. TypeScript and the production Vite build passed. The build retains a bundle-size advisory; physical-device loading and frame pacing remain unverified.
 
+
+## Focused left/right joystick review
+
+- Left stick: added a 15% radial dead zone with smoothly remapped analog speed to prevent resting-thumb drift.
+- Right stick: firing engages beyond 32% and releases below 22%, preventing threshold jitter; aiming and remembered direction remain independent of firing.
+- Both sticks: nub movement stays within the pad; active input has visible feedback and firing uses amber feedback. Non-primary mouse buttons cannot take ownership.
+- Resize/orientation changes release both captured pointers and clear movement/firing so the new layout accepts fresh touches.
+- Added portrait and landscape touch regressions for all four directions, slow movement, independent releases, crossing pads without stealing ownership, cancellation, rotation and fresh gestures. Added firing-threshold and nub-containment checks.
+- Physical-device verification remains outstanding; these tests exercise real browser input events under mobile emulation.
+
+Focused review validation: all 24 regression tests and the production build passed locally. Inspected the updated portrait control-pad screenshot.
+
