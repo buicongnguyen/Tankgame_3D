@@ -148,3 +148,13 @@ Public GitHub and GitHub Pages publication was explicitly approved by the user. 
 ### Compact UI revision
 
 Reduced title scale, briefing width and padding, route cards, combat HUD height and radio copy. Moved extended story and instructions into a closed disclosure. Retained readable combat text and touch action targets. All eight regression tests and the production build passed after this revision; desktop, portrait and landscape screenshots were inspected.
+
+### Public deployment verified
+
+- Public source: https://github.com/buicongnguyen/Tankgame_3D
+- Live game: https://buicongnguyen.github.io/Tankgame_3D/
+- Deployed game commit: 56dcf65fd0026f317c7e2d92370027bfd9cc12d1, pushed using git@github.com:buicongnguyen/Tankgame_3D.git.
+- Pages build, all eight browser/rules tests, and deploy succeeded: https://github.com/buicongnguyen/Tankgame_3D/actions/runs/34473414973
+- Android debug APK build succeeded: https://github.com/buicongnguyen/Tankgame_3D/actions/runs/34473414827 (artifact: steel-front-3d-debug-apk).
+- Public-browser verification: HTTP 200; all six GLB assets loaded; compact briefing collapsed by default; deploy, movement and fire reached the playing state; legacy canvas loaded; no page errors or failed requests.
+- The original Tank_game repository remains unchanged.
