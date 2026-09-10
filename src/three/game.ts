@@ -1,4 +1,5 @@
 import * as T from 'three';
+import { BossCombat, BOSS, bossKind } from './bosses';
 import { SpecialWeapons } from './special-weapons';
 import { World } from './world';
 import type { Cover, TankVisual } from './world';
@@ -10,13 +11,14 @@ import type { Save, Difficulty } from './campaign';
 import { armorMultiplier, clamp, circleBox, distance, purchase, segmentBox, segmentCircle, turnToward, upgradeCost } from './rules';
 import type { Point, Upgrade } from './rules';
 type Phase='menu'|'playing'|'paused'|'depot'|'failed'|'victory';
-interface Unit { visual:TankVisual; hp:number; max:number; heading:number; aim:number; cooldown:number; role:'player'|'raider'|'sentry'|'heavy'|'boss'|'rifleman'|'rocketeer'; dead:boolean; }
+export interface Unit { visual:TankVisual; hp:number; max:number; heading:number; aim:number; cooldown:number; role:'player'|'raider'|'sentry'|'heavy'|'boss'|'rifleman'|'rocketeer'; dead:boolean; }
 interface Shot { mesh:T.Mesh; p:Point; from:Point; dx:number; dz:number; speed:number; damage:number; life:number; friendly:boolean; splash:number; }
 interface Pickup { mesh:T.Mesh; life:number; }
 export class Game {
   root:HTMLElement; world:World; input:Input; save:Save=freshSave(); phase:Phase='menu'; mission=0;
   player!:Unit; enemies:Unit[]=[]; shots:Shot[]=[]; pickups:Pickup[]=[];
   elapsed=0; capture=0; spawnTimer=0; kills=0; shotsFired=0; lastReward=0;
+  bosses=new BossCombat();
   special=new SpecialWeapons();specialAmmo=[0,0];infantryKills=0;
   weaponPickerOpen=false;
   weapon=0; reload=0; shieldTime=0; shieldCooldown=0; repairs=1; relayHealth=300; convoyHealth=260; convoy:T.Group|null=null;convoyBlocked=false;
@@ -34,7 +36,7 @@ export class Game {
     this.root=root;
     try{this.save=parseSave(localStorage.getItem(SAVE_KEY));}catch{this.saveWarning=true;}
     root.innerHTML=`<div id="battlefield"></div><div class="vignette"></div><div id="hud" hidden>
-      <div class="mission-hud"><span class="eyebrow" id="mission-number"></span><h2 id="mission-name"></h2><p id="objective"></p><div class="objective-track"><i id="objective-fill"></i></div></div>
+      <div class="mission-hud"><span class="eyebrow" id="mission-number"></span><h2 id="mission-name"></h2><p id="objective"></p><div id="boss-readout" hidden></div><div class="objective-track"><i id="objective-fill"></i></div></div>
       <div class="top-actions"><button id="pause" aria-label="Pause game">Ⅱ <span>PAUSE</span></button><canvas id="minimap" width="176" height="132" aria-label="Tactical map"></canvas></div>
       <div class="bottom-hud"><div class="hull-block"><div><span>HULL</span><strong id="health-label"></strong></div><div class="hull-track"><i id="health-fill"></i></div><small id="status-line">ARMOR ONLINE</small></div>
       <button class="weapon-block" id="weapon"><span id="weapon-label"></span><strong id="reload-label"></strong><div class="reload-track"><i id="reload-fill"></i></div><small>CHOOSE WEAPON ▴</small></button>
@@ -100,20 +102,20 @@ export class Game {
   }
   makeUnit(x:number,z:number,role:Unit['role']):Unit{
     const boss=role==='boss',player=role==='player';
-    const infantry=role==='rifleman'||role==='rocketeer';const radius=infantry?.55:boss?2:1.25;
-    const free=(px:number,pz:number)=>Math.abs(px)<BOUNDS.x-radius&&Math.abs(pz)<BOUNDS.z-radius&&!this.world.covers.some(c=>c.hp>0&&circleBox({x:px,z:pz},radius,c))&&!this.enemies.some(e=>!e.dead&&distance({x:px,z:pz},e.visual.root.position)<radius+2);
+    const infantry=role==='rifleman'||role==='rocketeer';const radius=infantry?.55:boss?BOSS[bossKind(this.mission)].radius:1.25;
+    const free=(px:number,pz:number)=>Math.abs(px)<BOUNDS.x-radius&&Math.abs(pz)<BOUNDS.z-radius&&!this.world.covers.some(c=>c.hp>0&&circleBox({x:px,z:pz},radius,c))&&!this.enemies.some(e=>!e.dead&&distance({x:px,z:pz},e.visual.root.position)<radius+this.unitRadius(e));
     if(!free(x,z)){const origin={x,z};search:for(let r=3;r<=30;r+=3)for(let a=0;a<16;a++){const px=origin.x+Math.cos(a*Math.PI/8)*r,pz=origin.z+Math.sin(a*Math.PI/8)*r;if(free(px,pz)){x=px;z=pz;break search;}}}
-    const visual=this.world.tank(!player,boss,infantry?role:'tank');visual.root.position.set(x,0,z);
+    const visual=this.world.tank(!player,boss,infantry?role:boss?'boss-'+bossKind(this.mission):'tank');visual.root.position.set(x,0,z);if(boss){const core=visual.root.getObjectByName('Core');if(core)core.visible=false;}
     const difficulty=this.save.difficulty==='story'?1.4:this.save.difficulty==='veteran'?.8:1;
-    const hp=player?(240+this.save.upgrades.armor*65)*difficulty:infantry?(role==='rifleman'?35:55):boss?650:role==='heavy'?160:role==='sentry'?90:65;
+    const hp=player?(240+this.save.upgrades.armor*65)*difficulty:infantry?(role==='rifleman'?35:55):boss?BOSS[bossKind(this.mission)].health:role==='heavy'?160:role==='sentry'?90:65;
     return {visual,hp,max:hp,heading:player?Math.PI:0,aim:player?Math.PI:0,cooldown:2+(this.enemies.length%3)*.8,role,dead:false};
   }
   prepare(index:number){
-    this.special.clear();this.specialAmmo=[0,0];this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.strikes=[];this.mission=index;this.world.build(index,MISSIONS[index].kind);this.shots=[];this.pickups=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;
+    this.bosses.clear();this.special.clear();this.specialAmmo=[0,0];this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.strikes=[];this.mission=index;this.world.build(index,MISSIONS[index].kind);this.shots=[];this.pickups=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;
     this.elapsed=0;this.capture=0;this.spawnTimer=0;this.kills=0;this.shotsFired=0;this.reload=0;this.weapon=0;this.shieldTime=0;this.shieldCooldown=0;this.repairs=1;this.relayHealth=300;this.convoyHealth=260;
     this.player=this.makeUnit(-4,22,'player');this.player.visual.hull.rotation.y=Math.PI;this.player.visual.turret.rotation.y=Math.PI;
     const points=[[-17,-17],[17,-21],[25,0],[-28,0],[8,-25],[-6,-23]];
-    for(let i=0;i<MISSIONS[index].count;i++){const p=points[i];this.enemies.push(this.makeUnit(p[0]*(index>=4?1.7:1),p[1]*(index>=4?1.8:1),index===5&&i===0?'boss':index>=4&&i%2===0?'heavy':i%3===1?'sentry':'raider'));}
+    for(let i=0;i<MISSIONS[index].count;i++){const p=points[i];this.enemies.push(this.makeUnit(p[0]*(index>=4?1.7:1),p[1]*(index>=4?1.8:1),[5,6,8].includes(index)&&i===0?'boss':index>=4&&i%2===0?'heavy':i%3===1?'sentry':'raider'));}
     for(let i=0;i<(index<2?4:6);i++){const pos=[[-12,28],[13,28],[-20,-24],[20,-29],[-38,10],[38,12]][i];this.enemies.push(this.makeUnit(pos[0],pos[1],i%2?'rocketeer':'rifleman'));}
     if(MISSIONS[index].kind==='escort'){this.convoy=this.world.clone('transport');this.convoy.position.set(0,0,48);this.player.visual.root.position.set(-4,0,48);this.convoy.rotation.y=Math.PI;this.world.entities.add(this.convoy);}
     this.world.shield.visible=false;this.world.cursor.visible=false;
@@ -130,7 +132,7 @@ export class Game {
     this.updateHud();
   }
   isInfantry(unit:Unit){return unit.role==='rifleman'||unit.role==='rocketeer';}
-  unitRadius(unit:Unit){return this.isInfantry(unit)?.55:unit.role==='boss'?2:1.25;}
+  unitRadius(unit:Unit){return this.isInfantry(unit)?.55:unit.role==='boss'?BOSS[bossKind(this.mission)].radius:1.25;}
   weaponAvailable(w:number){return w<3?w<Math.max(this.fieldWeaponCount,weaponCount(this.save)):this.specialAmmo[w-3]>0;}
   weaponStats(){return [{damage:44,speed:48,reload:.85,splash:0},{damage:13,speed:58,reload:.19,splash:0},{damage:70,speed:30,reload:1.6,splash:4.5},{damage:150,speed:0,reload:.6,splash:0},{damage:170,speed:0,reload:2.4,splash:7}][this.weapon];}
   reloadDuration(){return this.weaponStats().reload*(1-this.save.upgrades.reload*.13);}
@@ -184,35 +186,35 @@ export class Game {
   updateEnemies(dt:number){
     const m=MISSIONS[this.mission],playerPos=this.player.visual.root.position;
     for(let i=0;i<this.enemies.length;i++){
-      const e=this.enemies[i];if(e.dead)continue;
+      const e=this.enemies[i];if(e.dead)continue;if(e.role==='boss'){this.bosses.update(this,e,dt);continue;}
       const p=e.visual.root.position;e.visual.root.userData.walking=false;
       let target:Point=playerPos;
       if(m.kind==='defense'&&distance(p,{x:0,z:-13})<distance(p,playerPos)+5)target={x:0,z:-13};
       if(this.convoy&&distance(p,this.convoy.position)<distance(p,playerPos)+3)target=this.convoy.position;
       const dist=distance(p,target),desired=Math.atan2(target.x-p.x,target.z-p.z);
-      e.aim=turnToward(e.aim,desired,dt*(e.role==='boss'?1.1:2));
+      e.aim=turnToward(e.aim,desired,dt*2);
       const obstruction=this.world.covers.some(c=>c.hp>0&&segmentBox(p,target,c)!==null);
       if(e.role!=='sentry'||dist>26||obstruction){
         const advance=dist>17||obstruction?1:dist<10?-.55:0;
         const side=e.role==='raider'?.5:obstruction?.7:0;
         const direction=desired+Math.sin(this.elapsed*.8+i)*.2;
-        const speed=this.isInfantry(e)?2.4:e.role==='boss'?2.1:e.role==='heavy'?2.9:4;
+        const speed=this.isInfantry(e)?2.4:e.role==='heavy'?2.9:4;
         const dx=(Math.sin(direction)*advance+Math.cos(direction)*side)*speed*dt,dz=(Math.cos(direction)*advance-Math.sin(direction)*side)*speed*dt;
         this.moveUnit(e,dx,dz);if(Math.abs(dx)+Math.abs(dz)>.001)e.heading=turnToward(e.heading,Math.atan2(dx,dz),dt*2);
       }
       if(dist<38)e.cooldown-=dt;else e.cooldown=Math.max(e.cooldown,.85);
       const beam=e.visual.beam;beam.visible=e.cooldown<.85&&dist<38;beam.scale.z=dist;beam.position.set(p.x+Math.sin(e.aim)*dist/2,.12,p.z+Math.cos(e.aim)*dist/2);beam.rotation.y=e.aim;
       this.syncVisual(e);
-      if(e.cooldown<=0&&dist<38&&(!this.isInfantry(e)||!obstruction)){this.shoot(e,false);e.cooldown=e.role==='boss'?(e.hp<e.max*.5?1.05:1.9):e.role==='rifleman'?1.1:e.role==='rocketeer'?3.5:e.role==='sentry'?2.6:3.1;}
+      if(e.cooldown<=0&&dist<38&&(!this.isInfantry(e)||!obstruction)){this.shoot(e,false);e.cooldown=e.role==='rifleman'?1.1:e.role==='rocketeer'?3.5:e.role==='sentry'?2.6:3.1;}
     }
   }
   damageUnit(unit:Unit,damage:number,source:Point){
     if(unit.dead||unit===this.player&&this.shieldTime>0)return;
     const multiplier=this.isInfantry(unit)?1:armorMultiplier(unit.visual.root.position,unit.heading,source);
-    unit.hp-=damage*multiplier;
+    unit.hp-=damage*multiplier*(unit.role==='boss'?this.bosses.multiplier(unit):1);
     const impact=unit.visual.root.position.clone();impact.y=1.4;this.world.fx.impact(impact);
     if(unit===this.player){this.hurtTimer=.2;this.tone(45,.07,.03);}
-    if(unit.hp<=0){unit.hp=0;unit.dead=true;unit.visual.beam.visible=false;if(this.isInfantry(unit)){this.infantryKills++;this.world.burst(unit.visual.root.position,2,5);}else this.world.destroyTank(unit.visual);this.tone(45,.22,.06);
+    if(unit.hp<=0){unit.hp=0;unit.dead=true;if(unit.role==='boss')this.bosses.cancel(unit);unit.visual.beam.visible=false;if(this.isInfantry(unit)){this.infantryKills++;this.world.burst(unit.visual.root.position,2,5);}else this.world.destroyTank(unit.visual);this.tone(45,.22,.06);
       if(unit!==this.player&&!this.isInfantry(unit)){this.kills++;if(this.kills%3===0){const mesh=new T.Mesh(new T.OctahedronGeometry(.65),new T.MeshStandardMaterial({color:0x7bf6c3,emissive:0x20805c,emissiveIntensity:.5}));mesh.userData.owned=true;mesh.position.copy(unit.visual.root.position).y=1;this.world.entities.add(mesh);this.pickups.push({mesh,life:30});}}
       this.syncVisual(unit);
     }
@@ -325,7 +327,7 @@ if(cover.kind==='barrel'){this.world.fx.impact(cover.mesh.position.clone().setY(
     if(m.kind==='defense')objective=`${Math.max(0,Math.ceil(m.duration-this.elapsed))}s remaining · RELAY ${Math.max(0,Math.ceil(this.relayHealth/3))}%`;
     if(m.kind==='escort')objective=`TRANSPORT ${Math.max(0,Math.ceil(this.convoyHealth/2.6))}% · ${this.convoy&&distance(this.player.visual.root.position,this.convoy.position)<12?(this.convoyBlocked?'CLEAR THE ROAD':'MOVING TO EXTRACTION'):'MOVE CLOSER TO ESCORT'}`;
     if(m.kind==='boss'){const b=this.enemies.find(e=>e.role==='boss');objective=`WARDEN ${Math.max(0,Math.ceil((b?.hp||0)/(b?.max||1)*100))}% · ${b&&b.hp<b.max*.5?'OVERDRIVE — KEEP MOVING':'WATCH THE TARGETING LINE'}`;}
-    this.el('objective').textContent=objective;this.radio.style.top=(this.el('mission-name').parentElement!.getBoundingClientRect().bottom+8)+'px';this.el('objective-fill').style.width=`${clamp(this.objectiveProgress()*100,0,100)}%`;
+    const boss=this.enemies.find(u=>u.role==='boss'&&!u.dead),readout=this.el('boss-readout');readout.hidden=!boss;if(boss)readout.textContent=`${BOSS[bossKind(this.mission)].name} · ${Math.ceil(boss.hp/boss.max*100)}% · ${this.bosses.status(boss)}`;this.el('objective').textContent=objective;this.radio.style.top=(this.el('mission-name').parentElement!.getBoundingClientRect().bottom+8)+'px';this.el('objective-fill').style.width=`${clamp(this.objectiveProgress()*100,0,100)}%`;
     this.el('health-label').textContent=`${Math.ceil(this.player.hp)} / ${Math.ceil(this.player.max)}`;this.el('health-fill').style.width=`${this.player.hp/this.player.max*100}%`;
     this.el('status-line').textContent=this.shieldTime>0?'PROTECTIVE FIELD ACTIVE':this.player.hp<this.player.max*.3?'HULL CRITICAL — SEEK COVER':terrainSpeed(this.world.environment.biome,this.player.visual.root.position.x,this.player.visual.root.position.z)<1?'ROUGH GROUND · REDUCED SPEED':'FRONT ARMOR ONLINE';
     const available=Math.max(this.fieldWeaponCount,weaponCount(this.save));

@@ -60,7 +60,7 @@ export class World {
   }
   async load() {
     const loader=new GLTFLoader();
-    await Promise.all(['tank','transport','barricade','crate','barrel','relay','pine','house','stonewall','steelwall','bridge','hill','rifleman','rocketeer'].map(async name=>{
+    await Promise.all(['tank','transport','barricade','crate','barrel','relay','pine','house','stonewall','steelwall','bridge','hill','rifleman','rocketeer','boss-rail','boss-missile','boss-walker'].map(async name=>{
       const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/${name}.glb`);
       const root=gltf.scene;
       root.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true; o.receiveShadow=true;}});
@@ -87,7 +87,7 @@ export class World {
   }
   clone(name:string):T.Group { return this.templates.get(name)!.clone(true); }
   tank(enemy=false,boss=false,model='tank'):TankVisual {
-    const root=this.clone(model);
+    const root=this.clone(model);root.userData.model=model;
     if(enemy) root.traverse(o=>{if(o instanceof T.Mesh && o.material instanceof T.MeshStandardMaterial){
       const name=o.material.name;
       // Reuse one enemy material per original material across all tanks.
@@ -96,7 +96,7 @@ export class World {
       if(!mat){mat=o.material.clone(); if(name==='Armor')mat.color.set(0x744b41);if(name==='Trim')mat.color.set(0xc08a68);if(name==='Signal')mat.color.set(0xff573e);this.enemyMaterials.set(key,mat);}
       o.material=mat;
     }});
-    if(boss)root.scale.setScalar(1.55);
+    if(boss&&model==='tank')root.scale.setScalar(1.55);
     const bar=new T.Mesh(new T.PlaneGeometry(2.8,.16),new T.MeshBasicMaterial({color:enemy?0xff795c:0x8efad6,depthTest:false}));
     bar.userData.owned=true;bar.rotation.x=-Math.PI/3;bar.position.y=boss?4.6:3;bar.renderOrder=5;root.add(bar);bar.visible=enemy;
     const beam=new T.Mesh(new T.BoxGeometry(.08,.02,1),new T.MeshBasicMaterial({color:0xff5849,transparent:true,opacity:.55}));
@@ -180,7 +180,7 @@ export class World {
     }
   }
   destroyTank(visual:TankVisual){
-    const root=this.clone('tank');root.position.copy(visual.root.position);root.scale.copy(visual.root.scale);
+    const root=this.clone(visual.root.userData.model||'tank');root.position.copy(visual.root.position);root.scale.copy(visual.root.scale);
     root.getObjectByName('Hull')!.rotation.y=visual.hull.rotation.y;
     const turret=root.getObjectByName('Turret')!;turret.rotation.set(.28,visual.turret.rotation.y,.24);turret.position.y=.9;
     root.traverse(o=>{if(o instanceof T.Mesh)o.material=this.burnt;});this.entities.add(root);

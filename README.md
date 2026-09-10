@@ -13,6 +13,7 @@ Lead Kestrel through nine operations to reopen the Meridian evacuation route: cl
 - Water, off-road snow and mud change tank speed; bridge and road routes preserve speed.
 - Destructible cover, house medical salvage, supply crates and explosive fuel drums.
 - Cannon, unlockable autocannon and siege rockets, plus collectible pulse laser and arc rockets.
+- Three distinct bosses: Rail Titan, Tempest Carrier and the six-legged Iron Sovereign, with attack warnings and exposed-core windows.
 - Blender riflemen and rocketeers support enemy armor across the campaign.
 - Shield, consumable repair and field repair pickups.
 - Three difficulty modes; mission checkpoints, retries and replay.
@@ -92,3 +93,5 @@ Shell tracers, rocket exhaust, muzzle flashes, debris, shock rings, smoke, dust 
 Environment selection, behavior, source art and scope: [Environment expansion](docs/ENVIRONMENT_EXPANSION.md).
 
 Infantry roles, weapon caches and ammunition: [Infantry and special weapons](docs/INFANTRY_AND_SPECIAL_WEAPONS.md).
+
+Boss model kit, encounters and counterplay: [Boss variety](docs/BOSS_VARIETY.md).
