@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.tankgame.arcade',
-  appName: 'Tank Game',
+  appId: 'com.tankgame.steelfront3d',
+  appName: 'Steel Front 3D',
   webDir: 'dist'
 };
 

@@ -1,7 +1,7 @@
 {
-  "name": "tank_game",
+  "name": "tankgame_3d",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,16 +9,21 @@
     "android:sync": "npm run build && cap sync android",
     "android:run": "npm run build && cap run android",
     "android:open": "cap open android",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "playwright test",
+    "test:assets": "node tools/check-assets.mjs"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.3.3",
+    "@playwright/test": "^1.63.0",
+    "@types/three": "^0.185.4",
     "typescript": "~6.0.2",
     "vite": "^8.0.10"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.3",
     "@capacitor/core": "^8.3.3",
-    "phaser": "^3.90.0"
+    "phaser": "^3.90.0",
+    "three": "^0.186.0"
   }
 }

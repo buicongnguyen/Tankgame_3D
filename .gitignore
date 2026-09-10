@@ -24,3 +24,9 @@ dist-ssr
 *.sw?
 .vite.err
 Transcribe_translate/
+
+# 3D development output
+/test-results/
+/playwright-report/
+*.blend1
+/public/models/barrel.001.glb

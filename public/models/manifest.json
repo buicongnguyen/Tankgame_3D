@@ -1,0 +1,35 @@
+{
+  "generator": "Blender 4.5 / tools/blender/build_assets.py",
+  "assets": [
+    {
+      "asset": "Tank",
+      "polygons": 1028,
+      "bytes": 167692
+    },
+    {
+      "asset": "Transport",
+      "polygons": 318,
+      "bytes": 54720
+    },
+    {
+      "asset": "Barricade",
+      "polygons": 130,
+      "bytes": 20016
+    },
+    {
+      "asset": "Crate",
+      "polygons": 78,
+      "bytes": 12380
+    },
+    {
+      "asset": "Barrel",
+      "polygons": 56,
+      "bytes": 13140
+    },
+    {
+      "asset": "Relay",
+      "polygons": 162,
+      "bytes": 28192
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+import type { Upgrade } from './rules';
+export type MissionKind = 'assault' | 'capture' | 'escort' | 'defense' | 'boss';
+export interface Mission { name: string; sector: string; kind: MissionKind; briefing: string; radio: string; debrief: string; objective: string; count: number; duration: number; reward: number; }
+export const MISSIONS: Mission[] = [
+  { name: 'First Light', sector: 'MERIDIAN OUTSKIRTS', kind: 'assault', briefing: 'A distress signal is repeating from the valley. Your crew is the only one close enough to answer. Clear the outer patrol and find a way through.', radio: 'IVO / That signal is human. Use the barricades, Kestrel. Keep your front armor toward their guns.', debrief: 'The patrol is down. We found the broadcast: a rescue convoy is trapped beyond the relay.', objective: 'Clear the outer patrol', count: 3, duration: 0, reward: 180 },
+  { name: 'Open Frequency', sector: 'RELAY STATION 07', kind: 'capture', briefing: 'The convoy cannot hear us. Reach the amber relay and hold it free of hostile armor for 18 seconds. The Warden network will try to take it back.', radio: 'IVO / Stay inside the ring. Hostiles in the ring interrupt the uplink. We only need eighteen clean seconds.', debrief: 'A voice answers: “We have families aboard. Please tell us the road is open.” Mara turns toward the pass.', objective: 'Secure the relay · 18 seconds', count: 3, duration: 18, reward: 230 },
+  { name: 'Homeward', sector: 'SOUTHERN EVACUATION ROAD', kind: 'escort', briefing: 'The rescue transport is moving. Stay within 12 meters so its driver can follow your signals. Clear ambushers and guide it to the northern extraction gate.', radio: 'MARA / Keep close to the transport. If we outrun it, the driver stops. Nobody gets left behind.', debrief: 'The first transport reaches shelter. The evacuation uplink is still exposed, and the network is turning toward it.', objective: 'Escort the rescue transport', count: 4, duration: 0, reward: 260 },
+  { name: 'Long Night', sector: 'EVACUATION UPLINK', kind: 'defense', briefing: 'Hold the uplink alive for 45 seconds while Ivo routes the remaining transports. Intercept enemies before they break the relay. Watch both the relay and your hull.', radio: 'IVO / Forty-five seconds. I can route them out if you keep this mast standing.', debrief: 'The uplink holds. Every transport has a route home. One siege battery still covers the final crossing.', objective: 'Defend the uplink · 45 seconds', count: 4, duration: 45, reward: 280 },
+  { name: 'Glass Road', sector: 'WARDEN PERIMETER', kind: 'assault', briefing: 'Heavy armor is holding the final crossing. Use rockets to break clustered enemies and circle their fronts. The supply drums can turn their own position against them.', radio: 'MARA / Those heavies have thick front plates. Make them turn. Their rear armor is the opening.', debrief: 'The crossing is open. The command machine has left its bunker. This is our chance to end the siege.', objective: 'Break the siege battery', count: 6, duration: 0, reward: 320 },
+  { name: 'Last Signal', sector: 'WARDEN COMMAND', kind: 'boss', briefing: 'Warden is the machine coordinating the siege. Destroy its command tank. Its guns accelerate below half armor; watch the red targeting line and move before it fires.', radio: 'IVO / That is Warden. Break its command core and the whole network goes dark. We are with you, Kestrel.', debrief: 'The red lights go dark. Across Meridian, radios come alive. The last transport crosses the bridge. For the first time tonight, the road is quiet.', objective: 'Destroy the Warden command tank', count: 3, duration: 0, reward: 400 },
+];
+export const SAVE_KEY = 'steel-front-3d-v1';
+export type Difficulty = 'story' | 'standard' | 'veteran';
+export interface Save { version: 1; mission: number; cleared: boolean[]; credits: number; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; }
+export const freshSave = (): Save => ({ version: 1, mission: 0, cleared: Array(6).fill(false), credits: 0, upgrades: { armor: 0, power: 0, reload: 0 }, difficulty: 'standard', sound: false, low: false });
+export function parseSave(raw: string | null): Save {
+  try {
+    const s = JSON.parse(raw || 'null');
+    if (!s || s.version !== 1 || !Number.isInteger(s.mission) || s.mission < 0 || s.mission > 5 || !Array.isArray(s.cleared) || s.cleared.length !== 6 || s.cleared.some((v: unknown) => typeof v !== 'boolean') || !Number.isInteger(s.credits) || s.credits < 0 || s.credits > 100000 || !['story','standard','veteran'].includes(s.difficulty)) return freshSave();
+    if (!s.upgrades || ['armor','power','reload'].some(k => !Number.isInteger(s.upgrades[k]) || s.upgrades[k] < 0 || s.upgrades[k] > 3)) return freshSave();
+    // A checkpoint cannot unlock past a gap in the campaign.
+    const firstUncleared = s.cleared.indexOf(false);
+    if (firstUncleared >= 0 && (s.mission > firstUncleared || s.cleared.slice(firstUncleared).some(Boolean))) return freshSave();
+    return { ...s, sound: s.sound === true, low: s.low === true };
+  } catch { return freshSave(); }
+}
+export function rewardClear(save: Save, mission: number): number {
+  if (save.cleared[mission]) return 0;
+  save.cleared[mission] = true;
+  const reward = MISSIONS[mission].reward;
+  save.credits += reward;
+  save.mission = Math.min(5, mission + 1);
+  return reward;
+}
+export const weaponNames = ['120 mm cannon', '30 mm autocannon', 'Siege rockets'];
+export function weaponCount(save: Save): number { return save.cleared[2] ? 3 : save.cleared[0] ? 2 : 1; }

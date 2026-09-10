@@ -1,0 +1,7 @@
+import { test, expect } from '@playwright/test';
+import { segmentBox, segmentCircle, armorMultiplier, purchase, circleBox } from '../src/three/rules';
+import { freshSave, parseSave, rewardClear, weaponCount } from '../src/three/campaign';
+test('swept shells hit thin cover before a tank at high speed',()=>{const a={x:0,z:0},b={x:0,z:100};expect(segmentBox(a,b,{x:0,z:10,w:4,d:.2})).toBeCloseTo(.099);expect(segmentCircle(a,b,{x:0,z:20},1)).toBeCloseTo(.19);expect(segmentBox(a,b,{x:8,z:10,w:4,d:1})).toBeNull();expect(segmentCircle(a,a,a,1)).toBe(0);expect(segmentCircle(a,a,{x:5,z:0},1)).toBeNull();});
+test('front armor and rear vulnerability follow hull heading',()=>{expect(armorMultiplier({x:0,z:0},0,{x:0,z:5})).toBe(.65);expect(armorMultiplier({x:0,z:0},0,{x:0,z:-5})).toBe(1.5);expect(armorMultiplier({x:0,z:0},Math.PI,{x:0,z:-5})).toBe(.65);expect(armorMultiplier({x:0,z:0},0,{x:5,z:0})).toBe(1);});
+test('collision and workshop boundaries',()=>{expect(circleBox({x:2,z:0},1.1,{x:0,z:0,w:2,d:2})).toBe(true);expect(purchase(119,0)).toBeNull();expect(purchase(120,0)).toEqual({credits:0,level:1});expect(purchase(5000,3)).toBeNull();});
+test('checkpoint corruption recovers and clear rewards are idempotent',()=>{expect(parseSave('{')).toEqual(freshSave());const s=freshSave();expect(rewardClear(s,0)).toBe(180);expect(rewardClear(s,0)).toBe(0);expect(s.credits).toBe(180);expect(s.mission).toBe(1);expect(weaponCount(s)).toBe(2);expect(parseSave(JSON.stringify(s))).toEqual(s);s.mission=4;expect(parseSave(JSON.stringify(s))).toEqual(freshSave());});
