@@ -14,15 +14,14 @@ import type { Point, Upgrade } from './rules';
 type Phase='menu'|'playing'|'paused'|'depot'|'failed'|'victory';
 export interface Unit { visual:TankVisual; hp:number; max:number; heading:number; aim:number; cooldown:number; role:'player'|'raider'|'sentry'|'heavy'|'boss'|'rifleman'|'rocketeer'; dead:boolean; }
 interface Shot { mesh:T.Mesh; p:Point; from:Point; dx:number; dz:number; speed:number; damage:number; life:number; friendly:boolean; splash:number; }
-interface Pickup { mesh:T.Mesh; life:number; }
 export class Game {
   root:HTMLElement; world:World; input:Input; save:Save=freshSave(); phase:Phase='menu'; mission=0;
-  player!:Unit; enemies:Unit[]=[]; shots:Shot[]=[]; pickups:Pickup[]=[];
+  player!:Unit; enemies:Unit[]=[]; shots:Shot[]=[];
   elapsed=0; capture=0; spawnTimer=0; kills=0; shotsFired=0; lastReward=0;
   bosses=new BossCombat();
   special=new SpecialWeapons();specialAmmo=[0,0];infantryKills=0;
   weaponPickerOpen=false;
-  weapon=0; reload=0; shieldTime=0; shieldCooldown=0; repairs=1; relayHealth=300; convoyHealth=260; convoy:T.Group|null=null;convoyBlocked=false;
+  weapon=0; reload=0; shieldTime=0; shieldCooldown=0; relayHealth=300; convoyHealth=260; convoy:T.Group|null=null;convoyBlocked=false;
   overlay:HTMLElement; hud:HTMLElement; radio:HTMLElement; mini:HTMLCanvasElement;
   radioTimer=0; hudTimer=0; last=0; accumulator=0; hurtTimer=0;
   ray=new T.Raycaster(); plane=new T.Plane(new T.Vector3(0,1,0),0); aimPoint=new T.Vector3(0,0,-15);
@@ -41,9 +40,9 @@ export class Game {
       <div class="top-actions"><button id="pause" aria-label="Pause game">Ⅱ <span>PAUSE</span></button><canvas id="minimap" width="176" height="132" aria-label="Tactical map"></canvas></div>
       <div class="bottom-hud"><div class="hull-block"><div><span>HULL</span><strong id="health-label"></strong></div><div class="hull-track"><i id="health-fill"></i></div><small id="status-line">ARMOR ONLINE</small></div>
       <button class="weapon-block" id="weapon"><span id="weapon-label"></span><strong id="reload-label"></strong><div class="reload-track"><i id="reload-fill"></i></div><small>CHOOSE WEAPON ▴</small></button>
-      <div class="abilities"><button id="fire" class="pc-fire"><kbd>SPACE / F</kbd>FIRE</button><button id="artillery"><kbd>R</kbd><span id="artillery-label">STRIKE</span></button><button id="shield"><kbd>Q</kbd><span id="shield-label">SHIELD</span></button><button id="repair"><kbd>E</kbd><span id="repair-label">REPAIR ×1</span></button></div></div>
+      <div class="abilities"><button id="fire" class="pc-fire"><kbd>SPACE / F</kbd>FIRE</button><button id="artillery"><kbd>R</kbd><span id="artillery-label">STRIKE</span></button><button id="shield"><kbd>Q</kbd><span id="shield-label">SHIELD</span></button><button id="repair"><kbd>E</kbd><span id="repair-label">FIND REPAIR</span></button></div></div>
       <div class="touch-pad move-pad" id="move-pad" aria-label="Drive joystick"><span class="stick-nub"></span><small>DRIVE</small></div><div class="touch-pad aim-pad" id="aim-pad" aria-label="Aim and fire joystick"><span class="stick-nub"></span><small>AIM / FIRE</small></div>
-      <div id="weapon-picker" class="weapon-picker" hidden role="group" aria-label="Choose weapon"></div><div class="radio" id="radio" role="status"></div><div class="desktop-hint">WASD <span>drive</span> · IJKL / MOUSE <span>aim</span> · SPACE / F <span>fire</span> · R <span>strike</span> · Q <span>shield</span> · E <span>repair</span></div>
+      <div id="weapon-picker" class="weapon-picker" hidden role="group" aria-label="Choose weapon"></div><div class="radio" id="radio" role="status"></div><div class="desktop-hint">WASD <span>drive</span> · IJKL / MOUSE <span>aim</span> · SPACE / F <span>fire</span> · R <span>strike</span> · Q <span>shield</span> · E <span>find repair</span></div>
     </div><div id="overlay"></div><div class="loading" id="loading"><span class="eyebrow">KESTREL // CONNECTING</span><h1>Establishing uplink<span class="blink">_</span></h1><p>Loading the valley and armored units.</p></div>`;
     this.overlay=this.el('overlay');this.hud=this.el('hud');this.radio=this.el('radio');this.mini=this.el('minimap') as HTMLCanvasElement;
     this.world=new World(this.el('battlefield'));this.input=new Input(this.world.renderer.domElement);
@@ -78,10 +77,10 @@ export class Game {
   focusPrimary(){requestAnimationFrame(()=>this.overlay.querySelector<HTMLButtonElement>('.primary')?.focus({preventScroll:true}));}
   route(){const frontier=this.save.cleared.indexOf(false);return MISSIONS.map((m,i)=>`<button class="route-item ${i===this.mission?'selected':''}" data-action="mission" data-value="${i}" ${frontier>=0&&i>frontier?'disabled':''}><span class="route-index">${this.save.cleared[i]?'✓':String(i+1).padStart(2,'0')}</span><span><small>${m.kind.toUpperCase()}</small><strong>${m.name}</strong></span><span class="route-state">${frontier>=0&&i>frontier?'LOCKED':i===this.mission?'◂':'↗'}</span></button>`).join('');}
   settings(){return `<div class="settings"><button data-action="sound">SOUND <b>${this.save.sound?'ON':'OFF'}</b></button><button data-action="quality">GRAPHICS <b>${this.save.low?'LOW':'HIGH'}</b></button><a href="./legacy.html">Original 2D ↗</a></div>`;}
-  controls(){return '<div class="control-guide"><span><kbd>W A S D</kbd> Drive</span><span><kbd>I J K L / MOUSE</kbd> Aim</span><span><kbd>SPACE / F / CLICK</kbd> Fire</span><span><kbd>1–5</kbd> Weapon</span><span><kbd>Q</kbd> Shield</span><span><kbd>E</kbd> Repair</span><span><kbd>R</kbd> Artillery</span><span><kbd>ESC</kbd> Pause</span><p class="touch-guide">On touch: left stick drives; right stick aims and fires. Tap the weapon panel to choose a gun. Strike, shield and repair have separate buttons.</p></div>';}
+  controls(){return '<div class="control-guide"><span><kbd>W A S D</kbd> Drive</span><span><kbd>I J K L / MOUSE</kbd> Aim</span><span><kbd>SPACE / F / CLICK</kbd> Fire</span><span><kbd>1–5</kbd> Weapon</span><span><kbd>Q</kbd> Shield</span><span><kbd>E</kbd> Find repair center</span><span><kbd>R</kbd> Artillery</span><span><kbd>ESC</kbd> Pause</span><p class="touch-guide">On touch: left stick drives; right stick aims and fires. Tap the weapon panel to choose a gun. Strike, shield and the repair-center finder have separate buttons.</p></div>';}
   showMenu(){
     this.setPhase('menu');this.world.target.copy(this.player.visual.root.position);const m=MISSIONS[this.mission];
-    this.overlay.innerHTML=`<main class="command-screen"><header class="brand"><span class="brand-mark">◈</span><span>KESTREL DIVISION<small>MERIDIAN RECOVERY COMMAND</small></span><span class="build-label">3D CAMPAIGN / 01</span></header><section class="hero"><span class="eyebrow">MERIDIAN CAMPAIGN</span><h1>STEEL<br><em>FRONT</em><span>LAST SIGNAL</span></h1></section><aside class="briefing panel"><div class="panel-top"><span class="eyebrow">OPERATION ${String(this.mission+1).padStart(2,'0')} / ${MISSIONS.length}</span></div><h2>${m.name}</h2><div class="mission-task"><span>OBJECTIVE</span><strong>${m.objective}</strong></div><div class="difficulty" aria-label="Difficulty">${(['story','standard','veteran'] as Difficulty[]).map(d=>`<button data-action="difficulty" data-value="${d}" aria-pressed="${this.save.difficulty===d}" class="${this.save.difficulty===d?'active':''}">${d}</button>`).join('')}</div><button class="primary deploy" data-action="deploy">DEPLOY <span>→</span></button><details><summary>Briefing & controls</summary><p class="briefing-copy">${m.briefing}</p>${this.controls()}<p class="manual">Front armor absorbs damage. Flank for stronger hits. Red lines warn of incoming fire. Amber marks the objective. Mines hit both sides. Red drums and gasoline crates explode and can chain-react. Green pads repair. Blue caches give rockets and supplies. Cannon is available immediately; clear First Light for autocannon and Homeward for rockets. Tap the weapon panel to choose. Cyan and purple map caches grant 12 laser shots or 6 arc rockets. Laser stops at cover; arc rockets fly over cover and blast both sides. Keys 4/5 select collected weapons. R calls a wide five-round barrage at your aim point; amber circles show danger to both sides.</p></details></aside><section class="campaign-route"><div class="route-heading"><span class="eyebrow">THE ROAD HOME</span><span>${this.save.cleared.filter(Boolean).length} / ${MISSIONS.length} COMPLETE</span></div><div class="route-list">${this.route()}</div></section><footer><button data-action="shop">SHOP · ${this.save.credits} CR</button>${this.settings()}<button class="quiet" data-action="reset-prompt">Reset campaign</button></footer>${this.saveWarning?'<p class="storage-warning">Browser storage is unavailable. Progress will last only for this session.</p>':''}</main>`;
+    this.overlay.innerHTML=`<main class="command-screen"><header class="brand"><span class="brand-mark">◈</span><span>KESTREL DIVISION<small>MERIDIAN RECOVERY COMMAND</small></span><span class="build-label">3D CAMPAIGN / 01</span></header><section class="hero"><span class="eyebrow">MERIDIAN CAMPAIGN</span><h1>STEEL<br><em>FRONT</em><span>LAST SIGNAL</span></h1></section><aside class="briefing panel"><div class="panel-top"><span class="eyebrow">OPERATION ${String(this.mission+1).padStart(2,'0')} / ${MISSIONS.length}</span></div><h2>${m.name}</h2><div class="mission-task"><span>OBJECTIVE</span><strong>${m.objective}</strong></div><div class="difficulty" aria-label="Difficulty">${(['story','standard','veteran'] as Difficulty[]).map(d=>`<button data-action="difficulty" data-value="${d}" aria-pressed="${this.save.difficulty===d}" class="${this.save.difficulty===d?'active':''}">${d}</button>`).join('')}</div><button class="primary deploy" data-action="deploy">DEPLOY <span>→</span></button><details><summary>Briefing & controls</summary><p class="briefing-copy">${m.briefing}</p>${this.controls()}<p class="manual">Front armor absorbs damage. Flank for stronger hits. Red lines warn of incoming fire. Amber marks the objective. Mines hit both sides. Red drums and gasoline crates explode and can chain-react. Healing is available only at green repair centers. E locates the nearest center. Boxes contain weapons or ammo supplies, never health. Cannon is available immediately; clear First Light for autocannon and Homeward for rockets. Tap the weapon panel to choose. Cyan and purple map caches grant 12 laser shots or 6 arc rockets. Laser stops at cover; arc rockets fly over cover and blast both sides. Keys 4/5 select collected weapons. R calls a wide five-round barrage at your aim point; amber circles show danger to both sides.</p></details></aside><section class="campaign-route"><div class="route-heading"><span class="eyebrow">THE ROAD HOME</span><span>${this.save.cleared.filter(Boolean).length} / ${MISSIONS.length} COMPLETE</span></div><div class="route-list">${this.route()}</div></section><footer><button data-action="shop">SHOP · ${this.save.credits} CR</button>${this.settings()}<button class="quiet" data-action="reset-prompt">Reset campaign</button></footer>${this.saveWarning?'<p class="storage-warning">Browser storage is unavailable. Progress will last only for this session.</p>':''}</main>`;
     this.focusPrimary();
   }
   pause(){if(this.phase!=='playing')return;this.setPhase('paused');this.renderPause();}
@@ -117,8 +116,8 @@ export class Game {
   }
   defenseSpawn(i:number,role:Unit['role']){const corners=[[-66,-52],[66,52],[66,-52],[-66,52]];const [x,z]=corners[i%4];return this.makeUnit(x,z,role);}
   prepare(index:number){
-    this.bosses.clear();this.special.clear();this.specialAmmo=[this.save.weapons.includes(3)?12:0,this.save.weapons.includes(4)?6:0];this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.strikes=[];this.mission=index;this.world.build(index,MISSIONS[index].kind);this.shots=[];this.pickups=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;
-    this.elapsed=0;this.capture=0;this.spawnTimer=0;this.kills=0;this.shotsFired=0;this.reload=0;this.weapon=0;this.shieldTime=0;this.shieldCooldown=0;this.repairs=1;this.relayHealth=300;this.convoyHealth=260;
+    this.bosses.clear();this.special.clear();this.specialAmmo=[this.save.weapons.includes(3)?12:0,this.save.weapons.includes(4)?6:0];this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.strikes=[];this.mission=index;this.world.build(index,MISSIONS[index].kind);this.shots=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;
+    this.elapsed=0;this.capture=0;this.spawnTimer=0;this.kills=0;this.shotsFired=0;this.reload=0;this.weapon=0;this.shieldTime=0;this.shieldCooldown=0;this.relayHealth=300;this.convoyHealth=260;
     this.player=this.makeUnit(-4,MISSIONS[index].kind==='defense'?-3:22,'player');this.player.visual.hull.rotation.y=Math.PI;this.player.visual.turret.rotation.y=Math.PI;
     const points=[[-17,-17],[17,-21],[25,0],[-28,0],[8,-25],[-6,-23]];
     for(let i=0;i<MISSIONS[index].count;i++){const p=points[i],role:Unit['role']=[5,6,8].includes(index)&&i===0?'boss':index>=4&&i%2===0?'heavy':i%3===1?'sentry':'raider';this.enemies.push(MISSIONS[index].kind==='defense'?this.defenseSpawn(i,role):this.makeUnit(p[0]*(index>=4?1.7:1),p[1]*(index>=4?1.8:1),role));}
@@ -133,7 +132,10 @@ export class Game {
     if(action==='fire'&&this.reload<=0){this.syncVisual(this.player);this.shoot(this.player,true);}
     if(action==='artillery'&&this.artilleryCooldown<=0)this.callArtillery();
     if(action==='shield'&&this.shieldCooldown<=0){this.shieldTime=3;this.shieldCooldown=14;this.radioMessage('KESTREL / Protective field active. Three seconds of cover.',3);this.tone(620,.2,.04);}
-    if(action==='repair'&&this.repairs>0&&this.player.hp<this.player.max){this.repairs--;this.player.hp=Math.min(this.player.max,this.player.hp+110);this.world.burst(this.player.visual.root.position,3);this.tone(720,.15,.05);}
+    if(action==='repair'){
+      const p=this.player.visual.root.position,center=this.world.activities.filter(a=>a.kind==='repair'&&!a.spent).sort((a,b)=>distance(p,a)-distance(p,b))[0];
+      if(center){const dx=center.x-p.x,dz=center.z-p.z;const direction=(Math.abs(dz)>3?(dz<0?'N':'S'):'')+(Math.abs(dx)>3?(dx<0?'W':'E'):'');this.radioMessage(`REPAIR CENTER / ${Math.ceil(distance(p,center))} m ${direction}. Follow the green + on the minimap. Drive onto the pad to heal.`,6);}else this.radioMessage('REPAIR CENTER / All centers are depleted this mission.',4);
+    }
     if(action==='switch')this.weaponPickerOpen=!this.weaponPickerOpen;
     if(['1','2','3','4','5'].includes(action)){const w=Number(action)-1;if(this.weaponAvailable(w)){this.weapon=w;this.weaponPickerOpen=false;}else if(w>=3)this.radioMessage('ARMORY / Find the marked weapon cache on the map.',3);else this.radioMessage(`ARMORY / ${w===1?'Autocannon unlocks after First Light.':'Rockets unlock after Homeward.'}`,3);}
     this.updateHud();
@@ -228,16 +230,13 @@ export class Game {
     if(unit===this.player){this.hurtTimer=.2;this.tone(45,.07,.03);}
     if(unit.hp<=0){unit.hp=0;unit.dead=true;if(unit.role==='boss')this.bosses.cancel(unit);unit.visual.beam.visible=false;if(this.isInfantry(unit)){this.infantryKills++;this.world.burst(unit.visual.root.position,2,5);}else this.world.destroyTank(unit.visual);this.tone(45,.22,.06);
       if(unit!==this.player&&!this.isInfantry(unit)){this.kills++;if(this.kills%2===0){const p=unit.visual.root.position,kind=this.kills%4===0?'arc':'laser';this.world.activities.push(createActivity(this.world.arena,kind,p.x,p.z));this.radioMessage(`SALVAGE / ${kind==='laser'?'Laser':'Arc rocket'} weapon box dropped. Drive over it to collect.`,4);}
-      if(this.kills%3===0){const mesh=new T.Mesh(new T.OctahedronGeometry(.65),new T.MeshStandardMaterial({color:0x7bf6c3,emissive:0x20805c,emissiveIntensity:.5}));mesh.userData.owned=true;mesh.position.copy(unit.visual.root.position).y=1;this.world.entities.add(mesh);this.pickups.push({mesh,life:30});}}
+      }
       this.syncVisual(unit);
     }
   }
   hitCover(cover:Cover,damage:number){
     if(cover.hp<=0)return;cover.hp-=damage;this.world.burst(cover.mesh.position,2,5);
     if(cover.hp<=0){cover.mesh.visible=false;
-      if(cover.kind==='house'){
-        const mesh=new T.Mesh(new T.OctahedronGeometry(.65),new T.MeshStandardMaterial({color:0x7bf6c3,emissive:0x20805c,emissiveIntensity:.5}));mesh.userData.owned=true;mesh.position.copy(cover.mesh.position).y=1;this.world.entities.add(mesh);this.pickups.push({mesh,life:60});this.radioMessage('IVO / Medical supplies exposed in the ruins.',3);
-      }
       if(['house','stonewall','pine'].includes(cover.kind))this.world.fx.impact(cover.mesh.position.clone().setY(1),true);
 if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.world.fx.impact(cover.mesh.position.clone().setY(1),true);this.explode(cover,cover.kind==='fuelcrate'?7:5,cover.kind==='fuelcrate'?110:65);}}
   }
@@ -295,7 +294,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.world.fx.impact(cover.m
         if(activity.remaining<=0){activity.spent=true;activity.mesh.visible=false;}
       }
       if((activity.kind==='laser'||activity.kind==='arc')&&near<2.5){activity.spent=true;activity.mesh.visible=false;const w=activity.kind==='laser'?3:4;this.specialAmmo[w-3]+=w===3?12:6;this.weapon=w;this.reload=0;this.world.burst(p,3);this.radioMessage(w===3?'ARMORY / Laser: 12 shots. Stops at hard cover.':'ARMORY / Arc rockets: 6 rounds. Aim beyond cover; clear the purple blast circle.',5);}
-      if(activity.kind==='supply'&&near<2.5){activity.spent=true;activity.mesh.visible=false;this.repairs=Math.min(3,this.repairs+1);this.powerBoost=25;this.fieldWeaponCount=3;this.weapon=2;this.artilleryCooldown=0;this.world.burst(p,3);this.radioMessage('SUPPLY / Rockets, repair kit, strike ready. Damage boost: 25s.',4);}
+      if(activity.kind==='supply'&&near<2.5){activity.spent=true;activity.mesh.visible=false;this.powerBoost=25;this.fieldWeaponCount=3;this.weapon=2;this.artilleryCooldown=0;this.world.burst(p,3);this.radioMessage('SUPPLY / Rockets and strike ready. Damage boost: 25s.',4);}
       if(activity.kind==='mine'&&[this.player,...this.enemies].some(u=>!u.dead&&distance(u.visual.root.position,activity)<1.5)){
         activity.spent=true;activity.mesh.visible=false;this.world.fx.impact(new T.Vector3(activity.x,.4,activity.z),true);this.explode(activity,4.5,85);
       }
@@ -324,7 +323,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.world.fx.impact(cover.m
       this.spawnTimer+=dt;
       if(this.spawnTimer>12&&this.enemies.filter(e=>!e.dead).length<7){this.spawnTimer=0;this.enemies.push(m.kind==='defense'?this.defenseSpawn(this.enemies.length,'raider'):this.makeUnit(this.enemies.length%2?30:-30,-24,'raider'));this.radioMessage('IVO / New hostile signature on the perimeter.',3);}
     }
-    for(let i=this.pickups.length-1;i>=0;i--){const pickup=this.pickups[i];pickup.life-=dt;pickup.mesh.rotation.y+=dt;if(distance(p,pickup.mesh.position)<2.4){this.player.hp=Math.min(this.player.max,this.player.hp+45);pickup.life=0;this.tone(800,.12,.03);}if(pickup.life<=0){pickup.mesh.removeFromParent();pickup.mesh.geometry.dispose();(pickup.mesh.material as T.Material).dispose();this.pickups.splice(i,1);}}
+
     if(this.player.dead||this.player.hp<=0||this.convoyHealth<=0||this.relayHealth<=0){this.fail();return;}
     if(this.objectiveProgress()>=1){this.complete();return;}
     this.hudTimer+=dt;if(this.hudTimer>.1){this.hudTimer=0;this.updateHud();}
@@ -350,15 +349,15 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.world.fx.impact(cover.m
     const state=`${available}:${this.weapon}:${this.specialAmmo.join()}`;
     if(picker.dataset.state!==state){picker.dataset.state=state;picker.innerHTML=['CANNON','AUTOCANNON','ROCKETS','LASER','ARC ROCKET'].map((name,i)=>`<button data-weapon="${i+1}" aria-pressed="${this.weapon===i}" ${!this.weaponAvailable(i)?'disabled':''}><strong>${i+1} · ${name}</strong><small>${i>=3?(this.specialAmmo[i-3]>0?this.specialAmmo[i-3]+' shots · '+(i===3?'Direct beam':'Over cover'):'Find map cache'):i>=available?(i===1?'Clear First Light':'Clear Homeward'):['Heavy single shot','Rapid fire','Area damage'][i]}</small></button>`).join('');}
     this.el('weapon-label').textContent=weaponNames[this.weapon]+(this.weapon>=3?' · '+this.specialAmmo[this.weapon-3]:'')+' ▴';this.el('weapon').setAttribute('aria-label','Choose weapon: '+weaponNames[this.weapon]);this.el('reload-label').textContent=this.reload>0?`${this.reload.toFixed(1)}s`:'READY';this.el('reload-fill').style.width=`${(1-clamp(this.reload/this.reloadDuration(),0,1))*100}%`;
-    this.el('shield-label').textContent=this.shieldCooldown>0?`SHIELD ${Math.ceil(this.shieldCooldown)}s`:'SHIELD';this.el('repair-label').textContent=`REPAIR ×${this.repairs}`;
-    (this.el('shield') as HTMLButtonElement).disabled=this.shieldCooldown>0;(this.el('repair') as HTMLButtonElement).disabled=this.repairs===0||this.player.hp>=this.player.max;
+    this.el('shield-label').textContent=this.shieldCooldown>0?`SHIELD ${Math.ceil(this.shieldCooldown)}s`:'SHIELD';this.el('repair-label').textContent='FIND REPAIR';
+    (this.el('shield') as HTMLButtonElement).disabled=this.shieldCooldown>0;(this.el('repair') as HTMLButtonElement).disabled=false;
     this.el('artillery-label').textContent=this.artilleryCooldown>0?`STRIKE ${Math.ceil(this.artilleryCooldown)}s`:'STRIKE';(this.el('artillery') as HTMLButtonElement).disabled=this.artilleryCooldown>0;
     const ctx=this.mini.getContext('2d')!;ctx.fillStyle='#142328';ctx.fillRect(0,0,176,132);ctx.strokeStyle='#3b5557';ctx.strokeRect(5,5,166,122);
     const map=(point:Point)=>({x:point.x/(BOUNDS.x*2)*166+88,y:point.z/(BOUNDS.z*2)*122+66});
     if(this.world.environment.biome==='river'){const q=map({x:0,z:28});ctx.fillStyle='#398d9f';ctx.fillRect(5,q.y,166,8/120*122);for(const x of [-35,0,35]){const b=map({x,z:26});ctx.fillStyle='#baac82';ctx.fillRect(b.x-5,b.y,10,12/120*122);}}
     for(const c of this.world.covers){if(c.hp<=0)continue;const q=map(c);ctx.fillStyle=c.kind==='pine'?'#51845b':c.kind==='house'?'#ac7858':c.kind==='fuelcrate'?'#ff8955':'#667770';ctx.fillRect(q.x-2,q.y-2,4,4);}
     if(this.world.ring.visible){const q=map(this.world.ring.position);ctx.strokeStyle='#ffbd70';ctx.beginPath();ctx.arc(q.x,q.y,9,0,Math.PI*2);ctx.stroke();}
-    for(const a of this.world.activities){if(a.spent)continue;const q=map(a);ctx.fillStyle=a.kind==='repair'?'#75ffbd':a.kind==='supply'?'#70d9ff':a.kind==='laser'?'#8bffff':a.kind==='arc'?'#c392ff':'#ff7055';ctx.fillRect(q.x-2,q.y-2,4,4);}
+    for(const a of this.world.activities){if(a.spent)continue;const q=map(a);ctx.fillStyle=a.kind==='repair'?'#75ffbd':a.kind==='supply'?'#70d9ff':a.kind==='laser'?'#8bffff':a.kind==='arc'?'#c392ff':'#ff7055';if(a.kind==='repair'){ctx.fillRect(q.x-3,q.y-1,6,2);ctx.fillRect(q.x-1,q.y-3,2,6);}else ctx.fillRect(q.x-2,q.y-2,4,4);}
     for(const u of [this.player,...this.enemies]){if(u.dead)continue;const q=map(u.visual.root.position);ctx.fillStyle=u===this.player?'#a4ffe0':'#ff7a5d';ctx.beginPath();ctx.arc(q.x,q.y,u===this.player?3:this.isInfantry(u)?1.2:2,0,Math.PI*2);ctx.fill();}
     if(this.convoy){const q=map(this.convoy.position);ctx.fillStyle='#ffcb84';ctx.fillRect(q.x-3,q.y-3,6,6);}
   }

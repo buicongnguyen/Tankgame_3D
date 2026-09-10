@@ -11,11 +11,11 @@ Lead Kestrel through nine operations to reopen the Meridian evacuation route: cl
 - Independently aimed turret, directional armor and real projectile travel.
 - Blender trees, houses, stone/steel walls, bridges and rocky hills.
 - Water, off-road snow and mud change tank speed; bridge and road routes preserve speed.
-- Destructible cover, house medical salvage, supply crates, explosive fuel drums and gasoline crates.
+- Destructible cover, supply crates, explosive fuel drums and gasoline crates.
 - Cannon, unlockable autocannon and siege rockets, plus collectible pulse laser and arc rockets.
 - Three distinct bosses: Rail Titan, Tempest Carrier and the six-legged Iron Sovereign, with attack warnings and exposed-core windows.
 - Blender riflemen and rocketeers support enemy armor across the campaign.
-- Shield, consumable repair and field repair pickups.
+- Shield and fixed green repair centers.
 - Three difficulty modes; mission checkpoints, retries and replay.
 - Responsive command screen, minimap, objective HUD and simultaneous touch sticks.
 - Optional synthesized combat audio; low graphics mode; locally bundled fonts.
@@ -45,10 +45,10 @@ The browser tests use controlled integration fixtures for mission edge cases, al
 | Aim/fire | Mouse or I/J/K/L aim; hold click, Space or F to fire | Right stick |
 | Switch weapon | 1 / 2 / 3 / 4 / 5 | Tap weapon panel, then choose a gun |
 | Protective shield | Q | Shield button |
-| Repair | E | Repair button |
+| Find repair center | E | Find Repair button |
 | Pause | Escape | Pause button |
 
-Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within 12 meters of the convoy to move it. Capture progress requires occupying the amber ring without enemies inside it. The shield lasts three seconds and recharges in fourteen seconds. Each mission provides one repair kit. Settings and campaign checkpoints save in this browser; clearing site data resets them.
+Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within 12 meters of the convoy to move it. Capture progress requires occupying the amber ring without enemies inside it. The shield lasts three seconds and recharges in fourteen seconds. Healing during a mission is available only at repair centers. Settings and campaign checkpoints save in this browser; clearing site data resets them.
 
 ## Rebuild the Blender assets
 
@@ -86,7 +86,7 @@ Game models and narrative are authored for this project. Barlow and Barlow Conde
 
 ## Battlefield update
 
-Explore a 144 × 120 m combat zone with flank cover, green repair pads, blue supply caches and proximity mines. **R / STRIKE** calls three artillery shells at your aim point; stay clear of the marked circles. Supplies provide a repair kit, sortie-only rockets, 25 seconds of boosted damage and a fresh strike.
+Explore a 144 × 120 m combat zone with flank cover, green repair pads, blue supply caches and proximity mines. **R / STRIKE** calls three artillery shells at your aim point; stay clear of the marked circles. Supplies provide sortie-only rockets, 25 seconds of boosted damage and a fresh strike.
 
 Shell tracers, rocket exhaust, muzzle flashes, debris, shock rings, smoke, dust and persistent scorched wrecks replace the original simple hit/death effects. The escort route is now 98 m long. Effects are capped and reduced in low graphics mode.
 
@@ -106,6 +106,8 @@ Every stage completion, including the two campaign endings, offers **Shop · Upg
 
 ## Combat usability update
 
-Shop upgrades have shield, damage and reload icons. Every second enemy tank destroyed drops a labeled weapon box, alternating 12 laser shots and 6 arc rockets; drive over it to collect. These field drops last for the sortie and do not purchase permanent ownership. Infantry do not trigger tank drops, and existing repair drops remain.
+Shop upgrades have shield, damage and reload icons. Every second enemy tank destroyed drops a labeled weapon box, alternating 12 laser shots and 6 arc rockets; drive over it to collect. These field drops last for the sortie and do not purchase permanent ownership. Infantry do not trigger tank drops, and no health pickups are dropped.
 
-Both defense missions start Kestrel near the uplink. Initial opposition and reinforcements spawn at map corners and approach the center; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, strike with R, shield with Q and repair with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
+Both defense missions start Kestrel near the uplink. Initial opposition and reinforcements spawn at map corners and approach the center; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, strike with R, shield with Q and locate a repair center with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
+
+Repair centers are large green circular service pads, marked with a green cross on the minimap. Drive within 3 m to restore up to 32 HP per second; each center provides 160 HP per mission. Tank wrecks, houses, weapon boxes and supply boxes do not heal. E / Find Repair reports the nearest available center and never restores health remotely.
