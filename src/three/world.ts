@@ -115,7 +115,24 @@ export class World {
   }
   private box(w:number,h:number,d:number,color:number,x:number,y:number,z:number,group=this.arena){
     const mesh=new T.Mesh(new T.BoxGeometry(w,h,d),new T.MeshStandardMaterial({color,roughness:.95}));
-    mesh.position.set(x,y,z);mesh.receiveShadow=true;mesh.castShadow=true;mesh.userData.owned=true;group.add(mesh);return mesh;
+    mesh.position.set(x,y,z);mesh.receiveShadow=true;mesh.castShadow=true;mesh.userData.owned=true;mesh.userData.staticBatch=true;group.add(mesh);return mesh;
+  }
+  private batchScenery(){
+    // Merge static scenery by material/shadow behavior. Cover remains independent and destructible.
+    const buckets=new Map<string,{geometries:T.BufferGeometry[];material:T.Material;shadow:boolean}>();
+    this.arena.updateMatrixWorld(true);
+    const meshes:T.Mesh[]=[];
+    this.arena.traverse(o=>{if(o instanceof T.Mesh&&o.userData.staticBatch&&o.material instanceof T.MeshStandardMaterial)meshes.push(o);});
+    for(const mesh of meshes){
+      const material=mesh.material as T.MeshStandardMaterial,key=`${material.color.getHex()}:${mesh.castShadow}`;
+      let bucket=buckets.get(key);if(!bucket){bucket={geometries:[],material:material.clone(),shadow:mesh.castShadow};buckets.set(key,bucket);}
+      bucket.geometries.push(mesh.geometry.clone().applyMatrix4(mesh.matrixWorld));mesh.removeFromParent();mesh.geometry.dispose();material.dispose();
+    }
+    for(const bucket of buckets.values()){
+      const geometry=mergeGeometries(bucket.geometries);bucket.geometries.forEach(g=>g.dispose());
+      if(!geometry){bucket.material.dispose();continue;}
+      const mesh=new T.Mesh(geometry,bucket.material);mesh.castShadow=bucket.shadow;mesh.receiveShadow=true;mesh.userData.owned=true;this.arena.add(mesh);
+    }
   }
   build(index:number,kind:string) {
     this.clear();
@@ -147,7 +164,7 @@ export class World {
     }
     // Extraction pylons frame the road.
     for(const x of [-4,4]){this.box(.45,3.2,.45,0x3e5751,x,1.6,-51);this.box(.65,.2,.65,0x98f3bf,x,3.3,-51);}
-    this.activities=buildActivities(this.arena);
+    this.batchScenery();this.activities=buildActivities(this.arena);
     this.target.set(0,0,0);
   }
   settings(low:boolean){this.low=low;this.fx.low=low;this.renderer.setPixelRatio(Math.min(devicePixelRatio,low?1:1.6));this.renderer.shadowMap.enabled=!low;this.resize();}
