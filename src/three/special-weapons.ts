@@ -5,7 +5,7 @@ import {BOUNDS} from './activities';
 export class SpecialWeapons{
  beams:{mesh:T.Mesh;life:number}[]=[];
  arcs:{mesh:T.Mesh;marker:T.Mesh;from:T.Vector3;target:T.Vector3;age:number;duration:number;damage:number}[]=[];
- remove(mesh:T.Mesh){mesh.removeFromParent();mesh.geometry.dispose();(mesh.material as T.Material).dispose();}
+ remove(mesh:T.Mesh){mesh.removeFromParent();if(mesh.userData.shared)return;mesh.geometry.dispose();(mesh.material as T.Material).dispose();}
  clear(){for(const b of this.beams)this.remove(b.mesh);for(const a of this.arcs){this.remove(a.mesh);this.remove(a.marker);}this.beams=[];this.arcs=[];}
  fire(g:Game,w:number){
   const start=g.player.visual.root.position.clone();start.y=1.5;
@@ -19,14 +19,14 @@ export class SpecialWeapons{
   }else{
    const offset=g.aimPoint.clone().sub(start);offset.y=0;if(offset.length()>45)offset.setLength(45);
    const target=start.clone().add(offset);target.set(clamp(target.x,-BOUNDS.x,BOUNDS.x),0,clamp(target.z,-BOUNDS.z,BOUNDS.z));
-   const mesh=new T.Mesh(new T.ConeGeometry(.25,1.5,8).rotateX(Math.PI/2),new T.MeshStandardMaterial({color:0xc392ff,emissive:0x593392}));mesh.position.copy(start);g.world.entities.add(mesh);
+   const mesh=g.world.rocket();mesh.position.copy(start);g.world.entities.add(mesh);
    const marker=new T.Mesh(new T.RingGeometry(6.8,7,48),new T.MeshBasicMaterial({color:0xc392ff,side:T.DoubleSide,transparent:true,opacity:.65}));marker.rotation.x=-Math.PI/2;marker.position.copy(target).y=.1;g.world.entities.add(marker);
    this.arcs.push({mesh,marker,from:start,target,age:0,duration:1.5,damage});g.tone(140,.18,.05);
   }
  }
  update(g:Game,dt:number){
   for(let i=this.beams.length-1;i>=0;i--){const b=this.beams[i];b.life-=dt;if(b.life<=0){this.remove(b.mesh);this.beams.splice(i,1);}else (b.mesh.material as T.MeshBasicMaterial).opacity=b.life/.18;}
-  for(let i=this.arcs.length-1;i>=0;i--){const a=this.arcs[i];a.age+=dt;const t=Math.min(1,a.age/a.duration),previous=a.mesh.position.clone();a.mesh.position.lerpVectors(a.from,a.target,t);a.mesh.position.y+=(4*t*(1-t))*16;const forward=a.mesh.position.clone().sub(previous);if(forward.lengthSq()>0)a.mesh.lookAt(a.mesh.position.clone().add(forward));if(g.trailClock<=0)g.world.fx.smoke(a.mesh.position,.75,0xafa6bf);
+  for(let i=this.arcs.length-1;i>=0;i--){const a=this.arcs[i];a.age+=dt;const t=Math.min(1,a.age/a.duration),previous=a.mesh.position.clone();a.mesh.position.lerpVectors(a.from,a.target,t);a.mesh.position.y+=(4*t*(1-t))*16;const forward=a.mesh.position.clone().sub(previous);if(forward.lengthSq()>0)a.mesh.lookAt(a.mesh.position.clone().add(forward));if(g.trailClock<=0)g.world.rocketTrail(a.mesh);
    if(t>=1){g.world.fx.impact(a.target.clone().setY(.8),true);g.explode(a.target,7,a.damage);this.remove(a.mesh);this.remove(a.marker);this.arcs.splice(i,1);}
   }
  }

@@ -7,7 +7,7 @@ import { CombatEffects } from './effects';
 import { BOUNDS, buildActivities } from './activities';
 import type { Activity } from './activities';
 export interface TankVisual { root: T.Group; hull: T.Object3D; turret: T.Object3D; muzzle: T.Object3D; bar: T.Mesh; beam: T.Mesh; }
-export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill'; hp: number; mesh: T.Group; }
+export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate'; hp: number; mesh: T.Group; }
 interface Effect { mesh: T.Mesh; life: number; max: number; velocity: T.Vector3; }
 const scratch = new T.Vector3();
 export class World {
@@ -60,7 +60,7 @@ export class World {
   }
   async load() {
     const loader=new GLTFLoader();
-    await Promise.all(['tank','transport','barricade','crate','barrel','relay','pine','house','stonewall','steelwall','bridge','hill','rifleman','rocketeer','boss-rail','boss-missile','boss-walker'].map(async name=>{
+    await Promise.all(['tank','transport','barricade','crate','barrel','relay','pine','house','stonewall','steelwall','bridge','hill','rifleman','rocketeer','boss-rail','boss-missile','boss-walker','rocket','fuelcrate'].map(async name=>{
       const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/${name}.glb`);
       const root=gltf.scene;
       root.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true; o.receiveShadow=true;}});
@@ -69,19 +69,20 @@ export class World {
     // Tank pieces become a handful of material batches while the turret pivot and muzzle remain independent.
     const tank=this.templates.get('tank')!;
     tank.updateMatrixWorld(true);
-    for (const part of [tank.getObjectByName('Hull')!,tank.getObjectByName('Turret')!,...['pine','house','stonewall','steelwall','bridge','hill'].map(name=>this.templates.get(name)!)]) {
+    for (const part of [tank.getObjectByName('Hull')!,tank.getObjectByName('Turret')!,...['pine','house','stonewall','steelwall','bridge','hill','rocket','fuelcrate'].map(name=>this.templates.get(name)!)]) {
       part.updateMatrixWorld(true);
       const inverse=part.matrixWorld.clone().invert();
-      const buckets=new Map<T.Material,T.BufferGeometry[]>();
-      const meshes:T.Mesh[]=[];
-      part.traverse(o=>{if(o instanceof T.Mesh && !Array.isArray(o.material)){
+      const buckets=new Map<string,{material:T.Material;geometries:T.BufferGeometry[];sources:T.Mesh[]}>();
+      part.traverse(o=>{if(o instanceof T.Mesh&&!Array.isArray(o.material)){
         const g=o.geometry.clone().applyMatrix4(inverse.clone().multiply(o.matrixWorld));
-        const batch=buckets.get(o.material)||[]; batch.push(g); buckets.set(o.material,batch); meshes.push(o);
+        const key=o.material.uuid+':'+Object.keys(g.attributes).sort().join(',')+':'+!!g.index;
+        let bucket=buckets.get(key);if(!bucket){bucket={material:o.material,geometries:[],sources:[]};buckets.set(key,bucket);}
+        bucket.geometries.push(g);bucket.sources.push(o);
       }});
-      for(const mesh of meshes) mesh.removeFromParent();
-      for(const [material,geometries] of buckets){
-        const merged=mergeGeometries(geometries); geometries.forEach(g=>g.dispose());
-        if(merged){const mesh=new T.Mesh(merged,material);mesh.castShadow=true;mesh.receiveShadow=true;part.add(mesh);}
+      for(const {material,geometries,sources} of buckets.values()){
+        const merged=mergeGeometries(geometries);geometries.forEach(g=>g.dispose());
+        // Only replace originals after a successful merge. UV-less fins must never disappear.
+        if(merged){for(const mesh of sources)mesh.removeFromParent();const mesh=new T.Mesh(merged,material);mesh.castShadow=true;mesh.receiveShadow=true;part.add(mesh);}
       }
     }
   }
@@ -103,6 +104,14 @@ export class World {
     beam.userData.owned=true;beam.visible=false;this.entities.add(beam);
     this.entities.add(root);
     return {root,hull:root.getObjectByName('Hull')!,turret:root.getObjectByName('Turret')!,muzzle:root.getObjectByName('Muzzle')!,bar,beam};
+  }
+  rocketGeometry=new T.BufferGeometry();rocketMaterial=new T.MeshBasicMaterial({color:0xff9538});
+  rocket(){const mesh=new T.Mesh(this.rocketGeometry,this.rocketMaterial);mesh.add(this.clone('rocket'));mesh.userData.rocket=true;mesh.userData.shared=true;return mesh;}
+  rocketTrail(mesh:T.Object3D){
+    mesh.updateMatrixWorld(true);const exhaust=mesh.getObjectByName('Exhaust');if(!exhaust)return;const tail=new T.Vector3();exhaust.getWorldPosition(tail);
+    const backward=new T.Vector3(0,0,-1).applyQuaternion(mesh.quaternion);
+    this.fx.emit(tail,'flash',0xffc76b,.55,.07,backward.clone().multiplyScalar(3));
+    this.fx.emit(tail,'smoke',0x69737b,.95,1.5,backward.multiplyScalar(1.4).add(new T.Vector3(0,.7,0)));
   }
   enemyMaterials=new Map<string,T.MeshStandardMaterial>();
   clear() { this.environment.clear();this.fx.clear();this.wrecks=[];this.activities=[];
@@ -153,6 +162,7 @@ export class World {
       if(kind==='barricade')mesh.scale.set(2,1.3,1.5);
       this.arena.add(mesh);this.covers.push({x,z,w:kind==='barricade'?6.4:kind==='crate'?1.3:1,d:kind==='barricade'?1.8:kind==='crate'?1.3:1,kind,hp:kind==='barricade'?Infinity:kind==='crate'?55:25,mesh});
     }
+    for(const [x,z] of [[-20,9],[24,-8],[-41,-32],[39,22]]){const mesh=this.clone('fuelcrate');mesh.position.set(x,0,z);this.arena.add(mesh);this.covers.push({x,z,w:2.2,d:1.55,kind:'fuelcrate',hp:35,mesh});}
     for(let i=0;i<60;i++){
       const side=i%2?-1:1,x=side*(76+(i%3)),z=-62+Math.floor(i/2)*4.2;
       const rock=this.box(2+(i%3),1.4+(i%4)*.8,3.5,0x6d7262,x,1,z);rock.rotation.y=i*.7;

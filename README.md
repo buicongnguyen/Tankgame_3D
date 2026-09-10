@@ -11,7 +11,7 @@ Lead Kestrel through nine operations to reopen the Meridian evacuation route: cl
 - Independently aimed turret, directional armor and real projectile travel.
 - Blender trees, houses, stone/steel walls, bridges and rocky hills.
 - Water, off-road snow and mud change tank speed; bridge and road routes preserve speed.
-- Destructible cover, house medical salvage, supply crates and explosive fuel drums.
+- Destructible cover, house medical salvage, supply crates, explosive fuel drums and gasoline crates.
 - Cannon, unlockable autocannon and siege rockets, plus collectible pulse laser and arc rockets.
 - Three distinct bosses: Rail Titan, Tempest Carrier and the six-legged Iron Sovereign, with attack warnings and exposed-core windows.
 - Blender riflemen and rocketeers support enemy armor across the campaign.
@@ -59,7 +59,7 @@ Editable source: `assets/blender/steel-front.blend`. Generator: `tools/blender/b
 npm run test:assets
 ```
 
-Use your own Blender executable location on another machine. Exported assets total 296,140 bytes; the tank has 2,024 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
+Use your own Blender executable location on another machine. The 19 exported assets total 598,224 bytes; the tank has 2,024 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
 
 ## Architecture and planning
 
@@ -95,3 +95,7 @@ Environment selection, behavior, source art and scope: [Environment expansion](d
 Infantry roles, weapon caches and ammunition: [Infantry and special weapons](docs/INFANTRY_AND_SPECIAL_WEAPONS.md).
 
 Boss model kit, encounters and counterplay: [Boss variety](docs/BOSS_VARIETY.md).
+
+## Explosives and rocket artwork
+
+Mines hurt both sides. Gasoline crates damage nearby tanks, soldiers and destructible cover, and can set off nearby fuel containers. Rockets use a Blender model with fins, a nozzle and trailing smoke. See [combat rules and asset rebuilding](docs/EXPLOSIVES_AND_ROCKETS.md).
