@@ -14,24 +14,28 @@ test('every level has reproducible, separated supplies and varied routes',()=>{
  expect(fingerprints.size).toBe(48);expect(south).toBeGreaterThan(10);
 });
 
-test('laser pierces enemies and one concrete, stops at second and breaks both after two upgraded hits',async({page})=>{
+test('upgraded laser pierces one concrete and never damages either barrier after repeated shots',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
  const result=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.enemies=[];g.player.visual.root.position.set(0,0,35);g.player.aim=Math.PI;
  const targets=[28,12,-8,-30].map(z=>{const e=g.makeUnit(0,z,'heavy');e.visual.root.position.set(0,0,z);e.hp=e.max=10000;return e;});g.enemies=targets;
- const wall=(z:number,kind='barricade')=>{const mesh=g.world.clone(kind);mesh.position.set(0,0,z);g.world.arena.add(mesh);return {x:0,z,w:6,d:1.8,kind,hp:Infinity,mesh};};
- const first=wall(20),second=wall(0);g.world.covers=[second,first];g.save.upgrades.power=3;g.save.skin='inferno';g.powerBoost=25;g.specialAmmo[0]=12;g.weapon=3;
- g.shoot(g.player,true);const one=targets.map(e=>e.hp<10000),cracked=[first,second].every((c:any)=>c.laserHits===1&&c.hp>0&&c.mesh.visible);const hp=targets.map(e=>e.hp);
- g.shoot(g.player,true);const two=targets.map((e,i)=>e.hp<hp[i]),broken=[first,second].every((c:any)=>c.hp===0&&!c.mesh.visible);
- g.shoot(g.player,true);const throughBreach=targets[2].hp<10000,range=targets[3].hp===10000;
+ const wall=(z:number,kind='barricade',hp=Infinity)=>{const mesh=g.world.clone(kind);mesh.position.set(0,0,z);g.world.arena.add(mesh);return {x:0,z,w:6,d:1.8,kind,hp,mesh};};
+ const first=wall(20),second=wall(0,'stonewall',180),children=[first,second].map(c=>c.mesh.children.length);g.world.covers=[second,first];g.save.upgrades.power=3;g.save.skin='inferno';g.powerBoost=25;g.specialAmmo[0]=12;g.weapon=3;
+ g.shoot(g.player,true);const one=targets.map(e=>e.hp<10000),hp=targets.map(e=>e.hp);
+ g.shoot(g.player,true);const two=targets.map((e,i)=>e.hp<hp[i]);
+ for(let i=0;i<4;i++)g.shoot(g.player,true);
+ const intact=first.hp===Infinity&&second.hp===180&&[first,second].every((c,i)=>c.mesh.visible&&c.mesh.children.length===children[i]);
+ const stillBlocked=targets[2].hp===10000;
+ // A stone wall destroyed by another weapon no longer counts toward penetration.
+ g.hitCover(second,200);g.shoot(g.player,true);const throughBreach=second.hp<=0&&targets[2].hp<10000,range=targets[3].hp===10000;
  const steel=wall(24,'steelwall');g.world.covers=[steel];const before=targets.map(e=>e.hp);g.shoot(g.player,true);const steelStops=targets[0].hp<before[0]&&targets.slice(1).every((e,i)=>e.hp===before[i+1])&&steel.hp===Infinity;
- g.start(0);return {one,two,cracked,broken,throughBreach,range,steelStops,cleanup:g.special.beams.length===0};});
- expect(result).toEqual({one:[true,true,false,false],two:[true,true,false,false],cracked:true,broken:true,throughBreach:true,range:true,steelStops:true,cleanup:true});
+ g.start(0);return {one,two,intact,stillBlocked,throughBreach,range,steelStops,cleanup:g.special.beams.length===0};});
+ expect(result).toEqual({one:[true,true,false,false],two:[true,true,false,false],intact:true,stillBlocked:true,throughBreach:true,range:true,steelStops:true,cleanup:true});
 });
 
-test('laser hits infantry and aircraft once each and unupgraded stone takes two hits',async({page})=>{
+test('laser hits infantry and aircraft through damaged stone without damaging the stone',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const result=await page.evaluate(()=>{
  const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.enemies=[];g.player.visual.root.position.set(0,0,35);g.player.aim=Math.PI;
- const infantry=g.makeUnit(0,28,'rifleman'),heli=g.makeUnit(0,10,'boss','helicopter');heli.visual.root.position.set(0,7,10);heli.hp=10000;g.enemies=[infantry,heli];const mesh=g.world.clone('stonewall');mesh.position.set(0,0,20);const stone={x:0,z:20,w:6,d:1.4,hp:180,kind:'stonewall',mesh};g.world.covers=[stone];g.special.fire(g,3);const dead=infantry.dead,air=heli.hp<10000,first=stone.hp>0;const kills=g.infantryKills;g.special.fire(g,3);return {dead,air,first,second:stone.hp===0,once:g.infantryKills===kills};});expect(Object.values(result).every(Boolean),JSON.stringify(result)).toBe(true);
+ const infantry=g.makeUnit(0,28,'rifleman'),heli=g.makeUnit(0,10,'boss','helicopter');heli.visual.root.position.set(0,7,10);heli.hp=10000;g.enemies=[infantry,heli];const mesh=g.world.clone('stonewall');mesh.position.set(0,0,20);const stone={x:0,z:20,w:6,d:1.4,hp:7,kind:'stonewall',mesh};g.world.covers=[stone];const children=mesh.children.length;g.special.fire(g,3);const dead=infantry.dead,air=heli.hp<10000,first=stone.hp===7;const kills=g.infantryKills;for(let i=0;i<3;i++)g.special.fire(g,3);return {dead,air,first,intact:stone.hp===7&&stone.mesh.visible&&mesh.children.length===children,once:g.infantryKills===kills};});expect(Object.values(result).every(Boolean),JSON.stringify(result)).toBe(true);
 });
 
 test('all 48 real layouts keep routes, supplies and spawns clear',async({page})=>{

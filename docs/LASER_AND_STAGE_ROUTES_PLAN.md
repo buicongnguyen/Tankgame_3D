@@ -2,12 +2,12 @@
 
 ## Combat rules
 - Pulse laser has a 60 m range and damages every living enemy intersecting the beam once per shot, including infantry and airborne bosses. Armor and boss vulnerability still apply.
-- A beam passes through the first concrete barricade or stone wall, damaging enemies behind it. The second concrete barrier takes the hit and stops that shot, even when that hit destroys it. Steel, hills, houses, trees and other cover stop the beam at the first contact.
-- Concrete takes two laser hits to collapse, regardless of damage upgrades or skin. A cracked surface marks the first hit. The next shot can use a previously opened breach. Existing cannon, explosion and destructible stone-wall behavior remain useful.
+- A beam passes through the first concrete barricade or stone wall, damaging enemies behind it. The second concrete barrier stops that shot. Neither concrete barrier takes laser damage. Steel, hills, houses, trees and other cover stop the beam at the first contact.
+- Repeated laser hits, damage upgrades and skins leave concrete intact, with no damage cracks. Existing cannon and explosion damage to destructible stone walls remains unchanged.
 - Resolve ordered intersections before applying damage so chain explosions and salvage do not change which obstacles stop the current shot. Keep short-lived beam and dust effects bounded and use existing shared model geometry.
 
 ## Routes for all 16 stages
-North is the top of the minimap (negative Z). A thin amber route and small ground chevrons show the direction; they are guidance, not a restriction on player movement. Concrete sections interrupt the old center lane, leaving broad alternating gaps. Outer flanks stay accessible, and the laser can create shortcuts. Reserve road clearance before placing scenery, rather than removing collisions after rendering.
+North is the top of the minimap (negative Z). A thin amber route and small ground chevrons show the direction; they are guidance, not a restriction on player movement. Concrete sections interrupt the old center lane, leaving broad alternating gaps. Outer flanks and concrete gaps stay accessible; the laser fires through cover without opening shortcuts. Reserve road clearance before placing scenery, rather than removing collisions after rendering.
 
 | Stage | Route / purpose | Supply distribution |
 | --- | --- | --- |
@@ -47,7 +47,7 @@ Each level has its own seeded supply layout. Level 2 mirrors suitable route bend
 6. Update manual, shop laser description and radio cues to match the actual rules.
 
 ## Acceptance and review
-- Beam: multiple enemies; one concrete then enemy; second concrete blocks; two upgraded/unupgraded hits destroy; steel blocks; out-of-range targets safe; dead units and chain explosions cannot cause duplicate hits; restart cleans visuals.
+- Beam: multiple enemies; one concrete then enemy; second concrete blocks; repeated upgraded/unupgraded hits leave both barriers intact; steel blocks; out-of-range targets safe; dead units and chain explosions cannot cause duplicate hits; restart cleans visuals.
 - All 48 layouts: spawn clearance, supply count/spacing, route and pickups reachable without owning a laser, safe objectives and convoy swept footprint, route variation and reproducible retry.
 - Every escort stage/level: actual waypoint simulation reaches extraction, stops for obstacles/player, does not teleport or complete after only changing Z; time target leaves combat allowance.
 - Health/shield pickups: no wasted full-health collection, capped healing/shield, once-only consumption, distinct mobile silhouettes and minimap symbols.
