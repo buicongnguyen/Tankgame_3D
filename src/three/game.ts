@@ -1,3 +1,4 @@
+import { rocketTarget } from './rocket-target';
 import { SKINS, getSkin, buySkin } from './skins';
 import * as T from 'three';
 import { BossCombat, BOSS, bossKind } from './bosses';
@@ -202,7 +203,9 @@ export class Game {
     if(this.input.touchAiming||this.input.hasTouchAim)this.aimPoint.set(p.x+this.input.aim.x*28,0,p.z+this.input.aim.z*28);
     else if(this.input.hasMouse){this.ray.setFromCamera(this.input.mouse,this.world.camera);this.ray.ray.intersectPlane(this.plane,this.aimPoint);}
     else this.aimPoint.set(p.x,0,p.z-15);
+    if(this.weapon===4){const target=rocketTarget(p,this.aimPoint,this.enemies.filter(e=>!e.dead).map(e=>e.visual.root.position),this.input.touchAiming||this.input.hasTouchAim);this.aimPoint.set(target.x,0,target.z);}
     this.player.aim=turnToward(this.player.aim,Math.atan2(this.aimPoint.x-p.x,this.aimPoint.z-p.z),dt*9);
+    this.world.cursor.scale.setScalar(this.weapon===4?7/.78:1);(this.world.cursor.material as T.MeshBasicMaterial).color.setHex(this.weapon===4?0xc392ff:0xc0ffdf);
     this.world.cursor.visible=true;this.world.cursor.position.set(this.aimPoint.x,.07,this.aimPoint.z);
     this.reload=Math.max(0,this.reload-dt);this.shieldTime=Math.max(0,this.shieldTime-dt);this.shieldCooldown=Math.max(0,this.shieldCooldown-dt);
     this.world.shield.visible=this.shieldTime>0;this.world.shield.position.copy(p).y=1;
