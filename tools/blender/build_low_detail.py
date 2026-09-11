@@ -10,12 +10,16 @@ for source in sorted((ROOT / 'public/models').glob('*.glb')):
         continue
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=str(source))
+    frontier = source.stem in ['glacier','volcano','volcanic-rock','palm','jungle-tree','cityblock']
     before = after = 0
     for obj in list(bpy.data.objects):
         if obj.type != 'MESH':
             continue
         obj.data.calc_loop_triangles()
         before += len(obj.data.loop_triangles)
+        if frontier and obj.name.startswith('Fine '):
+            bpy.data.objects.remove(obj, do_unlink=True)
+            continue
         bpy.context.view_layer.objects.active = obj
         # Retain every surface, rig and attachment; simplify bevels and curved parts.
         # Planar dissolve removes exported triangle diagonals before decimation.
@@ -27,11 +31,13 @@ for source in sorted((ROOT / 'public/models').glob('*.glb')):
         obj.data.calc_loop_triangles()
         if len(obj.data.loop_triangles) > 12:
             decimate = obj.modifiers.new('Mobile silhouette', 'DECIMATE')
-            decimate.ratio = .30
+            decimate.ratio = .18 if frontier else .30
             decimate.use_collapse_triangulate = True
             bpy.ops.object.modifier_apply(modifier=decimate.name)
         obj.data.calc_loop_triangles()
         after += len(obj.data.loop_triangles)
+        if frontier and obj.data.has_custom_normals:
+            bpy.ops.mesh.customdata_custom_splitnormals_clear()
     target = OUT / source.name
     bpy.ops.export_scene.gltf(filepath=str(target), export_format='GLB')
     report.append({'asset': source.stem, 'detailedTriangles': before, 'lowTriangles': after, 'bytes': target.stat().st_size})

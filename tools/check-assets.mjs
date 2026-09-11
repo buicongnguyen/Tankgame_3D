@@ -8,6 +8,11 @@ for(const name of names){
   const json=JSON.parse(b.subarray(20,20+b.readUInt32LE(12)).toString());
   assert.ok(json.asset.generator.includes('Blender'));
   assert.ok(!json.images?.some(i=>i.uri));
+  if(['glacier','volcano','volcanic-rock','palm','jungle-tree','cityblock'].includes(name)){
+    assert.ok(json.materials.some(m=>m.normalTexture),`${name} needs its authored normal detail`);
+    for(const img of json.images??[]){const v=json.bufferViews[img.bufferView],start=28+b.readUInt32LE(12)+(v.byteOffset??0),data=b.subarray(start,start+v.byteLength);assert.equal(img.mimeType,'image/png');assert.ok(data.readUInt32BE(16)<=128&&data.readUInt32BE(20)<=128,`${name} texture exceeded its mobile budget`);}
+  }
+
   let triangles=0;
   for(const mesh of json.meshes)for(const p of mesh.primitives)triangles+=(p.indices!==undefined?json.accessors[p.indices].count:json.accessors[p.attributes.POSITION].count)/3;
   assert.ok(triangles<(name==='tank'?12000:3000));
@@ -32,5 +37,5 @@ for(const name of names){
 }
 assert.ok(total<3_000_000);console.log(`Total runtime GLBs: ${total} bytes`);
 
-assert.ok(lowTotal<1_200_000);assert.ok(lowTriangles<highTriangles*.4);
+assert.ok(lowTotal<1_500_000);assert.ok(lowTriangles<highTriangles*.4);
 console.log(`Low tier: ${lowTotal} bytes; ${lowTriangles} / ${highTriangles} triangles (${Math.round((1-lowTriangles/highTriangles)*100)}% fewer)`);

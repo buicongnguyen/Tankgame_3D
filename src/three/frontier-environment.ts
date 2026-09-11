@@ -1,3 +1,4 @@
+import {groundTexture,sandRipples} from './frontier-surfaces';
 import * as T from 'three';
 import type {World,Cover} from './world';
 import {ACTIVITY_LAYOUT} from './activities';
@@ -17,14 +18,15 @@ export function buildFrontier(world:World,biome:Biome){
   const mesh=new T.Mesh(geometry,new T.MeshStandardMaterial({color,roughness}));mesh.rotation.x=-Math.PI/2;mesh.position.set(x,y,z);mesh.userData.owned=true;mesh.receiveShadow=true;world.arena.add(mesh);return mesh;
  };
  for(const region of terrainRegions(biome)){
-  const ice=region.kind==='ice';const patch=plane(new T.CircleGeometry(1,48),ice?0x78bbd1:0x9c713d,region.x,region.z,.04,ice?.18:1);patch.scale.set(region.rx,region.rz,1);
+  const ice=region.kind==='ice';const patch=plane(new T.CircleGeometry(1,48),ice?0x78bbd1:0x9c713d,region.x,region.z,.04,ice?.18:1);patch.scale.set(region.rx,region.rz,1);if(!ice)(patch.material as T.MeshStandardMaterial).map=groundTexture('desert');
   if(ice){
    const rim=plane(new T.RingGeometry(.975,1,48),0xbfe4e7,region.x,region.z,.052);rim.scale.set(region.rx,region.rz,1);
    for(let i=0;i<5;i++){
     const crack=plane(new T.PlaneGeometry(region.rx*(i%2?.48:.65),.065),0xc7e9e9,region.x+(i%3-1)*region.rx*.38,region.z+(i-2)*region.rz*.27,.055);crack.rotation.z=i*.73;
    }
-  }else for(let i=0;i<3;i++){
-   const ring=plane(new T.RingGeometry(.52+i*.14,.54+i*.14,48),0xc5a16a,region.x,region.z,.051+i*.003);ring.scale.set(region.rx,region.rz,1);
+  }else {
+   const rim=plane(new T.RingGeometry(.983,1,48),0xd8b57a,region.x,region.z,.062);rim.scale.set(region.rx,region.rz,1);
+   const ripples=plane(sandRipples(),0xc5a16a,region.x,region.z,.065);ripples.scale.set(region.rx,region.rz,1);
   }
  }
  if(biome==='glacier'){
@@ -56,7 +58,10 @@ export function buildFrontier(world:World,biome:Biome){
    plane(new T.PlaneGeometry(144,7),0x465358,0,z,.018);
    for(const x of [-34,0,34])for(let stripe=-2;stripe<=2;stripe++)plane(new T.PlaneGeometry(.45,3.7),0xb4bbaa,x+stripe*.85,z,.021);
   }
-  for(const x of [-52,-20,20,52])for(const z of [-47,-23,1,25,48])add('cityblock',x,z,8.4,7.5,400);
+  for(const x of [-52,-20,20,52])for(const z of [-47,-23,1,25,48])if(add('cityblock',x,z,8.4,7.5,400)){
+   plane(new T.PlaneGeometry(10,9),0x929b95,x,z,.045);
+   for(const dx of [-4.6,4.6])plane(new T.PlaneGeometry(.14,8.5),0xb9bcb0,x+dx,z,.059);
+  }
   for(const [x,z] of [[-39,47],[38,-46],[-40,-4],[40,32]])add('house',x,z,6,5,220);
  }
  // Native points are cheap decoration and completely disabled by Low detail.

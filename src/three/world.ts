@@ -1,3 +1,4 @@
+import {groundTexture,frontierBoundary} from './frontier-surfaces';
 import {GROUND_COLORS} from './frontier-environment';
 import MODEL_NAMES from './model-catalog.json';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -17,10 +18,10 @@ const scratch = new T.Vector3();
 export class World {
   scene = new T.Scene();
   environment=new Environment();
-  fx=new CombatEffects(this.scene); activities:Activity[]=[]; wrecks:{root:T.Group;age:number;emit:number}[]=[];
+  fx=new CombatEffects(this.scene); activities:Activity[]=[]; wrecks:{root:T.Group;scorch:T.Mesh;age:number;emit:number}[]=[];
   burnt=new T.MeshStandardMaterial({color:0x292b28,roughness:.96});
-  scorchGeometry=new T.CircleGeometry(3,24); scorchMaterial=new T.MeshBasicMaterial({color:0x28251e,transparent:true,opacity:.6,depthWrite:false});
-  camera = new T.PerspectiveCamera(43, 1, .1, 240);
+  scorchGeometry=new T.PlaneGeometry(7,7); scorchMaterial=new T.MeshBasicMaterial({color:0x28251e,map:this.fx.texture,transparent:true,opacity:.78,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-2});
+  camera = new T.PerspectiveCamera(43, 1, .5, 240);
   renderer: T.WebGLRenderer;
   arena = new T.Group();
   entities = new T.Group();
@@ -61,8 +62,8 @@ export class World {
     this.scene.add(this.arena,this.entities);
     this.ring = new T.Mesh(new T.RingGeometry(6.6,6.9,64),new T.MeshBasicMaterial({color:0xffc272,side:T.DoubleSide,transparent:true,opacity:.85}));
     this.ring.rotation.x=-Math.PI/2; this.ring.position.set(0,.05,-13); this.scene.add(this.ring);
-    this.cursor = new T.Mesh(new T.RingGeometry(.65,.78,24),new T.MeshBasicMaterial({color:0xc0ffdf,side:T.DoubleSide}));
-    this.cursor.rotation.x=-Math.PI/2; this.cursor.position.y=.08; this.scene.add(this.cursor);
+    this.cursor = new T.Mesh(new T.RingGeometry(.65,.78,24),new T.MeshBasicMaterial({color:0xc0ffdf,side:T.DoubleSide,transparent:true,depthWrite:false}));
+    this.cursor.renderOrder=4;this.cursor.rotation.x=-Math.PI/2; this.cursor.position.y=.08; this.scene.add(this.cursor);
     this.shield = new T.Mesh(new T.SphereGeometry(2.6,20,12),new T.MeshBasicMaterial({color:0x76ffe0,transparent:true,opacity:.12,wireframe:true}));
     this.scene.add(this.shield); this.shield.visible=false;
     window.addEventListener('resize',()=>this.resize()); this.resize();
@@ -122,7 +123,7 @@ export class World {
     // live projectile attachments and the exact rig objects held by the game.
     this.scene.traverse(o=>{if(o instanceof T.Mesh&&o.userData.modelAsset){
       const geometry=surfaces.get(`${o.userData.modelAsset}/${o.userData.surfaceKey}`);
-      if(geometry)o.geometry=geometry;
+      if(geometry){o.geometry=geometry;if(o instanceof T.InstancedMesh)o.computeBoundingSphere();}
     }});
     this.templates=templates;
   }
@@ -166,7 +167,7 @@ export class World {
     this.effects=[];
     // Only dispose runtime-created resources; GLB geometry/materials are shared templates.
     for(const group of [this.arena,this.entities]){
-      group.traverse(o=>{if(o instanceof T.Sprite && o.userData.activityLabel){o.material.map?.dispose();o.material.dispose();}if(o instanceof T.Mesh && o.userData.owned){o.geometry.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}});
+      group.traverse(o=>{if(o instanceof T.InstancedMesh)o.dispose();if(o instanceof T.Sprite && o.userData.activityLabel){o.material.map?.dispose();o.material.dispose();}if(o instanceof T.Mesh && o.userData.owned){o.geometry.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}});
       group.clear();
     }
     this.covers=[];
@@ -182,7 +183,7 @@ export class World {
     const meshes:T.Mesh[]=[];
     this.arena.traverse(o=>{if(o instanceof T.Mesh&&o.userData.staticBatch&&o.material instanceof T.MeshStandardMaterial)meshes.push(o);});
     for(const mesh of meshes){
-      const material=mesh.material as T.MeshStandardMaterial,key=`${material.color.getHex()}:${mesh.castShadow}`;
+      const material=mesh.material as T.MeshStandardMaterial,key=`${material.color.getHex()}:${mesh.castShadow}:${material.map?.uuid??''}`;
       let bucket=buckets.get(key);if(!bucket){bucket={geometries:[],material:material.clone(),shadow:mesh.castShadow};buckets.set(key,bucket);}
       bucket.geometries.push(mesh.geometry.clone().applyMatrix4(mesh.matrixWorld));mesh.removeFromParent();mesh.geometry.dispose();material.dispose();
     }
@@ -194,13 +195,13 @@ export class World {
   }
   build(index:number,kind:string) {
     this.clear();
-    const ground=this.box(164,.7,144,GROUND_COLORS[BIOMES[index]]??(index===3?0x74776c:0xa69c78),0,-.4,0);ground.castShadow=false;
+    const frontier=GROUND_COLORS[BIOMES[index]]!==undefined;
+    const ground=this.box(frontier?184:164,.7,frontier?164:144,GROUND_COLORS[BIOMES[index]]??(index===3?0x74776c:0xa69c78),0,-.4,0);ground.castShadow=false;if(GROUND_COLORS[BIOMES[index]]!==undefined)(ground.material as T.MeshStandardMaterial).map=groundTexture(BIOMES[index]);
     this.box(8,.035,130,BIOMES[index]==='city'?0x465358:BIOMES[index]==='glacier'?0x8eabb7:BIOMES[index]==='desert'?0xd8bd82:0x817e65,0,-.02,0);
     for(let z=-60;z<62;z+=5)this.box(.15,.025,2,0xc3b993,0,.01,z);
     // Winter snow replaces dirt detail; nearly coplanar patches underneath can shimmer.
-    for(let i=0;i<(['snow','glacier','city'].includes(BIOMES[index])?0:86);i++){
+    for(let i=0;i<(BIOMES[index]==='snow'||frontier?0:86);i++){
       const x=Math.sin(i*19.73)*72,z=Math.cos(i*8.2)*60;
-      if(GROUND_COLORS[BIOMES[index]]!==undefined&&Math.abs(x)<7)continue;
       const patch=this.box(1.2+(i%4),.035,1.3+(i%3),GROUND_COLORS[BIOMES[index]]??(i%2?0x98936f:0xb1a680),x,.005,z);patch.rotation.y=i;patch.castShadow=false;
     }
     // Keep the central convoy road clear. Every obstacle uses the same footprint for rendering and collision.
@@ -212,11 +213,14 @@ export class World {
       this.arena.add(mesh);this.covers.push({x,z,w:kind==='barricade'?6.4:kind==='crate'?1.3:1,d:kind==='barricade'?1.8:kind==='crate'?1.3:1,kind,hp:kind==='barricade'?Infinity:kind==='crate'?55:25,mesh});
     }
     for(const [x,z] of [[-20,9],[24,-8],[-41,-32],[39,22]]){const mesh=this.clone('fuelcrate');mesh.position.set(x,0,z);this.arena.add(mesh);this.covers.push({x,z,w:2.2,d:1.55,kind:'fuelcrate',hp:35,mesh});}
+    if(GROUND_COLORS[BIOMES[index]]!==undefined)frontierBoundary(this,BIOMES[index]);
+    else {
     for(let i=0;i<60;i++){
       const side=i%2?-1:1,x=side*(76+(i%3)),z=-62+Math.floor(i/2)*4.2;
       const rock=this.box(2+(i%3),1.4+(i%4)*.8,3.5,0x6d7262,x,1,z);rock.rotation.y=i*.7;
     }
     for(let i=0;i<29;i++){const x=-75+i*5.4;this.box(3,2.8+(i%3),2.5,0x737762,x,1,-65);}
+    }
     this.ring.visible=['capture','defense','escort'].includes(kind);
     this.ring.position.set(0,.06,kind==='escort'?-50:-13);
     this.ring.scale.setScalar(kind==='escort'?.7:1);
@@ -242,10 +246,10 @@ export class World {
     const root=this.clone(visual.root.userData.model||'tank');root.position.copy(visual.root.position);root.scale.copy(visual.root.scale);
     root.getObjectByName('Hull')!.rotation.y=visual.hull.rotation.y;
     const turret=root.getObjectByName('Turret')!;turret.rotation.set(.28,visual.turret.rotation.y,.24);turret.position.y=.9;
-    root.traverse(o=>{if(o instanceof T.Mesh)o.material=this.burnt;});this.entities.add(root);
-    const scorch=new T.Mesh(this.scorchGeometry,this.scorchMaterial);scorch.rotation.x=-Math.PI/2;scorch.position.copy(root.position).y=.035;this.entities.add(scorch);
-    root.add(scorch);scorch.position.set(0,.035,0);
-    this.wrecks.push({root,age:0,emit:0});if(this.wrecks.length>14)this.wrecks.shift()!.root.removeFromParent();
+    root.traverse(o=>{if(o instanceof T.Mesh){o.material=this.burnt;o.receiveShadow=false;}});const core=root.getObjectByName('Core');if(core)core.visible=false;this.entities.add(root);
+    // World-space ground mark: ice/snow and boss rig scaling must not bury it.
+    const scorch=new T.Mesh(this.scorchGeometry,this.scorchMaterial);scorch.name='WreckScorch';scorch.rotation.x=-Math.PI/2;scorch.position.set(root.position.x,.14,root.position.z);scorch.renderOrder=-1;this.entities.add(scorch);
+    this.wrecks.push({root,scorch,age:0,emit:0});if(this.wrecks.length>14){const old=this.wrecks.shift()!;old.root.removeFromParent();old.scorch.removeFromParent();}
     const p=root.position.clone();p.y=1;this.fx.impact(p,true);
   }
   update(dt:number,focus:T.Vector3,menu=false){

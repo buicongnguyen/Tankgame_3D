@@ -14,7 +14,7 @@ Improve silhouettes, mechanical credibility, material separation and lighting at
 
 ## Runtime constraints
 
-Tank: 5,712 triangles versus 2,024 before. All other assets remain below 3,000 triangles each. Total 25 GLBs after the frontier expansion: 2,331,216 bytes, below the unchanged 3,000,000-byte validation limit. No downloaded texture packs, per-object dynamic lights, physics debris or postprocessing passes are added. Static meshes are batched by material within each animated pivot; named boss Core and limb groups are preserved. Low mode now also swaps in simpler Blender geometry; see the mobile detail tier below.
+Tank: 5,712 triangles versus 2,024 before. All other assets remain below 3,000 triangles each. Total 25 GLBs after the frontier expansion: 2,774,388 bytes, below the unchanged 3,000,000-byte validation limit. No downloaded texture packs, per-object dynamic lights, physics debris or postprocessing passes are added. Static meshes are batched by material within each animated pivot; named boss Core and limb groups are preserved. Low mode now also swaps in simpler Blender geometry; see the mobile detail tier below.
 
 Browser tests verify model loading, bounded batches, preserved moving limbs and weak points, rocket exhaust, destruction, skins, all mission conditions, and mobile input/layout. Software-rendered CI gets a 120-second per-test budget and 15-second UI readiness allowance; dedicated mission finish timing tests still check the actual 0.8-second sequence. Physical-device frame rate and thermal performance require hardware testing.
 
@@ -59,4 +59,10 @@ Regression coverage includes portrait/landscape touch selection, cold reload fet
 
 `build_frontier.py` creates six additional Blender assets: faceted glacier outcrops, a caldera volcano, ember-veined volcanic rocks, palms, broadleaf jungle trees and three-floor city blocks. The editable scene is `assets/blender/frontier-environments.blend`. The shared runtime/test catalog is `src/three/model-catalog.json`.
 
-The complete detailed kit uses 27,384 triangles; Low detail uses 9,059 triangles (67% fewer), with 1,175,396 bytes of GLBs. Hazard rings, terrain footprints and collision remain identical across detail settings. Rockfalls reuse pooled smoke/impact effects, allow at most three active rocks and eight fading scars, and add no dynamic lights or rigid-body debris. See the [frontier implementation plan](FRONTIER_CAMPAIGN_PLAN.md).
+The complete detailed kit uses 34,350 triangles; Low detail uses 8,952 triangles (74% fewer), with 1,293,996 bytes of GLBs. Hazard rings, terrain footprints and collision remain identical across detail settings. Rockfalls reuse pooled smoke/impact effects, allow at most three active rocks and eight fading scars, and add no dynamic lights or rigid-body debris. See the [frontier implementation plan](FRONTIER_CAMPAIGN_PLAN.md).
+
+## Frontier polish and stable wrecks
+
+`frontier_detail.py`, called by `build_frontier.py`, adds natural silhouettes, construction details, and packed albedo/normal maps of at most 128 × 128 pixels. Blender batches static meshes by material before export. Low detail omits fine decorative groups and recalculates imported normals after simplification. The detailed model budget remains 3 MB; the low-tier validation limit is now 1.5 MB to accommodate the packed surfaces (actual 1,293,996 bytes).
+
+Shared ground textures are generated once and reused. Frontier boundaries use instanced meshes, preserving their instance transforms during geometry swaps and releasing their own GPU buffers on stage changes. Wreck scorch marks use world-space placement at 0.14 m, soft edges, depth testing and polygon offset. The camera near plane is 0.5 m. Wrecks retain cast shadows while avoiding fine self-shadow shimmer. Review and validation details: [rendering and frontier review](RENDERING_AND_FRONTIER_POLISH_REVIEW.md).

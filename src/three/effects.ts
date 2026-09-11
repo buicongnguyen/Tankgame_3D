@@ -18,9 +18,10 @@ export class CombatEffects {
   emit(p:T.Vector3,kind:Kind,color:number,size:number,life:number,velocity=new T.Vector3()){
     if(this.particles.length>=(this.low?85:230))return;
     const soft=kind==='flash'||kind==='smoke'||kind==='scorch';
-    const material=new T.MeshBasicMaterial({color,transparent:true,opacity:1,depthWrite:false,map:soft?this.texture:null,blending:kind==='flash'?T.AdditiveBlending:T.NormalBlending,side:T.DoubleSide});
+    const material=new T.MeshBasicMaterial({color,transparent:true,opacity:1,depthWrite:false,map:soft?this.texture:null,blending:kind==='flash'?T.AdditiveBlending:T.NormalBlending,side:T.DoubleSide,polygonOffset:kind==='ring'||kind==='scorch',polygonOffsetFactor:-1,polygonOffsetUnits:-2});
     const mesh=new T.Mesh(soft?this.plane:kind==='ring'?this.ring:this.shard,material);mesh.position.copy(p);mesh.scale.setScalar(size);
     if(kind==='ring'||kind==='scorch')mesh.rotation.x=-Math.PI/2;
+    if(kind==='scorch')mesh.renderOrder=-1;
     this.root.add(mesh);this.particles.push({mesh,age:0,life,size,velocity,kind});
   }
   muzzle(p:T.Vector3,heading:number,rocket=false){
@@ -31,7 +32,7 @@ export class CombatEffects {
   smoke(p:T.Vector3,size=1,color=0x514d46){this.emit(p,'smoke',color,size,1.6,new T.Vector3(.35,1.5,.1));}
   impact(p:T.Vector3,large=false){
     this.emit(p,'flash',0xffc56c,large?8:2,.18);
-    const floor=p.clone();floor.y=.09;this.emit(floor,'ring',0xd7b77e,large?2:.5,large?.65:.3);
+    const floor=p.clone();floor.y=.16;this.emit(floor,'ring',0xd7b77e,large?2:.5,large?.65:.3);
     for(let i=0;i<(this.low?5:large?22:8);i++){
       const angle=Math.random()*Math.PI*2,speed=(large?12:5)*Math.random();
       this.emit(p,'spark',i%3===0?0x44413a:0xffa64d,large?.12+Math.random()*.16:.06,.6+Math.random()*.5,new T.Vector3(Math.sin(angle)*speed,2+Math.random()*8,Math.cos(angle)*speed));
@@ -55,7 +56,7 @@ export class CombatEffects {
       if(!metal)for(let i=0;i<(this.low?1:destroyed?4:1);i++)this.emit(p,'smoke',surface==='stone'?0xb0a48f:0x82715b,destroyed?2.6:.8,destroyed?1.8:.5,new T.Vector3((Math.random()-.5)*2,1.2,(Math.random()-.5)*2));
     }
     if(destroyed){
-      const ground=p.clone().setY(.085);this.emit(ground,'scorch',0x27221c,fuel?7:4,8);
+      const ground=p.clone().setY(.14);this.emit(ground,'scorch',0x27221c,fuel?7:4,8);
       if(surface==='wood'||fuel){
         // Bounded cosmetic emitters; no dynamic lights, shadows or damage volumes.
         if(this.fires.length>=(this.low?2:6))this.fires.shift();

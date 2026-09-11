@@ -56,7 +56,7 @@ Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within
 
 Tap **Graphics** on the command screen or in **Pause** to choose **Detailed** or **Low detail**. Low detail uses simpler Blender models, a smaller rendering buffer, fewer effects, and no dynamic shadows or reflection lighting. Text and touch controls retain their normal resolution. The setting saves locally and applies to the current stage without resetting your tank or mission.
 
-Only the selected model tier downloads on startup. Low detail contains 25 models totaling 1.18 MB; the tank uses 1,692 triangles instead of 5,712. Switch back to Detailed whenever desired. Actual frame rate depends on the phone.
+Only the selected model tier downloads on startup. Low detail contains 25 models totaling 1.29 MB; the tank uses 1,692 triangles instead of 5,712. Switch back to Detailed whenever desired. Actual frame rate depends on the phone.
 
 ## Rebuild the Blender assets
 
@@ -67,7 +67,7 @@ Editable sources include `assets/blender/steel-front.blend` and `assets/blender/
 npm run test:assets
 ```
 
-Use your own Blender executable location on another machine. The 25 exported assets total 2,331,216 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
+Use your own Blender executable location on another machine. The 25 exported assets total 2,774,388 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
 
 ## Architecture and planning
 
@@ -166,4 +166,14 @@ Arc rockets now adapt their landing distance to live enemies in an 18-degree con
 
 The tank now has sloped armor, layered track shoes, wheel hubs, a gun mantlet and sleeve, optics, smoke launchers and engine louvres. Vehicles gain glazing, mirrors, grilles and cargo ribs; houses gain window frames, sills, roof seams, gutters and chimney details. Supplies, bosses, infantry and foliage have additional structural geometry. Metal, rubber, glass and paint use distinct PBR responses, with reflected studio lighting in normal mode and simplified lighting in low mode.
 
-The expanded 25-model kit remains below the existing 3 MB combined budget (2,331,216 bytes). Runtime meshes are grouped by material within animated pivots; turrets, legs, muzzle/exhaust attachments and boss weak points remain independent. Five shop previews are rendered in Blender Eevee at 512 x 384. See [visual quality scope and rebuilding](docs/VISUAL_QUALITY.md). This is a more detailed browser art pass, not a claim of full AAA photorealism.
+The expanded 25-model kit remains below the existing 3 MB combined budget (2,774,388 bytes). Runtime meshes are grouped by material within animated pivots; turrets, legs, muzzle/exhaust attachments and boss weak points remain independent. Five shop previews are rendered in Blender Eevee at 512 x 384. See [visual quality scope and rebuilding](docs/VISUAL_QUALITY.md). This is a more detailed browser art pass, not a claim of full AAA photorealism.
+
+## Winter wreck stability and infantry contact
+
+Burnt wrecks use soft scorch marks placed above snow and ice, with explicit depth bias. Wrecks cast shadows but do not receive unstable self-shadows from their small mechanical details. Both the wreck and its mark are removed together when the 14-wreck limit is reached or a stage changes.
+
+Driving Kestrel into hostile infantry at **3 m/s or more** now defeats them. Stationary contact and slow nudges do not. Sand penalties and ice momentum affect actual contact speed; walls and other vehicles still stop the tank. These defeats count as infantry kills, never tank-objective progress or tank weapon-box drops. Enemy armor does not run down its own infantry.
+
+The frontier art now includes packed Blender albedo/normal maps (maximum 128 × 128), irregular ice and basalt, lava channels that follow the volcano slopes, palm leaflets, branched tree crowns, building sills/balconies/roof services, city sidewalks and textured terrain. Boundary scenery uses shared geometry instances. Low detail uses 8,952 triangles across the 25-model kit versus 34,350 in Detailed (74% fewer), with about 1.29 MB of GLBs.
+
+See the [implementation plan](docs/RENDERING_AND_FRONTIER_POLISH_PLAN.md) and [code, logic and visual review](docs/RENDERING_AND_FRONTIER_POLISH_REVIEW.md). This remains a stylized browser game; the art pass improves material and construction detail without claiming full AAA photorealism.

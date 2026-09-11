@@ -63,6 +63,8 @@ box(c,'Entrance',(0,-3.48,.8),(1.3,.12,1.6),window,0);box(c,'Awning',(0,-3.95,1.
 box(c,'Roof',(0,0,6.9),(8.1,7.1,.3),roof,.04)
 for x,y,w,d in [(-3.95,0,.18,7),(3.95,0,.18,7),(0,-3.45,8,.18),(0,3.45,8,.18)]:box(c,'Parapet',(x,y,7.2),(w,d,.5),trim,.01)
 for x in [-2,1.8]:box(c,'Roof service unit',(x,.8,7.4),(1.4,1.3,.6),roof,.05)
+from frontier_detail import refine
+refine(roots)
 for model in roots:
  bpy.ops.object.select_all(action='DESELECT');model.select_set(True)
  for child in model.children_recursive:child.select_set(True)
