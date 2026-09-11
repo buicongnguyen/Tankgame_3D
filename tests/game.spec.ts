@@ -10,7 +10,7 @@ test('real assets, desktop controls, pause, cover and UI',async({page})=>{
   const before=await page.evaluate(()=> (window as any).__steel.player.visual.root.position.z);
   await page.keyboard.down('KeyW');await expect.poll(()=>page.evaluate(()=>(window as any).__steel.player.visual.root.position.z),{timeout:30000}).toBeLessThan(before-1);await page.keyboard.up('KeyW');
   expect(await page.evaluate(()=>(window as any).__steel.player.visual.root.position.z)).toBeLessThan(before-1);
-  await page.mouse.move(700,300);await page.mouse.down();await page.waitForTimeout(1000);await page.mouse.up();
+  await page.mouse.move(700,300);await page.mouse.down();await expect.poll(()=>page.evaluate(()=>(window as any).__steel.shotsFired),{timeout:30000}).toBeGreaterThan(0);await page.mouse.up();
   expect(await page.evaluate(()=>(window as any).__steel.shotsFired)).toBeGreaterThan(0);
   await page.keyboard.press('KeyQ');await expect(page.locator('#status-line')).toHaveText('PROTECTIVE FIELD ACTIVE');
   await page.keyboard.press('Escape');await expect(page.getByRole('heading',{name:'Take a breath.'})).toBeVisible();

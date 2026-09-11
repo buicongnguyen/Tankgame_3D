@@ -1,6 +1,6 @@
 import * as T from 'three';
 export class Input {
-  keys=new Set<string>(); mouse=new T.Vector2(); hasMouse=false; firing=false;
+  keys=new Set<string>(); mouse=new T.Vector2(); hasMouse=false; firing=false; pendingFire=false;
   move={x:0,z:0}; aim={x:0,z:-1}; touchFiring=false; touchAiming=false; hasTouchAim=false;
   onAction: (action:string)=>void=()=>{};
   onPause: ()=>void=()=>{};
@@ -19,15 +19,15 @@ export class Input {
     window.addEventListener('keyup',e=>this.keys.delete(e.code));
     const pointer=(e:PointerEvent)=>{const r=canvas.getBoundingClientRect();this.hasTouchAim=false;this.mouse.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);this.hasMouse=true;};
     canvas.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')pointer(e);});
-    canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===0){pointer(e);this.firing=true;canvas.setPointerCapture(e.pointerId);}});
+    canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===0&&this.active){pointer(e);this.firing=true;this.pendingFire=true;canvas.setPointerCapture(e.pointerId);}});
     canvas.addEventListener('pointerup',()=>this.firing=false);
-    canvas.addEventListener('pointercancel',()=>this.firing=false);
+    canvas.addEventListener('pointercancel',()=>{this.firing=false;this.pendingFire=false;});
     canvas.addEventListener('contextmenu',e=>e.preventDefault());
     window.addEventListener('resize',()=>this.reset());
     window.addEventListener('blur',()=>{this.reset();this.onBackground();});
     document.addEventListener('visibilitychange',()=>{if(document.hidden){this.reset();this.onBackground();}});
   }
-  reset(){for(const reset of this.resetters)reset();this.hasTouchAim=false;this.hasMouse=false;this.keys.clear();this.firing=false;this.touchFiring=false;this.touchAiming=false;this.move={x:0,z:0};document.querySelectorAll<HTMLElement>('.stick-nub').forEach(n=>n.style.transform='translate(0px, 0px)');}
+  reset(){for(const reset of this.resetters)reset();this.hasTouchAim=false;this.hasMouse=false;this.keys.clear();this.firing=false;this.pendingFire=false;this.touchFiring=false;this.touchAiming=false;this.move={x:0,z:0};document.querySelectorAll<HTMLElement>('.stick-nub').forEach(n=>n.style.transform='translate(0px, 0px)');}
   movement(){return {x:(this.keys.has('KeyD')||this.keys.has('ArrowRight')?1:0)-(this.keys.has('KeyA')||this.keys.has('ArrowLeft')?1:0)+this.move.x,z:(this.keys.has('KeyS')||this.keys.has('ArrowDown')?1:0)-(this.keys.has('KeyW')||this.keys.has('ArrowUp')?1:0)+this.move.z};}
   bindStick(element:HTMLElement,type:'move'|'aim'){
     let owner:number|null=null;

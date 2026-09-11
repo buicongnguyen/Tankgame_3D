@@ -141,7 +141,7 @@ export class Game {
   start(index:number){this.prepare(index);this.setPhase('playing');this.world.target.copy(this.player.visual.root.position);this.world.target.z+=this.world.camera.aspect<1?8:-8;this.world.update(0,this.player.visual.root.position);this.updateHud();this.overlay.innerHTML='';this.radioMessage(index===0?'IVO / Tap SWITCH GUN or press C. Map caches refill special weapons.':MISSIONS[index].radio,9);this.last=performance.now();this.accumulator=0;this.tone(360,.12,.05);}
   action(action:string){
     if(this.phase!=='playing')return;
-    if(action==='fire'&&this.reload<=0){this.syncVisual(this.player);this.shoot(this.player,true);}
+    if(action==='fire'&&this.reload<=0){this.input.pendingFire=false;this.syncVisual(this.player);this.shoot(this.player,true);}
     if(action==='artillery'&&this.artilleryCooldown<=0)this.callArtillery();
     if(action==='shield'&&this.shieldCooldown<=0){this.shieldTime=getSkin(this.save.skin).shield;this.shieldCooldown=14;this.radioMessage(`KESTREL / Protective field active · ${this.shieldTime}s of cover.`,3);this.tone(620,.2,.04);}
     if(action==='repair'){
@@ -209,7 +209,7 @@ export class Game {
     this.world.cursor.visible=true;this.world.cursor.position.set(this.aimPoint.x,.07,this.aimPoint.z);
     this.reload=Math.max(0,this.reload-dt);this.shieldTime=Math.max(0,this.shieldTime-dt);this.shieldCooldown=Math.max(0,this.shieldCooldown-dt);
     this.world.shield.visible=this.shieldTime>0;this.world.shield.position.copy(p).y=1;
-    if((this.input.firing||this.input.touchFiring||this.input.keys.has('Space')||this.input.keys.has('KeyF'))&&this.reload<=0){this.syncVisual(this.player);this.shoot(this.player,true);}
+    if((this.input.pendingFire||this.input.firing||this.input.touchFiring||this.input.keys.has('Space')||this.input.keys.has('KeyF'))&&this.reload<=0){this.input.pendingFire=false;this.syncVisual(this.player);this.shoot(this.player,true);}
   }
   updateEnemies(dt:number){
     const m=MISSIONS[this.mission],playerPos=this.player.visual.root.position;
