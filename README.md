@@ -59,7 +59,7 @@ Editable source: `assets/blender/steel-front.blend`. Generator: `tools/blender/b
 npm run test:assets
 ```
 
-Use your own Blender executable location on another machine. The 19 exported assets total 598,224 bytes; the tank has 2,024 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
+Use your own Blender executable location on another machine. The 19 exported assets total 1,988,832 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
 
 ## Architecture and planning
 
@@ -153,3 +153,9 @@ The combat weapon panel always shows **Switch Gun**. Click or tap it to select a
 ## Arc rocket range assistance
 
 Arc rockets now adapt their landing distance to live enemies in an 18-degree cone when aiming with the touch stick or I/J/K/L. Assistance considers targets 10–45 meters away, favoring nearer aligned enemies; with no target the normal 28-meter aim remains. Mouse aim only snaps within 3 meters of an enemy, preserving deliberate ground targeting. The purple aim ring previews the seven-meter blast radius. Destinations stay fixed after launch; rockets still cross cover and blasts can hurt either side. Ordinary siege rockets remain direct-fire projectiles.
+
+## Detailed Blender visual pass
+
+The tank now has sloped armor, layered track shoes, wheel hubs, a gun mantlet and sleeve, optics, smoke launchers and engine louvres. Vehicles gain glazing, mirrors, grilles and cargo ribs; houses gain window frames, sills, roof seams, gutters and chimney details. Supplies, bosses, infantry and foliage have additional structural geometry. Metal, rubber, glass and paint use distinct PBR responses, with reflected studio lighting in normal mode and simplified lighting in low mode.
+
+The 19 models remain below the existing 3 MB combined budget (1,988,832 bytes). Runtime meshes are grouped by material within animated pivots; turrets, legs, muzzle/exhaust attachments and boss weak points remain independent. Five shop previews are rendered in Blender Eevee at 512 x 384. See [visual quality scope and rebuilding](docs/VISUAL_QUALITY.md). This is a more detailed browser art pass, not a claim of full AAA photorealism.

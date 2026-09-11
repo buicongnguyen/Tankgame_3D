@@ -1,3 +1,4 @@
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { skinPalette } from './skins';
 import * as T from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -31,6 +32,7 @@ export class World {
   effectGeometry = new T.IcosahedronGeometry(1, 0);
   effectMaterials = [0xffba66,0xf67845,0x696657,0x75f5cf].map(color => new T.MeshBasicMaterial({ color, transparent: true }));
   low = false;
+  studioEnvironment:T.Texture;
   target = new T.Vector3();
   constructor(container: HTMLElement) {
     this.renderer = new T.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -39,12 +41,15 @@ export class World {
     this.renderer.shadowMap.type = T.PCFShadowMap;
     this.renderer.outputColorSpace = T.SRGBColorSpace;
     this.renderer.toneMapping = T.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.toneMappingExposure = 1.0;
+    const room=new RoomEnvironment(),pmrem=new T.PMREMGenerator(this.renderer);
+    this.studioEnvironment=pmrem.fromScene(room,.04,.1,100,{size:64}).texture;this.scene.environment=this.studioEnvironment;this.scene.environmentIntensity=.45;
+    room.dispose();pmrem.dispose();
     container.append(this.renderer.domElement);
     this.renderer.domElement.setAttribute('aria-label','3D battlefield');
     this.scene.background = new T.Color('#b1ad90');
     this.scene.fog = new T.Fog('#b1ad90', 80, 150);
-    this.scene.add(new T.HemisphereLight(0xd5eee8,0x61513d,2.7));
+    this.scene.add(new T.HemisphereLight(0xd5eee8,0x61513d,1.6));
     this.sun = new T.DirectionalLight(0xffe4b4,3.1);
     this.sun.position.set(-28,48,20); this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048,2048);
@@ -67,14 +72,21 @@ export class World {
       root.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true; o.receiveShadow=true;}});
       this.templates.set(name,root);
     }));
-    // Tank pieces become a handful of material batches while the turret pivot and muzzle remain independent.
-    const tank=this.templates.get('tank')!;
-    tank.updateMatrixWorld(true);
-    for (const part of [tank.getObjectByName('Hull')!,tank.getObjectByName('Turret')!,...['pine','house','stonewall','steelwall','bridge','hill','rocket','fuelcrate'].map(name=>this.templates.get(name)!)]) {
+    // Batch by material within each animated pivot, preserving all moving limbs.
+    const parts:T.Object3D[]=[];
+    for(const root of this.templates.values()){
+      root.updateMatrixWorld(true);
+      const hull=root.getObjectByName('Hull'),turret=root.getObjectByName('Turret');
+      if(hull&&turret){parts.push(hull,turret);root.traverse(o=>{if(/^(Leg[0-9]|LeftLeg|RightLeg)/.test(o.name))parts.push(o);});}
+      else parts.push(root);
+    }
+    for (const part of parts) {
       part.updateMatrixWorld(true);
       const inverse=part.matrixWorld.clone().invert();
       const buckets=new Map<string,{material:T.Material;geometries:T.BufferGeometry[];sources:T.Mesh[]}>();
       part.traverse(o=>{if(o instanceof T.Mesh&&!Array.isArray(o.material)){
+        if(o.name==='Core')return; // Boss weak-point visibility remains independent.
+        let parent=o.parent;while(parent&&parent!==part){if(parts.includes(parent))return;parent=parent.parent;}
         const g=o.geometry.clone().applyMatrix4(inverse.clone().multiply(o.matrixWorld));
         const key=o.material.uuid+':'+Object.keys(g.attributes).sort().join(',')+':'+!!g.index;
         let bucket=buckets.get(key);if(!bucket){bucket={material:o.material,geometries:[],sources:[]};buckets.set(key,bucket);}
@@ -188,7 +200,7 @@ export class World {
     this.environment.build(this,index);this.batchScenery();this.activities=buildActivities(this.arena);
     this.target.set(0,0,0);
   }
-  settings(low:boolean){this.low=low;this.fx.low=low;this.renderer.setPixelRatio(Math.min(devicePixelRatio,low?1:1.6));this.renderer.shadowMap.enabled=!low;this.resize();}
+  settings(low:boolean){this.scene.environment=low?null:this.studioEnvironment;this.low=low;this.fx.low=low;this.renderer.setPixelRatio(Math.min(devicePixelRatio,low?1:1.6));this.renderer.shadowMap.enabled=!low;this.resize();}
   resize(){const w=window.innerWidth,h=window.innerHeight;this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}
   burst(position:T.Vector3,color=0,amount=12){
     for(let i=0;i<(this.low?Math.ceil(amount/2):amount)&&this.effects.length<100;i++){

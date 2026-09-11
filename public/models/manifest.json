@@ -3,33 +3,33 @@
   "assets": [
     {
       "asset": "Tank",
-      "polygons": 1028,
-      "bytes": 167692
+      "polygons": 2952,
+      "bytes": 464000
     },
     {
       "asset": "Transport",
-      "polygons": 318,
-      "bytes": 54720
+      "polygons": 998,
+      "bytes": 157376
     },
     {
       "asset": "Barricade",
-      "polygons": 130,
-      "bytes": 20016
+      "polygons": 182,
+      "bytes": 27812
     },
     {
       "asset": "Crate",
-      "polygons": 78,
-      "bytes": 12380
+      "polygons": 294,
+      "bytes": 50868
     },
     {
       "asset": "Barrel",
-      "polygons": 56,
-      "bytes": 13140
+      "polygons": 96,
+      "bytes": 20444
     },
     {
       "asset": "Relay",
-      "polygons": 162,
-      "bytes": 28192
+      "polygons": 266,
+      "bytes": 43876
     }
   ]
 }

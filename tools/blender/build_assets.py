@@ -95,6 +95,10 @@ box('Cabinet',(.0,0,1.1),(1.1,.75,1.15),armor,relay)
 for z in [1.0,1.25,1.5]: box('RelayLight',(0,-.39,z),(.75,.035,.07),light,relay,.01)
 cylinder('Dish',(0,-.14,4.2),.8,.15,white,relay,(math.pi/3,0,0),16)
 
+import sys
+sys.path.insert(0,str(Path(__file__).parent))
+from asset_detail import core
+core(tank,hull,turret,truck,wall,crate,barrel,relay,armor,trim,track,metal,light,concrete,sand,red,white)
 report=[]
 for root in roots:
     bpy.ops.object.select_all(action='DESELECT')

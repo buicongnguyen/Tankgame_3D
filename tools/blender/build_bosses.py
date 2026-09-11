@@ -40,6 +40,10 @@ for kind in ['rail','missile','walker']:
     box('Foot',leg,(side*1.55,0,-.52),(.65,.85,.55),dark)
   for x in [-.55,0,.55]:box('Cannon',turret,(x,-1.85,.38),(.22,1.7,.28),dark)
   empty('Muzzle',turret,(0,-2.8,.38))
+ import sys
+ sys.path.insert(0,str(Path(__file__).parent))
+ from asset_detail import combatant
+ combatant(hull,turret,kind)
  bpy.ops.export_scene.gltf(filepath=str(ROOT/'public/models'/('boss-'+kind+'.glb')),export_format='GLB')
  bpy.ops.wm.save_as_mainfile(filepath=str(ROOT/'assets/blender'/('boss-'+kind+'.blend')))
 print('Boss rigs exported')

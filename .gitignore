@@ -30,3 +30,5 @@ Transcribe_translate/
 /playwright-report/
 *.blend1
 /public/models/barrel.001.glb
+
+__pycache__/

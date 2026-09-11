@@ -22,6 +22,10 @@ for name in ['rifleman','rocketeer']:
  if name=='rifleman':box(torso,(.28,-.6,.16),(.14,1.05,.2),gun);empty('Muzzle',torso,(.28,-1.18,.16))
  else:
   bpy.ops.mesh.primitive_cylinder_add(vertices=8,radius=.18,depth=1.35);o=bpy.context.object;o.parent=torso;o.location=(.42,-.35,.47);o.rotation_euler.x=math.pi/2;o.data.materials.append(gun);empty('Muzzle',torso,(.42,-1.08,.47))
+ import sys
+ sys.path.insert(0,str(Path(__file__).parent))
+ from asset_detail import infantry
+ infantry(torso)
  bpy.ops.export_scene.gltf(filepath=str(ROOT/'public/models'/f'{name}.glb'),export_format='GLB')
  bpy.ops.wm.save_as_mainfile(filepath=str(ROOT/'assets/blender'/f'{name}.blend'))
 print('Infantry models exported')
