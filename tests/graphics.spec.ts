@@ -38,7 +38,7 @@ test('failed detail download keeps current graphics and allows retry',async({pag
 });
 
 test('iPhone WebKit can select low detail from pause and resume',async()=>{
- const browser=await webkit.launch();const context=await browser.newContext({viewport:{width:375,height:667},isMobile:true,hasTouch:true,deviceScaleFactor:3});const page=await context.newPage();const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ const browser=await webkit.launch({args:[]});const context=await browser.newContext({viewport:{width:375,height:667},isMobile:true,hasTouch:true,deviceScaleFactor:3});const page=await context.newPage();const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:5178/?e2e');await page.getByRole('button',{name:'DEPLOY'}).tap();await page.locator('#pause').tap();
  const graphics=page.locator('[data-action="quality"]');await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','true');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
