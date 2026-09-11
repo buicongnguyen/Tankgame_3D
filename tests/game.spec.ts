@@ -5,8 +5,10 @@ test('real assets, desktop controls, pause, cover and UI',async({page})=>{
   await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();
   expect(models.size).toBe(19);await page.screenshot({path:'test-results/command-desktop.png'});
   await page.getByRole('button',{name:'DEPLOY'}).click();await expect(page.locator('#hud')).toBeVisible();
+  // Wait for simulation frames after shader warm-up before testing held keyboard input.
+  await expect.poll(()=>page.evaluate(()=>(window as any).__steel.elapsed),{timeout:30000}).toBeGreaterThan(.05);
   const before=await page.evaluate(()=> (window as any).__steel.player.visual.root.position.z);
-  await page.keyboard.down('KeyW');await expect.poll(()=>page.evaluate(()=>(window as any).__steel.player.visual.root.position.z),{timeout:10000}).toBeLessThan(before-1);await page.keyboard.up('KeyW');
+  await page.keyboard.down('KeyW');await expect.poll(()=>page.evaluate(()=>(window as any).__steel.player.visual.root.position.z),{timeout:30000}).toBeLessThan(before-1);await page.keyboard.up('KeyW');
   expect(await page.evaluate(()=>(window as any).__steel.player.visual.root.position.z)).toBeLessThan(before-1);
   await page.mouse.move(700,300);await page.mouse.down();await page.waitForTimeout(1000);await page.mouse.up();
   expect(await page.evaluate(()=>(window as any).__steel.shotsFired)).toBeGreaterThan(0);
