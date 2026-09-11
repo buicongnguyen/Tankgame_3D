@@ -1,8 +1,11 @@
+import {normalizeDifficulty,mode} from './difficulty';
+import type {Difficulty} from './difficulty';
+export type {Difficulty} from './difficulty';
 import type {Biome} from './terrain';
 import { SKINS } from './skins';
 import type { Upgrade } from './rules';
 export type MissionKind = 'assault' | 'capture' | 'escort' | 'defense' | 'boss';
-export interface Mission { biome:Biome; parTime:number; boss?:'rail'|'missile'|'walker'; name: string; sector: string; kind: MissionKind; briefing: string; radio: string; debrief: string; objective: string; count: number; duration: number; reward: number; }
+export interface Mission { biome:Biome; parTime:number; boss?:'rail'|'missile'|'walker'|'helicopter'|'spider'|'laser'; name: string; sector: string; kind: MissionKind; briefing: string; radio: string; debrief: string; objective: string; count: number; duration: number; reward: number; }
 export const MISSIONS: Mission[] = [
   { biome:'grove', parTime:90, name: 'First Light', sector: 'MERIDIAN OUTSKIRTS', kind: 'assault', briefing: 'A distress signal is repeating from the valley. Your crew is the only one close enough to answer. Clear the outer patrol and find a way through.', radio: 'IVO / Use cover. Keep your front armor toward hostile guns.', debrief: 'The patrol is down. We found the broadcast: a rescue convoy is trapped beyond the relay.', objective: 'Clear the outer patrol', count: 3, duration: 0, reward: 180 },
   { biome:'village', parTime:90, name: 'Open Frequency', sector: 'RELAY STATION 07', kind: 'capture', briefing: 'The convoy cannot hear us. Reach the amber relay and hold it free of hostile armor for 18 seconds. The Warden network will try to take it back.', radio: 'IVO / Hold the ring for 18s. Hostiles interrupt capture.', debrief: 'A voice answers: “We have families aboard. Please tell us the road is open.” Mara turns toward the pass.', objective: 'Secure the relay · 18 seconds', count: 3, duration: 18, reward: 230 },
@@ -17,16 +20,21 @@ export const MISSIONS: Mission[] = [
   {"name": "Cinderfall", "biome": "volcanic", "parTime": 150, "sector": "ACTIVE VOLCANIC BASIN", "kind": "assault", "briefing": "Clear six armored patrols below the erupting volcano. Red circles warn where rocks will land. They damage both sides and can ignite fuel. Leave each circle before impact or lure a hostile tank into it.", "radio": "MARA / Falling rocks hit both sides. Clear the red circles.", "debrief": "The patrol breaks beneath the falling rock. Desert settlements are waiting for the relief convoy.", "objective": "Clear the volcanic patrol · dodge rockfalls", "count": 6, "duration": 0, "reward": 460},
   {"name": "Dune Lifeline", "biome": "desert", "parTime": 180, "sector": "SOUTHERN DUNE COUNTRY", "kind": "escort", "briefing": "Escort relief supplies through the desert. Dark rippled sand traps slow tanks to one quarter speed. The central road stays firm. Keep near the transport and choose side routes carefully when collecting supplies.", "radio": "MARA / Sand traps mean quarter speed. Keep the convoy road clear.", "debrief": "Water and fuel reach the desert settlements. A jungle relay is their only link to the city.", "objective": "Escort the desert supply convoy", "count": 6, "duration": 0, "reward": 480},
   {"name": "Canopy Hold", "biome": "jungle", "parTime": 0, "sector": "EQUATORIAL RELAY", "kind": "defense", "briefing": "Hold the jungle uplink for 50 seconds. Hostiles enter from the corners beneath dense broadleaf cover. Trees block shells; destroy selected trunks to open firing lanes while preserving your own cover.", "radio": "IVO / Hold for 50s. Cut firing lanes through the trees.", "debrief": "The jungle uplink reveals the last command battery, hidden among city blocks. Meridian has one final fight.", "objective": "Defend the jungle relay · 50 seconds", "count": 6, "duration": 50, "reward": 500},
-  {"name": "Citadel Dawn", "biome": "city", "parTime": 170, "boss": "rail", "sector": "MERIDIAN CITY CENTER", "kind": "boss", "briefing": "Destroy the city command Rail Titan. Apartment blocks and barricades divide the streets. Use intersections to flank it, stay behind hard cover during its red charge line, and attack the exposed core.", "radio": "MARA / Use the streets. Dodge the rail line; strike the open core.", "debrief": "The city battery falls silent. From the polar outpost to the volcanic basin, desert villages and jungle shelters, every signal now has a route home.", "objective": "Destroy the city command battery", "count": 6, "duration": 0, "reward": 600},
+  {"name": "Citadel Dawn", "biome": "city", "parTime": 170, "boss": "rail", "sector": "MERIDIAN CITY CENTER", "kind": "boss", "briefing": "Destroy the city command Rail Titan. Apartment blocks and barricades divide the streets. Use intersections to flank it, stay behind hard cover during its red charge line, and attack the exposed core.", "radio": "MARA / Use the streets. Dodge the rail line; strike the open core.", "debrief": "The city battery falls silent. A fresh tremor cuts the eastern relief road; the fault-line outposts still need Kestrel.", "objective": "Destroy the city command battery", "count": 6, "duration": 0, "reward": 600},
+  {name:'Fault Line',biome:'quake',boss:'spider',parTime:140,sector:'SEISMIC RIFT',kind:'assault',briefing:'Cross the fractured basin. Amber warnings precede tremors: rising dust marks 1.6 seconds when ground tanks cannot move. Infantry and airborne helicopters keep moving. Use cover before each quake.',radio:'IVO / Tremor warning. Ground tanks lock for 1.6s; guns still work.',debrief:'The fault-line relay holds. One flooded supply route remains.',objective:'Clear the rift patrol · brace for tremors',count:6,duration:0,reward:620},
+  {name:'Mire Crossing',biome:'marsh',boss:'helicopter',parTime:190,sector:'FLOODED LOWLANDS',kind:'escort',briefing:'Escort the last transport across the marsh. Brown water holes sink and slow tanks. Keep driving toward firm ground; traction returns in short recovery windows. The central road remains safe.',radio:'MARA / Mud holes bog down tanks. Keep steering out; the road stays firm.',debrief:'The last relief transport reaches dry ground. Every frontier settlement is connected.',objective:'Escort the marsh convoy · avoid sinking holes',count:6,duration:0,reward:650},
+
 ];
 export const SAVE_KEY = 'steel-front-3d-v1';
-export type Difficulty = 'story' | 'standard' | 'veteran';
-export interface Save { version: 1; mission: number; cleared: boolean[]; credits: number; weapons: number[]; equippedWeapon: number; skins: string[]; skin: string; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; }
-export const freshSave = (): Save => ({ version: 1, mission: 0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], equippedWeapon: 0, skins: ['classic','sunburst'], skin:'classic', upgrades: { armor: 0, power: 0, reload: 0 }, difficulty: 'standard', sound: false, low: false });
+export const LEVEL_NAMES=['Approach','Counterattack','Command battle'];
+export interface Save { version: 1; mission: number; level:number; cleared: boolean[]; credits: number; weapons: number[]; equippedWeapon: number; skins: string[]; skin: string; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; }
+export const freshSave = (): Save => ({ version: 1, mission: 0, level:0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], equippedWeapon: 0, skins: ['classic','sunburst'], skin:'classic', upgrades: { armor: 0, power: 0, reload: 0 }, difficulty: 'normal', sound: false, low: false });
 export function parseSave(raw: string | null): Save {
   try {
     const s = JSON.parse(raw || 'null');
-    if (!s || s.version !== 1 || !Number.isInteger(s.mission) || s.mission < 0 || s.mission >= s.cleared?.length || !Array.isArray(s.cleared) || ![6,9,MISSIONS.length].includes(s.cleared.length) || s.cleared.some((v: unknown) => typeof v !== 'boolean') || !Number.isInteger(s.credits) || s.credits < 0 || s.credits > 100000 || !['story','standard','veteran'].includes(s.difficulty)) return freshSave();
+    if (!s || s.version !== 1 || !Number.isInteger(s.mission) || s.mission < 0 || s.mission >= s.cleared?.length || !Array.isArray(s.cleared) || ![6,9,14,MISSIONS.length].includes(s.cleared.length) || s.cleared.some((v: unknown) => typeof v !== 'boolean') || !Number.isInteger(s.credits) || s.credits < 0 || s.credits > 100000 || !normalizeDifficulty(s.difficulty)) return freshSave();
+    s.difficulty=normalizeDifficulty(s.difficulty);s.level??=0;
+    if(!Number.isInteger(s.level)||s.level<0||s.level>2)return freshSave();
     if (!s.upgrades || ['armor','power','reload'].some(k => !Number.isInteger(s.upgrades[k]) || s.upgrades[k] < 0 || s.upgrades[k] > 3)) return freshSave();
     s.weapons ??= [];
     if(!Array.isArray(s.weapons)||s.weapons.some((w:unknown)=>!Number.isInteger(w)||Number(w)<1||Number(w)>4)||new Set(s.weapons).size!==s.weapons.length)return freshSave();
@@ -34,24 +42,34 @@ export function parseSave(raw: string | null): Save {
     s.skins=[...new Set(['classic','sunburst',...(Array.isArray(s.skins)?s.skins.filter((id:unknown)=>SKINS.some(skin=>skin.id===id)):[])])];
     if(!s.skins.includes(s.skin))s.skin='classic';
     // Extend either historical campaign length without changing purchases or progress.
-    if(s.cleared.length<MISSIONS.length){const previous=s.cleared.length,finished=s.cleared.every(Boolean);s.cleared.push(...Array(MISSIONS.length-previous).fill(false));if(finished)s.mission=previous;}
+    if(s.cleared.length<MISSIONS.length){const previous=s.cleared.length,finished=s.cleared.every(Boolean);s.cleared.push(...Array(MISSIONS.length-previous).fill(false));if(finished){s.mission=previous;s.level=0;}}
     // A checkpoint cannot unlock past a gap in the campaign.
     const firstUncleared = s.cleared.indexOf(false);
     if (firstUncleared >= 0 && (s.mission > firstUncleared || s.cleared.slice(firstUncleared).some(Boolean))) return freshSave();
     return { ...s, sound: s.sound === true, low: s.low === true };
   } catch { return freshSave(); }
 }
-export function rewardClear(save: Save, mission: number): number {
-  if (save.cleared[mission]) return 0;
-  save.cleared[mission] = true;
-  const reward = MISSIONS[mission].reward;
-  save.credits += reward;
-  save.mission = Math.min(MISSIONS.length-1, mission + 1);
+/** Advance only the next unfinished level; old stages stay available for replay. */
+export function rewardClear(save:Save,mission:number,level:number):number {
+  if(save.cleared[mission]||mission!==save.mission||level!==save.level)return 0;
+  const reward=Math.round(MISSIONS[mission].reward*(level===0?.65:level===1?.8:1));
+  save.credits+=reward;
+  if(level<2)save.level=level+1;
+  else {save.cleared[mission]=true;save.mission=Math.min(MISSIONS.length-1,mission+1);save.level=save.cleared[save.mission]?2:0;}
   return reward;
 }
+export function levelMission(index:number,level:number):Mission{
+ const m=MISSIONS[index],kind=m.kind==='boss'&&level<2?'assault':m.kind,duration=Math.round(m.duration*(level===1?1.2:1));
+ const objective=kind==='capture'?`Secure the relay · ${duration} seconds`:kind==='defense'?`Defend the uplink · ${duration} seconds`:m.kind==='boss'&&level<2?'Clear the command patrol':m.objective;
+ const briefing=m.kind==='boss'&&level<2?'Clear the command patrol before the final boss battle. Use the streets and hard cover to flank hostile armor.':m.briefing.replaceAll(`${m.duration} seconds`,`${duration} seconds`).replaceAll(`${m.duration}s`,`${duration}s`);
+ return {...m,kind,duration,objective,briefing,parTime:Math.round(m.parTime*(level===2?1.6:level===1?1.2:1))};
+}
+export const unlockedLevel=(save:Save,mission:number)=>save.cleared[mission]?2:mission===save.mission?save.level:0;
 export const weaponNames = ['120 mm cannon', '30 mm autocannon', 'Siege rockets','Pulse laser','Arc rockets'];
 export function weaponCount(save: Save): number { return Math.max(save.cleared[2]?3:save.cleared[0]?2:1,...save.weapons.filter(w=>w<3).map(w=>w+1)); }
 
 export const weaponPrices:Record<number,number>={1:120,2:180,3:360,4:420};
 export function ownsWeapon(save:Save,id:number){return id<3?id<weaponCount(save):save.weapons.includes(id);}
 export function buyWeapon(save:Save,id:number){const cost=weaponPrices[id];if(!cost||ownsWeapon(save,id)||save.credits<cost)return false;save.credits-=cost;save.weapons.push(id);save.equippedWeapon=id;return true;}
+
+export function encounterSize(index:number,level:number,difficulty:string){const settings=mode(difficulty);return {armor:MISSIONS[index].count*settings.enemies,infantry:(index<2?6:10)*settings.enemies,bosses:level===2?settings.bosses:0};}

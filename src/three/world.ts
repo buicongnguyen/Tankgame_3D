@@ -12,7 +12,7 @@ import { CombatEffects } from './effects';
 import { BOUNDS, buildActivities } from './activities';
 import type { Activity } from './activities';
 export interface TankVisual { root: T.Group; hull: T.Object3D; turret: T.Object3D; muzzle: T.Object3D; bar: T.Mesh; beam: T.Mesh; }
-export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock'; hp: number; mesh: T.Group; }
+export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; }
 interface Effect { mesh: T.Mesh; life: number; max: number; velocity: T.Vector3; }
 const scratch = new T.Vector3();
 export class World {
@@ -84,7 +84,7 @@ export class World {
       for(const root of templates.values()){
         root.updateMatrixWorld(true);
         const hull=root.getObjectByName('Hull'),turret=root.getObjectByName('Turret');
-        if(hull&&turret){parts.push(hull,turret);root.traverse(o=>{if(/^(Leg[0-9]|LeftLeg|RightLeg)/.test(o.name))parts.push(o);});}
+        if(hull&&turret){parts.push(hull,turret);root.traverse(o=>{if(/^(Leg[0-9]|LeftLeg|RightLeg|Rotor|TailRotor)/.test(o.name))parts.push(o);});}
         else parts.push(root);
       }
       for (const part of parts) {
@@ -243,7 +243,7 @@ export class World {
     }
   }
   destroyTank(visual:TankVisual){
-    const root=this.clone(visual.root.userData.model||'tank');root.position.copy(visual.root.position);root.scale.copy(visual.root.scale);
+    const root=this.clone(visual.root.userData.model||'tank');root.position.copy(visual.root.position);root.position.y=Math.max(0,root.position.y);root.scale.copy(visual.root.scale);
     root.getObjectByName('Hull')!.rotation.y=visual.hull.rotation.y;
     const turret=root.getObjectByName('Turret')!;turret.rotation.set(.28,visual.turret.rotation.y,.24);turret.position.y=.9;
     root.traverse(o=>{if(o instanceof T.Mesh){o.material=this.burnt;o.receiveShadow=false;}});const core=root.getObjectByName('Core');if(core)core.visible=false;this.entities.add(root);
@@ -260,7 +260,7 @@ export class World {
     this.camera.lookAt(this.target.x,0,this.target.z-(menu?0:3));
     for(let i=this.effects.length-1;i>=0;i--){const e=this.effects[i];e.life-=dt;if(e.life<=0){e.mesh.removeFromParent();(e.mesh.material as T.Material).dispose();this.effects.splice(i,1);continue;}e.mesh.position.addScaledVector(e.velocity,dt);e.velocity.y-=dt*9;(e.mesh.material as T.MeshBasicMaterial).opacity=e.life/e.max;}
     this.sun.position.set(focus.x-28,48,focus.z+20);this.sun.target.position.set(focus.x,0,focus.z);
-    for(const wreck of this.wrecks){wreck.age+=dt;wreck.emit-=dt;if(wreck.age<12&&wreck.emit<=0){wreck.emit=this.low?.4:.18;const p=wreck.root.position.clone();p.y=1.3;this.fx.smoke(p,1.8);if(wreck.age<4)this.fx.emit(p,'flash',0xff6b23,1.4,.35);}}
+    for(const wreck of this.wrecks){wreck.age+=dt;wreck.root.position.y=Math.max(0,wreck.root.position.y-dt*(4+wreck.age*12));wreck.emit-=dt;if(wreck.age<12&&wreck.emit<=0){wreck.emit=this.low?.4:.18;const p=wreck.root.position.clone();p.y+=1.3;this.fx.smoke(p,1.8);if(wreck.age<4)this.fx.emit(p,'flash',0xff6b23,1.4,.35);}}
     this.environment.update(dt,this.low);this.fx.update(dt,this.camera);
     this.renderer.render(this.scene,this.camera);
   }

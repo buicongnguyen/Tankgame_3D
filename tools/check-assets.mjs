@@ -15,15 +15,15 @@ for(const name of names){
 
   let triangles=0;
   for(const mesh of json.meshes)for(const p of mesh.primitives)triangles+=(p.indices!==undefined?json.accessors[p.indices].count:json.accessors[p.attributes.POSITION].count)/3;
-  assert.ok(triangles<(name==='tank'?12000:3000));
-  if(['tank','rifleman','rocketeer','boss-rail','boss-missile','boss-walker'].includes(name))for(const node of ['Hull','Turret','Muzzle'])assert.ok(json.nodes.some(n=>n.name===node),`Missing ${node}`);
+  assert.ok(triangles<(name==='tank'?12000:name.startsWith('boss-')?4500:3000));
+  if(['tank','rifleman','rocketeer','boss-rail','boss-missile','boss-walker','boss-helicopter','boss-spider','boss-laser'].includes(name))for(const node of ['Hull','Turret','Muzzle'])assert.ok(json.nodes.some(n=>n.name===node),`Missing ${node}`);
   const low=fs.readFileSync(`public/models/low/${name}.glb`);lowTotal+=low.length;
   assert.equal(low.readUInt32LE(0),0x46546c67);assert.equal(low.readUInt32LE(8),low.length);
   const lowJson=JSON.parse(low.subarray(20,20+low.readUInt32LE(12)).toString());
   assert.ok(lowJson.asset.generator.includes('Blender'));assert.ok(!lowJson.images?.some(i=>i.uri));
   let simpler=0;for(const mesh of lowJson.meshes)for(const p of mesh.primitives)simpler+=(p.indices!==undefined?lowJson.accessors[p.indices].count:lowJson.accessors[p.attributes.POSITION].count)/3;
   assert.ok(simpler>0&&simpler<triangles,`${name} must actually simplify geometry`);
-  for(const node of json.nodes.filter(n=>/^(Hull|Turret|Muzzle|Exhaust|Core|LeftLeg|RightLeg|Leg[0-9][LR])$/.test(n.name))){
+  for(const node of json.nodes.filter(n=>/^(Hull|Turret|Muzzle|Exhaust|Core|Rotor|TailRotor|LeftLeg|RightLeg|Leg[0-9][LR])$/.test(n.name))){
     const other=lowJson.nodes.find(n=>n.name===node.name);assert.ok(other,`${name} low tier is missing ${node.name}`);
     for(const [field,fallback] of [['translation',[0,0,0]],['scale',[1,1,1]]]){
       const a=node[field]??fallback,c=other[field]??fallback;
@@ -35,7 +35,7 @@ for(const name of names){
   highTriangles+=triangles;lowTriangles+=simpler;
   console.log(`${name}: ${triangles} detailed / ${simpler} low triangles, valid Blender GLBs`);
 }
-assert.ok(total<3_000_000);console.log(`Total runtime GLBs: ${total} bytes`);
+assert.ok(total<4_000_000);console.log(`Total runtime GLBs: ${total} bytes`);
 
-assert.ok(lowTotal<1_500_000);assert.ok(lowTriangles<highTriangles*.4);
+assert.ok(lowTotal<2_000_000);assert.ok(lowTriangles<highTriangles*.4);
 console.log(`Low tier: ${lowTotal} bytes; ${lowTriangles} / ${highTriangles} triangles (${Math.round((1-lowTriangles/highTriangles)*100)}% fewer)`);

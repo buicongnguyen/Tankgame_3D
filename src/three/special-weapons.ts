@@ -11,10 +11,10 @@ export class SpecialWeapons{
   const start=g.player.visual.root.position.clone();start.y=1.5;
   const damage=(w===3?150:170)*g.playerDamageMultiplier();
   if(w===3){
-   const end=start.clone().add(new T.Vector3(Math.sin(g.player.aim)*60,0,Math.cos(g.player.aim)*60));let first=1,hit:(()=>void)|null=null;
+   const end=start.clone().add(new T.Vector3(Math.sin(g.player.aim)*60,0,Math.cos(g.player.aim)*60));let hitHeight=1.5,first=1,hit:(()=>void)|null=null;
    for(const c of g.world.covers){if(c.hp<=0)continue;const t=segmentBox(start,end,c,.05);if(t!==null&&t<first){first=t;hit=()=>g.hitCover(c,damage);}}
-   for(const u of g.enemies){if(u.dead)continue;const t=segmentCircle(start,end,u.visual.root.position,g.unitRadius(u));if(t!==null&&t<first){first=t;hit=()=>g.damageUnit(u,damage,start);}}
-   end.lerpVectors(start,end,first);if(hit)hit();const delta=end.clone().sub(start);
+   for(const u of g.enemies){if(u.dead)continue;const t=segmentCircle(start,end,u.visual.root.position,g.unitRadius(u));if(t!==null&&t<first){first=t;hitHeight=u.visual.root.position.y+1.5;hit=()=>g.damageUnit(u,damage,start,true);}}
+   end.lerpVectors(start,end,first);end.y=hitHeight;if(hit)hit();const delta=end.clone().sub(start);
    const beam=new T.Mesh(new T.CylinderGeometry(.14,.14,Math.max(.01,delta.length()),8),new T.MeshBasicMaterial({color:0x8bffff,transparent:true,opacity:.95,blending:T.AdditiveBlending,depthWrite:false}));beam.position.copy(start).add(end).multiplyScalar(.5);beam.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),delta.normalize());g.world.entities.add(beam);this.beams.push({mesh:beam,life:.18});g.world.fx.impact(end);g.tone(920,.12,.04);
   }else{
    const offset=g.aimPoint.clone().sub(start);offset.y=0;if(offset.length()>45)offset.setLength(45);
@@ -27,7 +27,7 @@ export class SpecialWeapons{
  update(g:Game,dt:number){
   for(let i=this.beams.length-1;i>=0;i--){const b=this.beams[i];b.life-=dt;if(b.life<=0){this.remove(b.mesh);this.beams.splice(i,1);}else (b.mesh.material as T.MeshBasicMaterial).opacity=b.life/.18;}
   for(let i=this.arcs.length-1;i>=0;i--){const a=this.arcs[i];a.age+=dt;const t=Math.min(1,a.age/a.duration),previous=a.mesh.position.clone();a.mesh.position.lerpVectors(a.from,a.target,t);a.mesh.position.y+=(4*t*(1-t))*16;const forward=a.mesh.position.clone().sub(previous);if(forward.lengthSq()>0)a.mesh.lookAt(a.mesh.position.clone().add(forward));if(g.trailClock<=0)g.world.rocketTrail(a.mesh);
-   if(t>=1){g.world.fx.impact(a.target.clone().setY(.8),true);g.explode(a.target,7,a.damage);this.remove(a.mesh);this.remove(a.marker);this.arcs.splice(i,1);}
+   if(t>=1){g.world.fx.impact(a.target.clone().setY(.8),true);g.explode(a.target,7,a.damage,true);this.remove(a.mesh);this.remove(a.marker);this.arcs.splice(i,1);}
   }
  }
 }

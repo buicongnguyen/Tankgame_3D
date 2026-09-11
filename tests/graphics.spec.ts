@@ -18,7 +18,7 @@ for(const viewport of [{width:390,height:844},{width:844,height:390}])test(`mobi
 
 test('pause switches all models without changing battle state or rig references',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
- const before=await page.evaluate(()=>{const g=(window as any).__steel;g.start(6);g.pause();g.player.hp=173;g.player.visual.turret.rotation.y=.8;g.world.applySkin(g.player.visual.root,'inferno');
+ const before=await page.evaluate(()=>{const g=(window as any).__steel;g.start(6,2);g.pause();g.player.hp=173;g.player.visual.turret.rotation.y=.8;g.world.applySkin(g.player.visual.root,'inferno');
  const boss=g.enemies.find((e:any)=>e.role==='boss');boss.visual.root.getObjectByName('Core').visible=true;
  const rocket=g.world.rocket();g.world.entities.add(rocket);
  (window as any).qualityRefs={player:g.player,hull:g.player.visual.hull,turret:g.player.visual.turret,muzzle:g.player.visual.muzzle,rocket,cover:g.world.covers[0]};

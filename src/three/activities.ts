@@ -11,7 +11,7 @@ export function buildActivities(parent:T.Group):Activity[]{
 export function createActivity(parent:T.Group,kind:ActivityKind,x:number,z:number):Activity{
   const mesh=new T.Group();mesh.position.set(x,0,z);parent.add(mesh);
   const color=kind==='repair'?0x75ffbd:kind==='supply'?0x70d9ff:kind==='laser'?0x8bffff:kind==='arc'?0xc392ff:0xff7055;
-  const marker=new T.Mesh(new T.RingGeometry(kind==='mine'?.6:2.7,kind==='mine'?.85:2.85,32),new T.MeshBasicMaterial({color,side:T.DoubleSide,transparent:true,opacity:.7}));marker.rotation.x=-Math.PI/2;marker.position.y=.07;marker.userData.owned=true;mesh.add(marker);
+  const marker=new T.Mesh(new T.RingGeometry(kind==='mine'?.6:2.7,kind==='mine'?.85:2.85,32),new T.MeshBasicMaterial({color,side:T.DoubleSide,transparent:true,opacity:.7}));marker.rotation.x=-Math.PI/2;marker.position.y=.12;marker.userData.owned=true;mesh.add(marker);
   const body=new T.Mesh(kind==='mine'?new T.CylinderGeometry(.6,.75,.2,12):kind==='repair'?new T.CylinderGeometry(2.8,2.8,.12,40):new T.BoxGeometry(1.5,.5,1.5),new T.MeshStandardMaterial({color:kind==='mine'?0x635342:0x344b46,roughness:.8}));body.position.y=kind==='mine'?.15:kind==='repair'?.08:.3;body.userData.owned=true;mesh.add(body);
   if(kind==='repair'){for(const x of [-2.5,2.5]){const post=new T.Mesh(new T.BoxGeometry(.3,1.4,.3),new T.MeshStandardMaterial({color:0x75ffbd,emissive:0x205d40}));post.position.set(x,.7,0);post.userData.owned=true;mesh.add(post);}}
   if(kind!=='mine'){

@@ -13,3 +13,5 @@
  .touch-pad{bottom:16px;width:106px;height:106px}.move-pad{left:22px}.aim-pad{right:22px}
  .radio{top:123px;max-width:260px;padding:8px 12px;font-size:9px}.mission-hud{top:12px;left:22px;padding:10px 14px}.mission-hud h2{font-size:22px}.mission-hud .eyebrow{font-size:8px}.top-actions{top:12px;right:22px}#minimap{width:100px;height:75px}
 }
+
+.mode-hint{display:block;margin:5px 0 9px;color:#c6d4ca;font-size:11px}.level-select{display:flex;gap:4px;margin:0 0 10px}.level-select button{flex:1;padding:8px 3px;min-height:40px;font-size:10px}.level-select button[aria-pressed="true"]{border-color:#acffdb;background:#254a43}.difficulty button{min-width:0;flex:1}

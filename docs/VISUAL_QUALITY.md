@@ -12,7 +12,7 @@ Improve silhouettes, mechanical credibility, material separation and lighting at
 - Rockets: smoother 24-sided body and nozzle geometry, shared existing exhaust and smoke attachments.
 - Lighting: less washed-out ambient light, a small 64-pixel PMREM reflection environment, differentiated metal/rubber/glass roughness, and physically lit Blender shop previews.
 
-## Runtime constraints
+## Original detailed-pass constraints (superseded totals below)
 
 Tank: 5,712 triangles versus 2,024 before. All other assets remain below 3,000 triangles each. Total 25 GLBs after the frontier expansion: 2,774,388 bytes, below the unchanged 3,000,000-byte validation limit. No downloaded texture packs, per-object dynamic lights, physics debris or postprocessing passes are added. Static meshes are batched by material within each animated pivot; named boss Core and limb groups are preserved. Low mode now also swaps in simpler Blender geometry; see the mobile detail tier below.
 
@@ -29,7 +29,8 @@ Run the existing Blender generators from the repository root, in this order, wit
 5. `tools/blender/build_rocket_fuel.py`
 6. `tools/blender/build_skins.py`
 7. `tools/blender/build_frontier.py`
-8. `tools/blender/build_low_detail.py`
+8. `tools/blender/build_extreme_bosses.py`
+9. `tools/blender/build_low_detail.py`
 
 The first five generators call `tools/blender/asset_detail.py` before export. The skin generator imports the completed tank and renders the five matching material variants. Every generator starts a clean Blender scene. Editable `.blend` sources, GLBs and previews are committed; Blender is not required for the web build. Run `npm run test:assets`, `npm run build` and `npm test` afterward.
 
@@ -47,7 +48,7 @@ Quick mouse clicks are retained until the next simulation frame, then consumed o
 
 The Graphics button in the command and pause screens switches between Detailed and Low detail. The existing saved `low` preference is retained. Low detail loads only `public/models/low/` on startup; the other tier loads on demand and is cached for later switches. Failed downloads retain the current setting and show a retry message.
 
-Blender imports each detailed GLB, dissolves coplanar triangles and decimates curved/beveled meshes while retaining surfaces, rigs and attachment names. `build_low_detail.py` reproduces all 25 variants directly from the detailed exports. The low tank has 1,692 triangles versus 5,712. Asset validation checks genuine triangle reductions, budgets and matching rig transforms for both tiers.
+Blender imports each detailed GLB, dissolves coplanar triangles and decimates curved/beveled meshes while retaining surfaces, rigs and attachment names. `build_low_detail.py` reproduces all 29 variants directly from the detailed exports. The low tank has 1,692 triangles versus 5,712. Asset validation checks genuine triangle reductions, budgets and matching rig transforms for both tiers.
 
 Runtime switching replaces geometry within the existing material batches. It preserves unit references, moving pivots, health, positions, collision footprints, skins, boss weak points, destruction state and in-flight rockets. Loading is confined to the command/pause screens; resume and other actions wait until loading finishes. The gameplay simulation stays paused.
 
@@ -66,3 +67,13 @@ The complete detailed kit uses 34,350 triangles; Low detail uses 8,952 triangles
 `frontier_detail.py`, called by `build_frontier.py`, adds natural silhouettes, construction details, and packed albedo/normal maps of at most 128 × 128 pixels. Blender batches static meshes by material before export. Low detail omits fine decorative groups and recalculates imported normals after simplification. The detailed model budget remains 3 MB; the low-tier validation limit is now 1.5 MB to accommodate the packed surfaces (actual 1,293,996 bytes).
 
 Shared ground textures are generated once and reused. Frontier boundaries use instanced meshes, preserving their instance transforms during geometry swaps and releasing their own GPU buffers on stage changes. Wreck scorch marks use world-space placement at 0.14 m, soft edges, depth testing and polygon offset. The camera near plane is 0.5 m. Wrecks retain cast shadows while avoiding fine self-shadow shimmer. Review and validation details: [rendering and frontier review](RENDERING_AND_FRONTIER_POLISH_REVIEW.md).
+
+## Current 48-level expansion kit
+
+The current catalog contains 29 Blender models. Detailed GLBs total **3,336,348 bytes / 41,130 triangles**; Low GLBs total **1,588,460 bytes / 11,084 triangles** (73% fewer triangles). The expanded validation limits are 4 MB and 2 MB. All props remain below 3,000 detailed triangles; the three new bosses remain below their 4,500-triangle ceiling. Earlier section totals describe previous releases.
+
+`build_extreme_bosses.py` authors a helicopter with cockpit, rocket pods, engine vents, skids and independently animated main/tail rotors; an eight-legged spider with servo joints, claws and layered carapace; a tracked laser tank with coils, cooling and focusing lens; and layered snow-white pines. It writes editable `.blend` files and GLBs. Named Hull, Turret, Muzzle, Core, Rotor, TailRotor and leg pivots survive runtime batching and both detail swaps.
+
+White Horizon has 15 ice regions and white pines; Canopy Hold has denser destructible foliage with varied height/rotation; Citadel Dawn has additional blocks and houses; Dune Lifeline has 12 sand traps. Fault Line adds fractured basalt and earthquake dust. Mire Crossing adds seven mud holes with ripples, lowland foliage and a firm central road. Raised region layers remain below the existing wreck scorch height to avoid coplanar flicker.
+
+Crazy mode preserves the same enemies in both rendering tiers. Actual phone frame rate and thermal behavior have not been measured. Detailed rendering is intentionally more costly, so Low detail remains available before deployment and while paused. See the [expansion review](CAMPAIGN_LEVELS_AND_EXTREME_MODES_REVIEW.md) for measured render counters and validation.

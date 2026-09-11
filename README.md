@@ -6,23 +6,33 @@ A playable 3D tank rescue campaign built with **Three.js + TypeScript**, using o
 
 ## The campaign
 
-Lead Kestrel through fourteen operations to reopen the Meridian evacuation route: clear patrols, capture a relay, escort a rescue transport, defend an uplink, break a siege battery, and defeat Warden, then reclaim river villages, escort a winter relief convoy, and defend the ridge transmitter. The frontier chapter adds a polar relay, erupting volcano, desert convoy route, jungle defense and occupied city. Each operation includes a story briefing and debrief. First-clear credits buy persistent armor, damage and reload upgrades.
+Lead Kestrel through sixteen stages, each with three levels (48 levels in total), to reopen the Meridian evacuation route: clear patrols, capture a relay, escort a rescue transport, defend an uplink, break a siege battery, and defeat Warden, then reclaim river villages, escort a winter relief convoy, and defend the ridge transmitter. The frontier chapter adds a polar relay, erupting volcano, desert convoy route, jungle defense and occupied city, followed by a seismic rift and flooded lowlands. Each stage includes a story briefing and debrief. First-clear credits from each level buy persistent armor, damage and reload upgrades, weapons and tank skins. Approach and Counterattack lead to a Command battle with one to four bosses.
 
 - Independently aimed turret, directional armor and real projectile travel.
-- Blender trees, houses, stone/steel walls, bridges, rocky hills, glaciers, a volcano, palms, broadleaf trees and city blocks.
+- Blender trees, houses, stone/steel walls, bridges, rocky hills, glaciers, white pines, a volcano, palms, dense broadleaf trees and city blocks.
 - Polar ice carries momentum; desert sand traps reduce player and enemy speed to exactly one quarter.
 - Volcanic rocks warn for 2.6 seconds before landing and can damage either side, infantry and destructible cover.
-- Water, off-road snow and mud change tank speed; bridge and road routes preserve speed.
+- Earthquakes warn before stopping ground tanks for 1.6 seconds, with rising dust; guns, infantry and airborne helicopters remain active.
+- Marsh water holes slow and visually sink tanks; periodic traction recovery lets them escape. Bridge and road routes preserve speed.
 - Destructible cover, supply crates, explosive fuel drums and gasoline crates.
 - Cannon, unlockable autocannon and siege rockets, plus collectible pulse laser and arc rockets.
-- Three distinct bosses: Rail Titan, Tempest Carrier and the six-legged Iron Sovereign, with attack warnings and exposed-core windows.
+- Six boss types: Rail Titan, Tempest Carrier, Iron Sovereign, helicopter, climbing spider and laser tank. Each has attack warnings and exposed-core windows. Helicopters land behind cover; spiders climb it and rest; laser bursts stop at solid cover.
 - Blender riflemen and rocketeers support enemy armor across the campaign.
 - Shield and fixed green repair centers.
-- Three difficulty modes; mission checkpoints, retries and replay.
+- Four difficulty modes; stage/level checkpoints, retries and replay.
 - Responsive command screen, minimap, objective HUD and simultaneous touch sticks.
 - Optional synthesized combat audio; selectable Detailed / Low detail graphics; locally bundled fonts.
 
-This release has fourteen original 3D missions inspired by the 2D game. The separate fifteen-stage 2D campaign and its enterable infantry shelters remain available through the legacy route. Completed nine-stage saves unlock the frontier chapter; existing progress and purchases are preserved.
+| Mode | Player hull | Regular enemies and reinforcement batches | Bosses on level 3 |
+| --- | --- | --- | --- |
+| Easy | +50% | 1× | 1 |
+| Normal | Standard | 1× | 1 |
+| Hard | Standard | 2× | 2 |
+| Crazy | Standard | 4× | 4 |
+
+Enemy armor and infantry both use the multiplier. Bosses are additional units on the third level; every boss must fall before completion, alongside the stage objective. The first two levels of former boss stages are patrol battles. Higher modes do not increase enemy damage or reduce player hull. A large Crazy finale starts with 24 regular tanks, 40 soldiers and four bosses.
+
+The separate fifteen-stage 2D campaign and its enterable infantry shelters remain available through the legacy route. Historical six-, nine- and fourteen-stage saves retain completed stages, purchases, credits and graphics settings; completed old stages expose all three levels for replay. Story/Standard/Veteran settings migrate to Easy/Normal/Hard. New progress saves after every level; replaying a completed level never awards duplicate credits.
 
 ## Run and verify
 
@@ -56,22 +66,22 @@ Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within
 
 Tap **Graphics** on the command screen or in **Pause** to choose **Detailed** or **Low detail**. Low detail uses simpler Blender models, a smaller rendering buffer, fewer effects, and no dynamic shadows or reflection lighting. Text and touch controls retain their normal resolution. The setting saves locally and applies to the current stage without resetting your tank or mission.
 
-Only the selected model tier downloads on startup. Low detail contains 25 models totaling 1.29 MB; the tank uses 1,692 triangles instead of 5,712. Switch back to Detailed whenever desired. Actual frame rate depends on the phone.
+Only the selected model tier downloads on startup. Low detail contains 29 models totaling 1.59 MB; the tank uses 1,692 triangles instead of 5,712. Switch back to Detailed whenever desired. Actual frame rate depends on the phone.
 
 ## Rebuild the Blender assets
 
-Editable sources include `assets/blender/steel-front.blend` and `assets/blender/frontier-environments.blend`. Generators: `tools/blender/build_assets.py` and `tools/blender/build_frontier.py`. Runtime exports: `public/models/*.glb`. After regenerating the detailed kit, run `tools/blender/build_low_detail.py` with Blender to rebuild `public/models/low/*.glb`.
+Editable sources include `assets/blender/steel-front.blend` and `assets/blender/frontier-environments.blend`. Generators include `tools/blender/build_assets.py`, `tools/blender/build_frontier.py` and `tools/blender/build_extreme_bosses.py`. The last generator writes four separate editable scenes for the helicopter, spider, laser tank and white pine. Runtime exports: `public/models/*.glb`. After regenerating the detailed kit, run `tools/blender/build_low_detail.py` with Blender to rebuild `public/models/low/*.glb`.
 
 ```powershell
 & 'C:\Users\n\source\repos\3d_astra\.tools\blender-4.5.3-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_assets.py
 npm run test:assets
 ```
 
-Use your own Blender executable location on another machine. The 25 exported assets total 2,774,388 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
+Use your own Blender executable location on another machine. The 29 detailed exports total 3,336,348 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
 
 ## Architecture and planning
 
-See [the detailed evaluation and production plan](docs/3D_PRODUCTION_PLAN.md), including scope, story, UX, Blender workflow, combat rules, acceptance checks, and future expansion. See also the [frontier campaign plan and implementation record](docs/FRONTIER_CAMPAIGN_PLAN.md). Runtime modules live in `src/three/`; original Phaser code is retained in `src/game/` and `src/legacy-main.ts`.
+See [the detailed evaluation and production plan](docs/3D_PRODUCTION_PLAN.md), including scope, story, UX, Blender workflow, combat rules, acceptance checks, and future expansion. See also the [frontier campaign plan](docs/FRONTIER_CAMPAIGN_PLAN.md), [48-level expansion plan](docs/CAMPAIGN_LEVELS_AND_EXTREME_MODES_PLAN.md) and [expansion code, logic and visual review](docs/CAMPAIGN_LEVELS_AND_EXTREME_MODES_REVIEW.md). Runtime modules live in `src/three/`; original Phaser code is retained in `src/game/` and `src/legacy-main.ts`.
 
 ## Deployment
 
@@ -86,7 +96,7 @@ The APK is a debug build. The default web route is the 3D campaign; `legacy.html
 
 ## Known limits
 
-Flat gameplay plane with 3D models; no terrain climbing or rigid-body simulation. Enemy navigation uses local steering, not a global pathfinding solver. All fourteen operations use the 144 × 120 m battlefield bounds, with biome-specific scenery, terrain rules, hazards and objectives. Audio is procedural effects rather than voiced dialogue or an authored soundtrack. Physical-phone framerate and thermal testing remain follow-up work.
+Player movement uses a flat gameplay plane with ice momentum and visual mud sinking; helicopter flight and spider climbing use scripted elevation. There is no rigid-body simulation. Enemy navigation uses local steering, not a global pathfinding solver. All sixteen stages use the 144 × 120 m battlefield bounds, with biome-specific scenery, terrain rules, hazards and objectives. Audio is procedural effects rather than voiced dialogue or an authored soundtrack. Physical-phone framerate and thermal testing remain follow-up work.
 
 ## Asset attribution
 
@@ -94,7 +104,7 @@ Game models and narrative are authored for this project. Barlow and Barlow Conde
 
 ## Battlefield update
 
-Explore a 144 × 120 m combat zone with flank cover, green repair pads, blue supply caches and proximity mines. **R / STRIKE** calls three artillery shells at your aim point; stay clear of the marked circles. Supplies provide sortie-only rockets, 25 seconds of boosted damage and a fresh strike.
+Explore a 144 × 120 m combat zone with flank cover, green repair pads, blue supply caches and proximity mines. **R / STRIKE** calls five artillery shells at your aim point; stay clear of the marked circles. Supplies provide sortie-only rockets, 25 seconds of boosted damage and a fresh strike.
 
 Shell tracers, rocket exhaust, muzzle flashes, debris, shock rings, smoke, dust and persistent scorched wrecks replace the original simple hit/death effects. The escort route is now 98 m long. Effects are capped and reduced in low graphics mode.
 
@@ -108,9 +118,9 @@ Boss model kit, encounters and counterplay: [Boss variety](docs/BOSS_VARIETY.md)
 
 Mines hurt both sides. Gasoline crates damage nearby tanks, soldiers and destructible cover, and can set off nearby fuel containers. Rockets use a Blender model with fins, a nozzle and trailing smoke. See [combat rules and asset rebuilding](docs/EXPLOSIVES_AND_ROCKETS.md).
 
-## Between-stage shop
+## Between-level shop
 
-Every stage completion, including the chapter and campaign endings, offers **Shop · Upgrades & Weapons**. The command screen also opens the shop. Spend supply credits on permanent armor, damage and reload upgrades or weapon ownership. Autocannon costs 120 CR and siege rockets 180 CR; their existing free campaign unlocks still apply. Pulse laser costs 360 CR and starts each mission with 12 shots; arc rockets cost 420 CR and start with 6 rounds. Map caches supply extra ammo. Purchases persist across reloads and retries, and owned weapons cannot be purchased twice. Older saves migrate with their earned credits and upgrades intact.
+Every level completion, including the chapter and campaign endings, offers **Shop · Upgrades & Weapons**. The command screen also opens the shop. Spend supply credits on permanent armor, damage and reload upgrades or weapon ownership. Autocannon costs 120 CR and siege rockets 180 CR; their existing free campaign unlocks still apply. Pulse laser costs 360 CR and starts each mission with 12 shots; arc rockets cost 420 CR and start with 6 rounds. Map caches supply extra ammo. Purchases persist across reloads and retries, and owned weapons cannot be purchased twice. Older saves migrate with their earned credits and upgrades intact.
 
 ## Combat usability update
 
@@ -130,7 +140,7 @@ Effects reuse the existing shard geometry and a single small procedural texture.
 
 A completed objective starts a 0.8-second finish sequence: combat stops while destruction effects keep playing. The results screen then shows elapsed time, remaining hull, defeated tanks and soldiers, base reward, time bonus, hull bonus and total credits. Boss endings include the same breakdown and Shop access.
 
-On the first clear, the hull bonus is 25% of the base reward multiplied by remaining hull percentage. The time bonus is 25% of the base reward multiplied by the fraction of the target time saved, clamped to zero for a late finish. Both round to whole credits. Target times for operations 1-9 are 90, 90, 150, fixed timer, 120, 150, 120, 150, fixed timer seconds. The frontier targets for operations 10–14 are 110, 150, 180, fixed timer and 170 seconds. Fixed-duration defense stages have no time bonus. Replays show performance but do not grant duplicate rewards. Credits and progression save when the objective completes, before the short visual delay.
+On the first clear, the hull bonus is 25% of the base reward multiplied by remaining hull percentage. The time bonus is 25% of the base reward multiplied by the fraction of the target time saved, clamped to zero for a late finish. Both round to whole credits. Target times for operations 1-9 are 90, 90, 150, fixed timer, 120, 150, 120, 150, fixed timer seconds. Level-one targets for stages 10–16 are 110, 150, 180, fixed timer, 170, 140 and 190 seconds. Counterattack target times increase by 20%; Command battle targets increase by 60%. Per-level base rewards are 65%, 80% and 100% of the stage reward. Counterattack capture/defense durations also increase by 20%. Fixed-duration defense stages have no time bonus. Replays show performance but do not grant duplicate rewards. Credits and progression save when the objective completes, before the short visual delay.
 
 ## Blender tank skins
 
@@ -166,7 +176,7 @@ Arc rockets now adapt their landing distance to live enemies in an 18-degree con
 
 The tank now has sloped armor, layered track shoes, wheel hubs, a gun mantlet and sleeve, optics, smoke launchers and engine louvres. Vehicles gain glazing, mirrors, grilles and cargo ribs; houses gain window frames, sills, roof seams, gutters and chimney details. Supplies, bosses, infantry and foliage have additional structural geometry. Metal, rubber, glass and paint use distinct PBR responses, with reflected studio lighting in normal mode and simplified lighting in low mode.
 
-The expanded 25-model kit remains below the existing 3 MB combined budget (2,774,388 bytes). Runtime meshes are grouped by material within animated pivots; turrets, legs, muzzle/exhaust attachments and boss weak points remain independent. Five shop previews are rendered in Blender Eevee at 512 x 384. See [visual quality scope and rebuilding](docs/VISUAL_QUALITY.md). This is a more detailed browser art pass, not a claim of full AAA photorealism.
+The expanded 29-model kit uses 3,336,348 bytes, below its 4 MB detailed-tier budget. Runtime meshes are grouped by material within animated pivots; turrets, legs, muzzle/exhaust attachments and boss weak points remain independent. Five shop previews are rendered in Blender Eevee at 512 x 384. See [visual quality scope and rebuilding](docs/VISUAL_QUALITY.md). This is a more detailed browser art pass, not a claim of full AAA photorealism.
 
 ## Winter wreck stability and infantry contact
 
@@ -174,6 +184,6 @@ Burnt wrecks use soft scorch marks placed above snow and ice, with explicit dept
 
 Driving Kestrel into hostile infantry at **3 m/s or more** now defeats them. Stationary contact and slow nudges do not. Sand penalties and ice momentum affect actual contact speed; walls and other vehicles still stop the tank. These defeats count as infantry kills, never tank-objective progress or tank weapon-box drops. Enemy armor does not run down its own infantry.
 
-The frontier art now includes packed Blender albedo/normal maps (maximum 128 × 128), irregular ice and basalt, lava channels that follow the volcano slopes, palm leaflets, branched tree crowns, building sills/balconies/roof services, city sidewalks and textured terrain. Boundary scenery uses shared geometry instances. Low detail uses 8,952 triangles across the 25-model kit versus 34,350 in Detailed (74% fewer), with about 1.29 MB of GLBs.
+The frontier art now includes packed Blender albedo/normal maps (maximum 128 × 128), irregular ice and basalt, lava channels that follow the volcano slopes, palm leaflets, branched tree crowns, building sills/balconies/roof services, city sidewalks and textured terrain. Boundary scenery uses shared geometry instances. Low detail uses 11,084 triangles across the 29-model kit versus 41,130 in Detailed (73% fewer), with about 1.59 MB of GLBs.
 
 See the [implementation plan](docs/RENDERING_AND_FRONTIER_POLISH_PLAN.md) and [code, logic and visual review](docs/RENDERING_AND_FRONTIER_POLISH_REVIEW.md). This remains a stylized browser game; the art pass improves material and construction detail without claiming full AAA photorealism.

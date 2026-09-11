@@ -1,0 +1,36 @@
+import {test,expect} from '@playwright/test';
+
+test('helicopter crosses cover, warns rockets and lands at a free point behind cover',async({page})=>{
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const result=await page.evaluate(()=>{
+  const g=(window as any).__steel;g.frame=()=>{};g.start(2,2);const b=g.enemies.find((e:any)=>e.role==='boss');g.enemies=[b];g.world.covers=[{x:0,z:10,w:6,d:2,hp:Infinity,kind:'barricade'}];g.player.visual.root.position.set(0,0,28);b.visual.root.position.set(-10,0,-10);g.bosses.clear();let flew=false,warned=false,landed=false;let target:any=null;
+  for(let i=0;i<500;i++){g.elapsed+=.05;g.bosses.update(g,b,.05);const s=g.bosses.states.get(b);flew||=b.visual.root.position.y>4;warned||=s.markers.length===3;if(s.phase==='landing')target={...s.landing};if(s.phase==='exposed'){landed=true;break;}}
+  const core=b.visual.root.getObjectByName('Core').visible,free=target&&g.bosses.freeLanding(g,b,target),behind=target&&target.z<10;const rotor=b.visual.root.getObjectByName('Rotor').rotation.y;return {kind:b.bossKind,flew,warned,landed,core,free:!!free,behind:!!behind,rotor:rotor>0};
+ });expect(result).toEqual({kind:'helicopter',flew:true,warned:true,landed:true,core:true,free:true,behind:true,rotor:true});
+});
+test('airborne helicopter ignores ground shots and mines but laser and arc rockets hit',async({page})=>{
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const result=await page.evaluate(()=>{
+  const g=(window as any).__steel;g.frame=()=>{};g.start(2,2);const b=g.enemies.find((e:any)=>e.role==='boss');g.enemies=[b];g.world.covers=[];g.player.visual.root.position.set(0,0,0);b.visual.root.position.set(0,6,25);g.player.aim=0;b.hp=b.max=2000;
+  g.damageUnit(b,100,g.player.visual.root.position);const groundSafe=b.hp===2000;g.weapon=0;g.shoot(g.player,true);for(let i=0;i<30;i++)g.updateShots(1/60);const shotsSafe=b.hp===2000;
+  for(const a of g.world.activities)a.spent=true;const mine=g.world.activities.find((a:any)=>a.kind==='mine');mine.spent=false;mine.x=0;mine.z=25;g.updateActivities(.1);const mineSafe=!mine.spent;
+  g.weapon=3;g.specialAmmo=[12,6];g.shoot(g.player,true);const laser=b.hp<2000;const before=b.hp;g.weapon=4;g.aimPoint.copy(b.visual.root.position);g.shoot(g.player,true);g.special.update(g,1.51);const arc=b.hp<before;
+  b.visual.root.position.y=0;g.damageUnit(b,100,g.player.visual.root.position);const grounded=b.hp<before;
+  b.visual.root.position.y=6;g.damageUnit(b,999999,g.player.visual.root.position,true);const wreck=g.world.wrecks.at(-1);g.world.update(1,g.player.visual.root.position);return {groundSafe,shotsSafe,mineSafe,laser,arc,grounded,fallen:wreck.root.position.y===0};
+ });expect(Object.values(result).every(Boolean),JSON.stringify(result)).toBe(true);
+});
+test('spider climbs solid cover and rests with a vulnerable core',async({page})=>{
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const result=await page.evaluate(()=>{
+  const g=(window as any).__steel;g.frame=()=>{};g.start(12,2);const b=g.enemies.find((e:any)=>e.role==='boss');g.enemies=[b];g.player.visual.root.position.set(30,0,30);g.world.covers=[{x:0,z:0,w:6,d:2,hp:Infinity,kind:'barricade'}];b.visual.root.position.set(0,0,-10);let peak=0;
+  for(let i=0;i<150;i++){g.bosses.climb(g,b,0,.2,.05);peak=Math.max(peak,b.visual.root.position.y);}g.bosses.update(g,b,.01);const s=g.bosses.states.get(b);s.phase='exposed';s.time=3;const p=b.visual.root.position.clone();g.bosses.update(g,b,.1);const rested=b.visual.root.position.equals(p),core=b.visual.root.getObjectByName('Core').visible,weak=g.bosses.multiplier(b)>1;
+  g.hazards.quakePhase='active';const z=b.visual.root.position.z;g.bosses.climb(g,b,0,1,.1);return {kind:b.bossKind,climbed:peak>2,crossed:z>10,rested,core,weak,quake:b.visual.root.position.z===z};
+ });expect(result).toEqual({kind:'spider',climbed:true,crossed:true,rested:true,core:true,weak:true,quake:true});
+});
+test('laser boss has locked warning, a finite cover-blocked burst and cooldown',async({page})=>{
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const result=await page.evaluate(()=>{
+  const g=(window as any).__steel;g.frame=()=>{};g.start(9,2);const b=g.enemies.find((e:any)=>e.role==='boss');g.enemies=[b];g.world.covers=[{x:0,z:15,w:8,d:2,hp:Infinity,kind:'barricade',mesh:g.world.clone('barricade')}];b.visual.root.position.set(0,0,0);g.player.visual.root.position.set(0,0,30);g.bosses.update(g,b,.01);const s=g.bosses.states.get(b);s.phase='tracking';s.time=.01;g.bosses.update(g,b,.02);const warning=s.phase==='charging',heading=s.heading;g.player.visual.root.position.x=1;g.bosses.update(g,b,1.51);g.player.visual.root.position.x=0;const hp=g.player.hp;g.bosses.update(g,b,.1);const blocked=g.player.hp===hp;g.world.covers=[];for(let i=0;i<6;i++)g.bosses.update(g,b,.2);return {kind:b.bossKind,warning,locked:s.heading===heading,blocked,hit:g.player.hp<hp,exposed:s.phase==='exposed'&&b.visual.root.getObjectByName('Core').visible,bounded:g.special.beams.length<=6};
+ });expect(result).toEqual({kind:'laser',warning:true,locked:true,blocked:true,hit:true,exposed:true,bounded:true});
+});
+for(const kind of ['helicopter','spider','laser'])test(`new ${kind} rig retains animation and state through mobile detail swaps`,async({page})=>{
+ await page.setViewportSize({width:1000,height:700});await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
+ const result=await page.evaluate(async kind=>{const g=(window as any).__steel;g.frame=()=>{};g.start(0,0);g.world.covers=[];for(const e of g.enemies)e.dead=true;const b=g.makeUnit(0,0,'boss',kind);g.enemies=[b];g.player.visual.root.position.set(0,0,20);g.bosses.update(g,b,.1);const root=b.visual.root,core=root.getObjectByName('Core'),pivot=root.getObjectByName(kind==='helicopter'?'Rotor':kind==='spider'?'Leg3L':'Turret');let meshes=0;pivot.traverse((o:any)=>{if(o.isMesh)meshes++;});const state=g.bosses.states.get(b);g.pause();await g.world.load(true);g.world.settings(true);await g.world.load(false);g.world.settings(false);g.hud.hidden=true;g.overlay.hidden=true;for(const child of g.world.entities.children)child.visible=child===root;g.world.camera.position.set(10,12,19);g.world.camera.lookAt(0,2,0);g.world.renderer.render(g.world.scene,g.world.camera);return {meshes,root:b.visual.root===root,core:root.getObjectByName('Core')===core,pivot:root.getObjectByName(pivot.name)===pivot,state:g.bosses.states.get(b)===state};},kind);
+ expect(result.meshes).toBeGreaterThan(0);expect(result).toMatchObject({root:true,core:true,pivot:true,state:true});await page.screenshot({path:`test-results/extreme-${kind}.png`});
+});

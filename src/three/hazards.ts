@@ -7,11 +7,14 @@ const ORIGIN=new T.Vector3(VOLCANO.x,VOLCANO.height,VOLCANO.z);
 export const ROCKFALL={radius:4.5,damage:95,warning:2.6,grace:6,interval:5,maxActive:3,maxScars:8};
 interface FallingRock extends Point {age:number;duration:number;trail:number;marker:T.Mesh;rock:T.Group;}
 export class BiomeHazards{
+ quakePhase:'calm'|'warning'|'active'='calm';quakeRemaining=8;dustClock=0;
+ get quaking(){return this.quakePhase==='active';}
+ get quakeWarning(){return this.quakePhase==='warning';}
  rocks:FallingRock[]=[];scars:{mesh:T.Mesh;age:number}[]=[];clock=ROCKFALL.grace;sequence=0;seed=1;
  ring=new T.RingGeometry(ROCKFALL.radius-.2,ROCKFALL.radius,48);scar=new T.CircleGeometry(2.1,24);
  random(){this.seed=(Math.imul(this.seed,1664525)+1013904223)>>>0;return this.seed/4294967296;}
  reset(seed:number){this.clear();this.clock=ROCKFALL.grace;this.sequence=0;this.seed=seed+413;}
- clear(){for(const r of this.rocks){r.marker.removeFromParent();(r.marker.material as T.Material).dispose();r.rock.removeFromParent();}this.rocks=[];for(const s of this.scars){s.mesh.removeFromParent();(s.mesh.material as T.Material).dispose();}this.scars=[];}
+ clear(){this.quakePhase='calm';this.quakeRemaining=8;this.dustClock=0;for(const r of this.rocks){r.marker.removeFromParent();(r.marker.material as T.Material).dispose();r.rock.removeFromParent();}this.rocks=[];for(const s of this.scars){s.mesh.removeFromParent();(s.mesh.material as T.Material).dispose();}this.scars=[];}
  warn(g:Game,p:Point,duration=ROCKFALL.warning){
   if(this.rocks.length>=ROCKFALL.maxActive)return false;
   const x=clamp(p.x,-67,67),z=clamp(p.z,-55,55);
@@ -21,8 +24,22 @@ export class BiomeHazards{
   this.rocks.push({x,z,age:0,duration:Math.max(ROCKFALL.warning,duration),trail:0,marker,rock});return true;
  }
  danger(p:Point){return this.rocks.some(r=>distance(r,p)<ROCKFALL.radius+1.25);}
+ updateQuake(g:Game,dt:number){
+  this.quakeRemaining-=dt;
+  if(this.quakeRemaining<=0){
+   if(this.quakePhase==='calm'){this.quakePhase='warning';this.quakeRemaining=1.4;g.radioMessage('SEISMIC WARNING / Take cover. Tracks will lock briefly.',2);}
+   else if(this.quakePhase==='warning'){this.quakePhase='active';this.quakeRemaining=1.6;g.radioMessage('EARTHQUAKE / Tracks locked · weapons ready.',1.6);}
+   else{this.quakePhase='calm';this.quakeRemaining=12;g.radioMessage('GROUND STABLE / Keep moving.',2);}
+  }
+  this.dustClock-=dt;
+  if(this.quaking&&this.dustClock<=0){this.dustClock=g.world.low?.35:.16;const focus=g.player.visual.root.position;
+   for(let i=0;i<(g.world.low?6:16);i++){const angle=i*2.399+g.elapsed,x=clamp(focus.x+Math.cos(angle)*(4+i*2),-70,70),z=clamp(focus.z+Math.sin(angle)*(4+i*2),-58,58);g.world.fx.emit(new T.Vector3(x,.3,z),'smoke',0xa79274,2.2,1.2,new T.Vector3(0,3,0));}
+  }
+ }
  update(g:Game,dt:number){
-  if(g.phase!=='playing'||g.world.environment.biome!=='volcanic'||dt<=0)return;
+  if(g.phase!=='playing'||dt<=0)return;
+  if(g.world.environment.biome==='quake'){this.updateQuake(g,dt);return;}
+  if(g.world.environment.biome!=='volcanic')return;
   this.clock-=dt;
   if(this.clock<=0){
    this.clock=ROCKFALL.interval;

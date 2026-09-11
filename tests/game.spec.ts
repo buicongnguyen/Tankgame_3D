@@ -2,8 +2,8 @@ import MODEL_NAMES from '../src/three/model-catalog.json' with {type:'json'};
 import { test, expect, type Page } from '@playwright/test';
 import {freshSave, SAVE_KEY} from '../src/three/campaign';
 
-async function deployCheckpoint(page:Page,mission:number){
-  const save=freshSave();save.mission=mission;save.cleared=save.cleared.map((_,i)=>i<mission);save.upgrades.armor=1;
+async function deployCheckpoint(page:Page,mission:number,level=0){
+  const save=freshSave();save.mission=mission;save.level=level;save.cleared=save.cleared.map((_,i)=>i<mission);save.upgrades.armor=1;
   await page.addInitScript(({key,save})=>{if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(save));},{key:SAVE_KEY,save});
   await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
 }
@@ -35,7 +35,8 @@ test('campaign workshop purchase, reload checkpoint and contested capture',async
   await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(1/60);});
   await expect(page.getByRole('heading',{name:'Mission accomplished'})).toBeVisible();await page.locator('[data-action=shop]').click();await page.locator('[data-action=buy][data-value=armor]').click();
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('steel-front-3d-v1')!).upgrades.armor)).toBe(1);
-  await page.screenshot({path:'test-results/depot-desktop.png'});await page.reload();await expect(page.locator('.briefing h2')).toHaveText('Open Frequency');
+  await page.screenshot({path:'test-results/depot-desktop.png'});await page.reload();await expect(page.locator('.briefing h2')).toHaveText('First Light');expect(await page.evaluate(()=>(window as any).__steel.save.level)).toBe(1);
+  await page.evaluate(()=>{const g=(window as any).__steel;g.save.cleared[0]=true;g.save.mission=1;g.save.level=0;g.persist();});await page.reload();await expect(page.locator('.briefing h2')).toHaveText('Open Frequency');
   await page.getByRole('button',{name:'DEPLOY'}).click();
   const capture=await page.evaluate(()=>{const g=(window as any).__steel;g.player.visual.root.position.set(0,0,-13);g.enemies[0].visual.root.position.set(3,0,-13);g.step(.1);const contested=g.capture===0;for(const e of g.enemies)e.dead=true;g.capture=17.99;g.step(.02);g.step(.8);return {contested,phase:g.phase};});expect(capture).toEqual({contested:true,phase:'depot'});
 });
@@ -47,10 +48,10 @@ test('campaign escort completion and defense failure, retry and success',async({
   await page.evaluate(()=>{const g=(window as any).__steel;g.elapsed=44.99;g.step(.02);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
 });
 test('campaign siege completion and first chapter ending retain cleared stages',async({page})=>{
-  await deployCheckpoint(page,4);
+  await deployCheckpoint(page,4,2);
   await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(.02);});
   await expect(page.getByRole('heading',{name:'Mission accomplished'})).toBeVisible();
-  await page.evaluate(()=>{const g=(window as any).__steel;g.start(5);for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(.02);});
+  await page.evaluate(()=>{const g=(window as any).__steel;g.save.level=2;g.start(5,2);for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(.02);});
   await expect(page.getByRole('heading',{name:'Everyone comes home.'})).toBeVisible();await page.screenshot({path:'test-results/ending-desktop.png'});
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('steel-front-3d-v1')!).cleared.slice(0,6).every(Boolean))).toBe(true);
 });

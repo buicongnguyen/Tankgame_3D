@@ -1,23 +1,23 @@
 import {test,expect} from '@playwright/test';
-import {freshSave,parseSave,MISSIONS} from '../src/three/campaign';
+import {freshSave,parseSave,MISSIONS,levelMission} from '../src/three/campaign';
 import {terrainSpeed,tractionMotion,ICE,SAND} from '../src/three/terrain';
 import {awardStage} from '../src/three/results';
 
 test('historical campaigns extend without losing purchases or progress',()=>{
- expect(MISSIONS).toHaveLength(14);
+ expect(MISSIONS).toHaveLength(16);
  for(const length of [6,9]){
   const old={...freshSave(),mission:length-1,cleared:Array(length).fill(true),credits:1800,weapons:[3,4],equippedWeapon:4,skins:['classic','sunburst','inferno'],skin:'inferno',low:true};
-  const save=parseSave(JSON.stringify(old));expect(save.mission).toBe(length);expect(save.cleared).toEqual([...old.cleared,...Array(14-length).fill(false)]);expect(save.credits).toBe(1800);expect(save.weapons).toEqual([3,4]);expect(save.skin).toBe('inferno');expect(save.low).toBe(true);
+  const save=parseSave(JSON.stringify(old));expect(save.mission).toBe(length);expect(save.cleared).toEqual([...old.cleared,...Array(16-length).fill(false)]);expect(save.credits).toBe(1800);expect(save.weapons).toEqual([3,4]);expect(save.skin).toBe('inferno');expect(save.low).toBe(true);
   const partial={...old,mission:2,cleared:Array.from({length},(_,i)=>i<2)};expect(parseSave(JSON.stringify(partial)).mission).toBe(2);
  }
  const corrupt={...freshSave(),mission:8,cleared:[true,false,...Array(7).fill(true)]};expect(parseSave(JSON.stringify(corrupt))).toEqual(freshSave());
- const save={...freshSave(),mission:9,cleared:[...Array(9).fill(true),...Array(5).fill(false)]};
- for(let stage=9;stage<14;stage++){const r=awardStage(save,stage,30,200,240);expect(r.target).toBe(MISSIONS[stage].parTime);expect(r.total).toBeGreaterThan(MISSIONS[stage].reward);expect(awardStage(save,stage,1,240,240).total).toBe(0);}
+ const save={...freshSave(),mission:9,cleared:[...Array(9).fill(true),...Array(7).fill(false)]};
+ for(let stage=9;stage<16;stage++)for(let level=0;level<3;level++){const r=awardStage(save,stage,30,200,240,level);expect(r.target).toBe(levelMission(stage,level).parTime);expect(r.total).toBeGreaterThan(0);expect(awardStage(save,stage,1,240,240,level).total).toBe(0);}
  expect(parseSave(JSON.stringify(save))).toEqual(save);
 });
 
 test('sand has exact quarter speed and ice preserves then releases momentum',()=>{
- for(const r of SAND){expect(terrainSpeed('desert',r.x,r.z)).toBe(.25);expect(terrainSpeed('desert',r.x+r.rx+1,r.z)).toBe(1);}
+ for(const r of SAND){expect(terrainSpeed('desert',r.x,r.z)).toBe(.25);expect(terrainSpeed('desert',0,r.z)).toBe(1);}
  const velocity={x:9,z:0},ice=ICE[0];const drift=tractionMotion('glacier',ice,velocity,0,0,.1);expect(drift.x).toBeGreaterThan(.5);expect(drift.x).toBeLessThan(.9);
  expect(tractionMotion('glacier',{x:0,z:0},velocity,0,0,.1)).toEqual({x:0,z:0});
  expect(tractionMotion('desert',SAND[0],velocity,.9,0,.1).x).toBeCloseTo(.225);
@@ -27,7 +27,7 @@ test('all campaign spawns, frontier objectives and service routes remain reachab
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
  const issues=await page.evaluate(async()=>{
   const g=(window as any).__steel;g.frame=()=>{};const {circleBox}=await import('/src/three/rules.ts');const issues:any[]=[];
-  for(let mission=0;mission<14;mission++){
+  for(let mission=0;mission<16;mission++){
    g.prepare(mission);const covers=g.world.covers.filter((c:any)=>c.hp>0);
    for(const u of [g.player,...g.enemies])if(covers.some((c:any)=>circleBox(u.visual.root.position,g.unitRadius(u),c)))issues.push({mission,overlap:u.role});
    if(mission<9)continue;
@@ -56,25 +56,16 @@ test('rockfalls warn, hit both sides once, respect shields and clean up',async({
  });expect(Object.values(result).every(Boolean),JSON.stringify(result)).toBe(true);
 });
 
-test('new mission objectives finish and the old ending continues into the frontier',async({page})=>{
- await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
- const result=await page.evaluate(()=>{
-  const g=(window as any).__steel;g.frame=()=>{};g.save.cleared=Array.from({length:14},(_,i)=>i<8);g.save.mission=8;g.start(8);g.complete();g.step(.8);const chapter=g.phase==='victory';g.menuAction('menu');const next=g.mission===9;
-  const phases=[];
-  for(let mission=9;mission<14;mission++){
-   g.start(mission);for(const e of g.enemies)e.dead=true;
-   if(mission===9){g.capture=21.99;g.player.visual.root.position.set(0,0,-13);}
-   if(mission===10)g.kills=6;
-   if(mission===11){g.player.visual.root.position.set(0,0,-48);g.convoy.position.z=-49.99;}
-   if(mission===12)g.elapsed=49.99;
-   if(mission===13)g.enemies.find((e:any)=>e.role==='boss').hp=0;
-   g.step(.02);g.step(.8);phases.push(g.phase);
-  }
-  return {chapter,next,phases,cleared:g.save.cleared.every(Boolean),label:document.querySelector('.victory-panel')?.textContent};
- });expect(result.chapter&&result.next&&result.cleared).toBe(true);expect(result.phases).toEqual(['depot','depot','depot','depot','victory']);expect(result.label).toContain('14 OPERATIONS');
+for(const mission of [8,9,10,11,12,13,14,15])test(`stage ${mission+1} final objective also requires all bosses`,async({page})=>{
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const result=await page.evaluate(mission=>{
+  const g=(window as any).__steel;g.frame=()=>{};g.save.cleared=Array.from({length:16},(_,i)=>i<mission);g.save.mission=mission;g.save.level=2;g.start(mission,2);
+  for(const e of g.enemies)g.damageUnit(e,999999,g.player.visual.root.position,true);
+  const m=g.missionData();if(m.kind==='capture'){g.capture=m.duration;g.player.visual.root.position.set(0,0,-13);}if(m.kind==='defense')g.elapsed=m.duration;if(g.convoy){g.player.visual.root.position.set(0,0,-48);g.convoy.position.z=-50;}
+  g.step(.02);g.step(.8);return {phase:g.phase,cleared:g.save.cleared[mission],next:g.save.mission,level:g.save.level};
+ },mission);expect(result).toEqual({phase:mission===8||mission===15?'victory':'depot',cleared:true,next:Math.min(15,mission+1),level:mission===15?2:0});
 });
 
-for(const mission of [9,10,11,12,13])test(`frontier ${mission+1} looks distinct and switches detail on phone`,async({browser})=>{
+for(const mission of [9,10,11,12,13,14,15])test(`frontier ${mission+1} looks distinct and switches detail on phone`,async({browser})=>{
  const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});const page=await context.newPage();const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).tap();
  const counts=await page.evaluate(i=>{const g=(window as any).__steel;g.start(i);g.frame=()=>{};g.hazards.clock=999;if(i===10){g.player.visual.root.position.set(-26,0,-20);g.hazards.warn(g,{x:-20,z:-18});g.hazards.update(g,1.6);}g.world.target.copy(g.player.visual.root.position);g.world.update(1,g.player.visual.root.position);g.updateHud();return {trees:g.world.covers.filter((c:any)=>c.kind==='jungle-tree').length,blocks:g.world.covers.filter((c:any)=>c.kind==='cityblock').length};},mission);

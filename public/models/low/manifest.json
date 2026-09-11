@@ -12,6 +12,18 @@
     "bytes": 12988
   },
   {
+    "asset": "boss-helicopter",
+    "detailedTriangles": 1448,
+    "lowTriangles": 512,
+    "bytes": 69224
+  },
+  {
+    "asset": "boss-laser",
+    "detailedTriangles": 1668,
+    "lowTriangles": 555,
+    "bytes": 71508
+  },
+  {
     "asset": "boss-missile",
     "detailedTriangles": 2596,
     "lowTriangles": 767,
@@ -22,6 +34,12 @@
     "detailedTriangles": 2332,
     "lowTriangles": 689,
     "bytes": 86036
+  },
+  {
+    "asset": "boss-spider",
+    "detailedTriangles": 2568,
+    "lowTriangles": 750,
+    "bytes": 98152
   },
   {
     "asset": "boss-walker",
@@ -148,5 +166,11 @@
     "detailedTriangles": 1932,
     "lowTriangles": 343,
     "bytes": 60176
+  },
+  {
+    "asset": "white-pine",
+    "detailedTriangles": 1096,
+    "lowTriangles": 315,
+    "bytes": 55580
   }
 ]

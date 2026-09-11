@@ -15,7 +15,7 @@ export function groundTexture(kind:string){
 }
 /** Shared GLB geometry with one instanced draw per surface; outside gameplay bounds. */
 export function frontierBoundary(world:World,biome:Biome){
- const name=biome==='glacier'?'glacier':biome==='jungle'?'jungle-tree':biome==='city'?'cityblock':biome==='desert'?'hill':'volcanic-rock';
+ const name=biome==='glacier'?'glacier':biome==='jungle'||biome==='marsh'?'jungle-tree':biome==='city'?'cityblock':biome==='desert'?'hill':'volcanic-rock';
  const positions:T.Vector3[]=[];const spacing=biome==='city'?14:biome==='jungle'?8:6;
  for(const side of [-1,1])for(let z=-61;z<=61;z+=spacing)positions.push(new T.Vector3(side*(biome==='city'?80:77),0,z));
  for(let x=-70;x<=70;x+=spacing)positions.push(new T.Vector3(x,0,biome==='city'?-69:-66));
