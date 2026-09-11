@@ -108,7 +108,7 @@ Game models and narrative are authored for this project. Barlow and Barlow Conde
 
 Explore a 144 × 120 m combat zone with flank cover, green repair pads, blue supply caches and proximity mines. **R / STRIKE** calls five artillery shells at your aim point; stay clear of the marked circles. Supplies provide sortie-only rockets, 25 seconds of boosted damage and a fresh strike.
 
-Shell tracers, rocket exhaust, muzzle flashes, debris, shock rings, smoke, dust and persistent scorched wrecks replace the original simple hit/death effects. The escort route is now 98 m long. Effects are capped and reduced in low graphics mode.
+Shell tracers, rocket exhaust, muzzle flashes, debris, shock rings, smoke, dust and persistent scorched wrecks replace the original simple hit/death effects. Escorts follow their stage-specific route through every bend. Effects are capped and reduced in low graphics mode.
 
 Environment selection, behavior, source art and scope: [Environment expansion](docs/ENVIRONMENT_EXPANSION.md).
 
@@ -126,9 +126,9 @@ Every level completion, including the chapter and campaign endings, offers **Sho
 
 ## Combat usability update
 
-Shop upgrades have shield, damage and reload icons. Every second enemy tank destroyed drops a labeled weapon box, alternating 12 laser shots and 6 arc rockets; drive over it to collect. These field drops last for the sortie and do not purchase permanent ownership. Infantry do not trigger tank drops, and no health pickups are dropped.
+Shop upgrades have shield, damage and reload icons. Tank salvage becomes rarer with difficulty: every 2 / 4 / 12 / 32 tank kills on Easy / Normal / Hard / Crazy, capped at 4 / 2 / 1 / 1 drops per stage. Boxes alternate 12 laser shots and 6 arc rockets and are placed on a reachable nearby shoulder; drive over one to collect. These field drops last for the sortie and do not purchase permanent ownership. Infantry do not trigger tank drops, and no health pickups are dropped.
 
-All defense missions start Kestrel near the uplink. Initial opposition and reinforcements spawn at map corners and approach the center; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, strike with R, shield with Q and locate a repair center with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
+All defense missions start Kestrel near the uplink. Initial opposition starts in staggered perimeter waves, including finale bosses; reinforcements also spawn at map corners and approach the center; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, strike with R, shield with Q and locate a repair center with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
 
 Repair centers are large green circular service pads, marked with a green cross on the minimap. Drive within 3 m to restore up to 32 HP per second; each center provides 160 HP per mission. Tank wrecks, houses, weapon boxes and supply boxes do not heal. E / Find Repair reports the nearest available center and never restores health remotely.
 
@@ -192,6 +192,8 @@ See the [implementation plan](docs/RENDERING_AND_FRONTIER_POLISH_PLAN.md) and [c
 
 ## Routes and field supplies
 
-All 48 levels use stage-specific marked routes: alternating concrete checkpoints, southbound operations, winding convoy tracks, and supply circuits around defense relays. Each level has four weapon/ammo caches, two medical cases, two shield cases, two repair centers and six off-road mines. Locations vary with the stage and level; retries repeat their seed. Supplies remain reachable without a special weapon. Convoys follow every bend, wait for ground traffic, and reach extraction only after the complete route.
+All 48 levels use marked routes, including west-to-east zigzags, south-to-north journeys, southwest-to-northeast approaches, southbound convoy tracks and circuits around defense relays. Useful map supplies total 10 / 8 / 6 / 4 on Easy / Normal / Hard / Crazy, plus six off-road mines. Every mode retains healing, a shield, a repair pad and an anti-air weapon cache. Pads and boxes sit 7–10 m from the route centerline with clear access, so collecting them requires a short detour. Stage and level seeds make retries reproducible.
 
-The player pulse laser pierces multiple enemies and one concrete barrier. A second concrete barrier stops that shot. The laser does not damage either barrier, even with upgrades or repeated hits. Steel and other cover still block the beam. Medical cases heal only a damaged tank and cap at maximum hull; shield cases do not stack duration. Existing tank salvage drops remain weapons only.
+Patrols and ambushers wait in zones along the route and respond when approached, passed or attacked. Bosses guard the final approach; defense stages use timed perimeter waves. Waiting units remain included in objectives. Assault and boss stages require the marked exit after clearing their combat objective. Convoys follow every bend, stop for ground traffic, and reach extraction only after the complete route.
+
+The player pulse laser pierces multiple enemies and one concrete barrier. A second concrete barrier stops that shot. The laser does not damage either barrier, even with upgrades or repeated hits. Steel and other cover still block the beam. Medical cases heal only a damaged tank and cap at maximum hull; shield cases do not stack duration. Tank salvage remains weapons only. Concrete has independent 176 HP sections: four standard cannon hits open just the struck section, while stronger conventional attacks and local explosions use their usual damage. Adjacent sections keep their collision until individually destroyed. See the [route, supply and encounter plan](docs/ROUTE_ENCOUNTERS_AND_SUPPLIES_PLAN.md).

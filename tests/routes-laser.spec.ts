@@ -6,9 +6,9 @@ test('every level has reproducible, separated supplies and varied routes',()=>{
  const fingerprints=new Set<string>();let south=0;
  for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++){
   const layout=stageLayout(stage,level,levelMission(stage,level).kind);expect(layout).toEqual(stageLayout(stage,level,levelMission(stage,level).kind));
-  expect(layout.supplies).toHaveLength(16);for(const kind of ['health','shield','repair'])expect(layout.supplies.filter(s=>s.kind===kind)).toHaveLength(2);
-  expect(layout.supplies.filter(s=>['laser','arc','supply'].includes(s.kind))).toHaveLength(4);expect(layout.supplies[0].kind).toBe('laser');
-  for(const [i,s] of layout.supplies.entries()){expect(Math.abs(s.x)).toBeLessThan(69);expect(Math.abs(s.z)).toBeLessThan(57);for(const t of layout.supplies.slice(i+1))expect(Math.hypot(s.x-t.x,s.z-t.z)).toBeGreaterThan(6.5);if(s.kind!=='mine')expect(roadDistance(layout.points,s)).toBeLessThan(3);}
+  expect(layout.supplies).toHaveLength(14);for(const kind of ['health','shield'])expect(layout.supplies.filter(s=>s.kind===kind)).toHaveLength(2);expect(layout.supplies.filter(s=>s.kind==='repair')).toHaveLength(1);
+  expect(layout.supplies.filter(s=>['laser','arc','supply'].includes(s.kind))).toHaveLength(3);expect(layout.supplies[0].kind).toBe('laser');
+  for(const [i,s] of layout.supplies.entries()){expect(Math.abs(s.x)).toBeLessThan(69);expect(Math.abs(s.z)).toBeLessThan(57);for(const t of layout.supplies.slice(i+1))expect(Math.hypot(s.x-t.x,s.z-t.z)).toBeGreaterThan(6.5);if(s.kind!=='mine'){expect(roadDistance(layout.points,s)).toBeGreaterThan(7.2);expect(roadDistance(layout.points,s)).toBeLessThan(9.31);}}
   fingerprints.add(JSON.stringify(layout.supplies));if(layout.southbound)south++;
  }
  expect(fingerprints.size).toBe(48);expect(south).toBeGreaterThan(10);
@@ -71,4 +71,17 @@ test('health and shield cases are finite and never waste full-health recovery',a
 
 test('ground attacker navigates around a concrete checkpoint',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.enemies=[];g.player.visual.root.position.set(0,0,-35);const e=g.makeUnit(0,20,'heavy');e.visual.root.position.set(0,0,20);g.enemies=[e];const mesh=g.world.clone('barricade');mesh.position.set(0,0,0);g.world.covers=[{x:0,z:0,w:34,d:1.8,hp:Infinity,kind:'barricade',mesh}];g.world.navigationRevision++;let flank=0;for(let i=0;i<1500;i++){g.elapsed+=1/30;g.updateEnemies(1/30);flank=Math.max(flank,Math.abs(e.visual.root.position.x));}return {z:e.visual.root.position.z,flank};});expect(r.flank).toBeGreaterThan(18);expect(r.z).toBeLessThan(-3);
+});
+
+
+test('laser crosses adjacent sections of one wall and stops at the next wall',async({page})=>{
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
+ const result=await page.evaluate(()=>{
+  const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.enemies=[];
+  g.world.concreteBarrier({x:0,z:0,w:25.6,d:1.8});g.world.concreteBarrier({x:0,z:-18,w:25.6,d:1.8});g.world.navigationRevision++;
+  g.player.visual.root.position.set(-10,0,8);g.player.aim=Math.atan2(3.6,-8);
+  const targets=[22,42].map(distance=>{const x=-10+Math.sin(g.player.aim)*distance,z=8+Math.cos(g.player.aim)*distance;const e=g.makeUnit(x,z,'heavy');e.visual.root.position.set(x,0,z);e.hp=e.max=10000;return e;});g.enemies=targets;
+  g.special.fire(g,3);
+  return {behindFirst:targets[0].hp<10000,behindSecond:targets[1].hp===10000,intact:g.world.covers.every((c:any)=>c.hp===176)};
+ });expect(result).toEqual({behindFirst:true,behindSecond:true,intact:true});
 });

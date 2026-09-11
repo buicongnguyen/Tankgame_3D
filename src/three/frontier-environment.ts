@@ -37,7 +37,7 @@ export function buildFrontier(world:World,biome:Biome){
  }
  if(biome==='volcanic'){
   // The caldera occupies a real, blocked footprint; walkable ground has no fake lava.
-  for(const c of [...world.covers])if(Math.abs(c.x-VOLCANO.x)<(c.w+VOLCANO.width)/2&&Math.abs(c.z-VOLCANO.z)<(c.d+VOLCANO.width)/2){c.mesh.removeFromParent();world.covers.splice(world.covers.indexOf(c),1);}
+  for(const c of [...world.covers])if(Math.abs(c.x-VOLCANO.x)<(c.w+VOLCANO.width)/2&&Math.abs(c.z-VOLCANO.z)<(c.d+VOLCANO.width)/2){c.hp=0;world.updateConcrete(c);c.mesh.removeFromParent();world.covers.splice(world.covers.indexOf(c),1);}
   add('volcano',VOLCANO.x,VOLCANO.z,VOLCANO.width,VOLCANO.width,Infinity,true)!.scale.setScalar(VOLCANO.scale);
   for(let i=0;i<28;i++)add('volcanic-rock',(i%2?1:-1)*(18+i*13%47),-52+i*19%104,2.6,2.2,Infinity);
   for(const [x,z] of [[-23,40],[26,43],[38,-12]])add('house',x,z,6,5,220);
@@ -54,7 +54,7 @@ export function buildFrontier(world:World,biome:Biome){
  }
  if(biome==='city'){
   // Replace the generic outer crate lines with full city blocks.
-  for(const c of [...world.covers])if(Math.abs(c.x)>40&&['barricade','crate','barrel'].includes(c.kind)){c.mesh.removeFromParent();world.covers.splice(world.covers.indexOf(c),1);}
+  for(const c of [...world.covers])if(Math.abs(c.x)>40&&!c.section&&['barricade','crate','barrel'].includes(c.kind)){c.hp=0;world.updateConcrete(c);c.mesh.removeFromParent();world.covers.splice(world.covers.indexOf(c),1);}
   for(const x of [-34,34])plane(new T.PlaneGeometry(10,126),0x465358,x,0,.015);
   for(const z of [-34,-10,14,38]){
    plane(new T.PlaneGeometry(144,7),0x465358,0,z,.018);
@@ -65,6 +65,8 @@ export function buildFrontier(world:World,biome:Biome){
    for(const dx of [-4.6,4.6])plane(new T.PlaneGeometry(.14,8.5),0xb9bcb0,x+dx,z,.059);
   }
   for(const [x,z] of [[-39,47],[38,-46],[-40,-4],[40,32]])add('house',x,z,6,5,220);
+  // Fill free blocks around the new east-west streets without covering route access.
+  for(let x=-62;x<=64;x+=14)for(let z=-50;z<=46;z+=12)if(world.covers.filter(c=>c.kind==='cityblock'||c.kind==='house').length<26&&add('cityblock',x,z,8.4,7.5,400))plane(new T.PlaneGeometry(10,9),0x929b95,x,z,.045);
  }
  if(biome==='quake'){
   for(let i=0;i<34;i++)add('volcanic-rock',(i%2?1:-1)*(18+i*11%46),-51+i*19%102,2.6,2.2,Infinity);
@@ -76,7 +78,7 @@ export function buildFrontier(world:World,biome:Biome){
   for(const [x,z] of [[-26,46],[24,-47],[-45,-15],[48,35]])add('house',x,z,6,5,200);
  }
  // More explosive opportunities without burying service pads or the central route.
- for(let i=0;i<40&&world.covers.filter(c=>c.kind==='fuelcrate').length<14;i++)add('fuelcrate',(i%2?1:-1)*(20+i*13%43),-48+i*19%96,2.2,1.55,35);
+ for(let i=0;i<180&&world.covers.filter(c=>c.kind==='fuelcrate').length<14;i++)add('fuelcrate',(i%2?1:-1)*(20+i*13%43),-48+i*19%96,2.2,1.55,35);
  // Native points are cheap decoration and completely disabled by Low detail.
  if(biome==='glacier'||biome==='volcanic'||biome==='jungle'){
   const positions=new Float32Array(80*3);for(let i=0;i<80;i++){positions[i*3]=Math.sin(i*17)*72;positions[i*3+1]=i*7%26+2;positions[i*3+2]=Math.cos(i*13)*60;}

@@ -14,7 +14,7 @@ import { CombatEffects } from './effects';
 import { BOUNDS, buildActivities } from './activities';
 import type { Activity } from './activities';
 export interface TankVisual { root: T.Group; hull: T.Object3D; turret: T.Object3D; muzzle: T.Object3D; bar: T.Mesh; beam: T.Mesh; }
-export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; }
+export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; section?: {parts:T.InstancedMesh[];index:number}; }
 interface Effect { mesh: T.Mesh; life: number; max: number; velocity: T.Vector3; }
 const scratch = new T.Vector3();
 export class World {
@@ -199,8 +199,8 @@ export class World {
       const mesh=new T.Mesh(geometry,bucket.material);mesh.castShadow=bucket.shadow;mesh.receiveShadow=true;mesh.userData.owned=true;this.arena.add(mesh);
     }
   }
-  build(index:number,kind:string,level=0) {
-    this.clear();this.navigationRevision++;this.layout=stageLayout(index,level,kind);
+  build(index:number,kind:string,level=0,difficulty='normal') {
+    this.clear();this.navigationRevision++;this.layout=stageLayout(index,level,kind,difficulty);
     const frontier=GROUND_COLORS[BIOMES[index]]!==undefined;
     const ground=this.box(frontier?184:164,.7,frontier?164:144,GROUND_COLORS[BIOMES[index]]??(BIOMES[index]==='snow'?0xc6d5d5:index===3?0x74776c:0xa69c78),0,-.4,0);ground.castShadow=false;if(GROUND_COLORS[BIOMES[index]]!==undefined)(ground.material as T.MeshStandardMaterial).map=groundTexture(BIOMES[index]);
     // Winter snow replaces dirt detail; nearly coplanar patches underneath can shimmer.
@@ -216,7 +216,7 @@ export class World {
       if(overlapsReservation(this.layout,{x,z,w:kind==='barricade'?6.4:1.3,d:kind==='barricade'?1.8:1.3}))continue;
       const mesh=this.clone(kind);mesh.position.set(x,0,z);
       if(kind==='barricade')mesh.scale.set(2,1.3,1.5);
-      this.arena.add(mesh);this.covers.push({x,z,w:kind==='barricade'?6.4:kind==='crate'?1.3:1,d:kind==='barricade'?1.8:kind==='crate'?1.3:1,kind,hp:kind==='barricade'?Infinity:kind==='crate'?55:25,mesh});
+      this.arena.add(mesh);this.covers.push({x,z,w:kind==='barricade'?6.4:kind==='crate'?1.3:1,d:kind==='barricade'?1.8:kind==='crate'?1.3:1,kind,hp:kind==='barricade'?176:kind==='crate'?55:25,mesh});
     }
     for(const [x,z] of [[-20,9],[24,-8],[-41,-32],[39,22]]){if(overlapsReservation(this.layout,{x,z,w:2.2,d:1.55})||this.layout.supplies.some(p=>Math.hypot(x-p.x,z-p.z)<9))continue;const mesh=this.clone('fuelcrate');mesh.position.set(x,0,z);this.arena.add(mesh);this.covers.push({x,z,w:2.2,d:1.55,kind:'fuelcrate',hp:35,mesh});}
     for(const barrier of this.layout.barriers)this.concreteBarrier(barrier);
@@ -228,26 +228,42 @@ export class World {
     }
     for(let i=0;i<29;i++){const x=-75+i*5.4;this.box(3,2.8+(i%3),2.5,0x737762,x,1,-65);}
     }
-    this.ring.visible=['capture','defense','escort'].includes(kind);
-    const exit=this.layout.points.at(-1)!;this.ring.position.set(kind==='escort'?exit.x:0,.12,kind==='escort'?exit.z:-13);
-    this.ring.scale.setScalar(kind==='escort'?.7:1);
+    this.ring.visible=true;
+    const exit=this.layout.points.at(-1)!;this.ring.position.set(['capture','defense'].includes(kind)?0:exit.x,.12,['capture','defense'].includes(kind)?-13:exit.z);
+    this.ring.scale.setScalar(['capture','defense'].includes(kind)?1:.7);
     if(kind==='capture'||kind==='defense'){
       const relay=this.clone('relay');relay.position.set(0,0,-13);this.arena.add(relay);
     }
     // Extraction pylons frame the road.
-    for(const x of [-4,4]){this.box(.45,3.2,.45,0x3e5751,x+exit.x,1.6,exit.z);this.box(.65,.2,.65,0x98f3bf,x+exit.x,3.3,exit.z);}
-    this.environment.build(this,index);this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);
+    const previous=this.layout.points.at(-2)!,angle=Math.atan2(exit.x-previous.x,exit.z-previous.z);
+    for(const side of [-4,4]){const x=exit.x+Math.cos(angle)*side,z=exit.z-Math.sin(angle)*side;this.box(.45,3.2,.45,0x3e5751,x,1.6,z);this.box(.65,.2,.65,0x98f3bf,x,3.3,z);}
+    this.environment.build(this,index);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);
     this.target.set(0,0,0);
   }
   private concreteBarrier(box:Box){
-    const root=new T.Group();root.position.set(box.x,0,box.z);root.name='RouteConcrete';
-    const template=this.templates.get('barricade')!;template.updateMatrixWorld(true);
-    const count=Math.ceil(box.w/6.4),width=box.w/count;
+    const vertical=box.d>box.w,length=vertical?box.d:box.w,count=Math.ceil(length/6.4),width=length/count;
+    const root=new T.Group();root.name='RouteConcrete';this.arena.add(root);
+    const template=this.templates.get('barricade')!;template.updateMatrixWorld(true);const parts:T.InstancedMesh[]=[];
     template.traverse(o=>{if(!(o instanceof T.Mesh))return;
       const instances=new T.InstancedMesh(o.geometry,o.material,count);instances.userData={...o.userData};instances.castShadow=true;instances.receiveShadow=true;
-      for(let i=0;i<count;i++){const matrix=new T.Matrix4().makeScale(width/3.2,1.3,1.5);matrix.setPosition(-box.w/2+width*(i+.5),0,0);matrix.multiply(o.matrixWorld);instances.setMatrixAt(i,matrix);}
-      instances.computeBoundingSphere();root.add(instances);
-    });this.arena.add(root);this.covers.push({...box,kind:'barricade',hp:Infinity,mesh:root});
+      for(let i=0;i<count;i++){
+        const offset=-length/2+width*(i+.5),position=new T.Vector3(box.x+(vertical?0:offset),0,box.z+(vertical?offset:0));
+        const matrix=new T.Matrix4().compose(position,new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),vertical?Math.PI/2:0),new T.Vector3(width/3.2,1.3,1.5)).multiply(o.matrixWorld);
+        instances.setMatrixAt(i,matrix);instances.setColorAt(i,new T.Color(0xffffff));
+      }
+      instances.computeBoundingSphere();root.add(instances);parts.push(instances);
+    });
+    for(let i=0;i<count;i++){
+      const offset=-length/2+width*(i+.5),x=box.x+(vertical?0:offset),z=box.z+(vertical?offset:0),mesh=new T.Group();mesh.position.set(x,0,z);mesh.name='ConcreteSection';this.arena.add(mesh);
+      this.covers.push({x,z,w:vertical?1.8:width,d:vertical?width:1.8,kind:'barricade',hp:176,mesh,section:{parts,index:i}});
+    }
+  }
+  updateConcrete(cover:Cover){
+    if(!cover.section)return;const {parts,index}=cover.section;
+    for(const part of parts){
+      if(cover.hp<=0){part.setMatrixAt(index,new T.Matrix4().makeScale(0,0,0));part.instanceMatrix.needsUpdate=true;}
+      else{part.setColorAt(index,new T.Color().setScalar(.45+.55*cover.hp/176));if(part.instanceColor)part.instanceColor.needsUpdate=true;}
+    }
   }
   private buildRoad(kind:string){
     const rectangles=this.layout.points.slice(1).map((p,i)=>{const a=this.layout.points[i];return {left:Math.min(a.x,p.x)-4,right:Math.max(a.x,p.x)+4,top:Math.min(a.z,p.z)-4,bottom:Math.max(a.z,p.z)+4};});
@@ -288,9 +304,10 @@ export class World {
     this.wrecks.push({root,scorch,age:0,emit:0});if(this.wrecks.length>14){const old=this.wrecks.shift()!;old.root.removeFromParent();old.scorch.removeFromParent();}
     const p=root.position.clone();p.y=1;this.fx.impact(p,true);
   }
-  cameraLead(){return (this.camera.aspect<1?8:-8)+(this.layout.southbound?16:0);}
+  cameraOffset(){const a=this.layout.points[0],b=this.layout.points.at(-1)!,d=Math.max(1,Math.hypot(b.x-a.x,b.z-a.z));return {x:(b.x-a.x)/d*8,z:(this.camera.aspect<1?16:0)+(b.z-a.z)/d*8};}
+  cameraLead(){return this.cameraOffset().z;}
   update(dt:number,focus:T.Vector3,menu=false){
-    const desired=menu?scratch.copy(focus):scratch.set(T.MathUtils.clamp(focus.x,-BOUNDS.x,BOUNDS.x),0,focus.z+this.cameraLead());
+    const offset=this.cameraOffset(),desired=menu?scratch.copy(focus):scratch.set(T.MathUtils.clamp(focus.x+offset.x,-BOUNDS.x,BOUNDS.x),0,focus.z+offset.z);
     this.target.lerp(desired,1-Math.exp(-dt*3));
     const portrait=this.camera.aspect<1;
     this.camera.position.set(this.target.x+(menu?16:0),menu?18:portrait?62:54,this.target.z+(menu?24:portrait?51:43));

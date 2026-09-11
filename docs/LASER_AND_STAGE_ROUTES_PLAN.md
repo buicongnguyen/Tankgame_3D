@@ -1,5 +1,7 @@
 # Piercing laser, field supplies and varied stage routes
 
+The laser rule below remains current. Route directions, supply counts, concrete durability and encounter pacing are superseded by the [route encounters and supplies plan](ROUTE_ENCOUNTERS_AND_SUPPLIES_PLAN.md). The remaining route/review text records the earlier release.
+
 ## Combat rules
 - Pulse laser has a 60 m range and damages every living enemy intersecting the beam once per shot, including infantry and airborne bosses. Armor and boss vulnerability still apply.
 - A beam passes through the first concrete barricade or stone wall, damaging enemies behind it. The second concrete barrier stops that shot. Neither concrete barrier takes laser damage. Steel, hills, houses, trees and other cover stop the beam at the first contact.

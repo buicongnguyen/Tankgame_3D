@@ -32,7 +32,7 @@ test('real assets, desktop controls, pause, cover and UI',async({page})=>{
 // Keep each checkpoint within the normal timeout on CI's software GPU.
 test('campaign workshop purchase, reload checkpoint and contested capture',async({page})=>{
   await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();await page.getByRole('button',{name:'DEPLOY'}).click();
-  await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(1/60);});
+  await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.player.visual.root.position.copy(g.world.ring.position);g.step(1/60);});
   await expect(page.getByRole('heading',{name:'Mission accomplished'})).toBeVisible();await page.locator('[data-action=shop]').click();await page.locator('[data-action=buy][data-value=armor]').click();
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('steel-front-3d-v1')!).upgrades.armor)).toBe(1);
   await page.screenshot({path:'test-results/depot-desktop.png'});await page.reload();await expect(page.locator('.briefing h2')).toHaveText('First Light');expect(await page.evaluate(()=>(window as any).__steel.save.level)).toBe(1);
@@ -49,9 +49,9 @@ test('campaign escort completion and defense failure, retry and success',async({
 });
 test('campaign siege completion and first chapter ending retain cleared stages',async({page})=>{
   await deployCheckpoint(page,4,2);
-  await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(.02);});
+  await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.player.visual.root.position.copy(g.world.ring.position);g.step(.02);});
   await expect(page.getByRole('heading',{name:'Mission accomplished'})).toBeVisible();
-  await page.evaluate(()=>{const g=(window as any).__steel;g.save.level=2;g.start(5,2);for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(.02);});
+  await page.evaluate(()=>{const g=(window as any).__steel;g.save.level=2;g.start(5,2);for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.player.visual.root.position.copy(g.world.ring.position);g.step(.02);});
   await expect(page.getByRole('heading',{name:'Everyone comes home.'})).toBeVisible();await page.screenshot({path:'test-results/ending-desktop.png'});
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('steel-front-3d-v1')!).cleared.slice(0,6).every(Boolean))).toBe(true);
 });

@@ -60,7 +60,7 @@ for(const mission of [8,9,10,11,12,13,14,15])test(`stage ${mission+1} final obje
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const result=await page.evaluate(mission=>{
   const g=(window as any).__steel;g.frame=()=>{};g.save.cleared=Array.from({length:16},(_,i)=>i<mission);g.save.mission=mission;g.save.level=2;g.start(mission,2);
   for(const e of g.enemies)g.damageUnit(e,999999,g.player.visual.root.position,true);
-  const m=g.missionData();if(m.kind==='capture'){g.capture=m.duration;g.player.visual.root.position.set(0,0,-13);}if(m.kind==='defense')g.elapsed=m.duration;if(g.convoy){const end=g.world.layout.points.at(-1);g.convoy.position.set(end.x,0,end.z);g.player.visual.root.position.set(end.x+4,0,end.z);g.convoyDistance=g.world.layout.length;}
+  const m=g.missionData();if(['assault','boss'].includes(m.kind))g.player.visual.root.position.copy(g.world.ring.position);if(m.kind==='capture'){g.capture=m.duration;g.player.visual.root.position.set(0,0,-13);}if(m.kind==='defense')g.elapsed=m.duration;if(g.convoy){const end=g.world.layout.points.at(-1);g.convoy.position.set(end.x,0,end.z);g.player.visual.root.position.set(end.x+4,0,end.z);g.convoyDistance=g.world.layout.length;}
   g.step(.02);g.step(.8);return {phase:g.phase,cleared:g.save.cleared[mission],next:g.save.mission,level:g.save.level};
  },mission);expect(result).toEqual({phase:mission===8||mission===15?'victory':'depot',cleared:true,next:Math.min(15,mission+1),level:mission===15?2:0});
 });

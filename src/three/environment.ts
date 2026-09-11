@@ -32,6 +32,12 @@ export class Environment{
    if(world.covers.some(c=>Math.abs(x-c.x)<c.w/2+3&&Math.abs(z-c.z)<c.d/2+3)||Math.abs(z-32)<7||Math.abs(z-20)<4&&x<0||Math.abs(z+30)<4)continue;
    add('pine',x,z,2.6,2.6,65);
   }
+  // Keep steel cover on free flanks when route reservations displace the original walls.
+  for(const x of [-48,48,-36,36,-58,58])for(const z of [-48,-28,-8,12,48]){
+   if(world.covers.filter(c=>c.kind==='steelwall').length>=2)break;
+   if(world.covers.some(c=>Math.abs(x-c.x)<c.w/2+4&&Math.abs(z-c.z)<c.d/2+1.55))continue;
+   add('steelwall',x,z,6,1.1,Infinity);
+  }
   const plane=(w:number,d:number,color:number,x:number,z:number)=>{const m=new T.Mesh(new T.PlaneGeometry(w,d),new T.MeshStandardMaterial({color,roughness:.8}));m.rotation.x=-Math.PI/2;m.position.set(x,.025,z);m.userData.owned=true;world.arena.add(m);return m;};
   if(river){
    this.water=plane(144,8,0x398d9f,0,32);this.water.position.y=.04;(this.water.material as T.MeshStandardMaterial).roughness=.25;

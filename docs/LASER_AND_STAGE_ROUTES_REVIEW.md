@@ -1,5 +1,7 @@
 # Laser and stage-route review
 
+The laser rule below remains current. Route directions, supply counts, concrete durability and encounter pacing are superseded by the [route encounters and supplies plan](ROUTE_ENCOUNTERS_AND_SUPPLIES_PLAN.md). The remaining route/review text records the earlier release.
+
 ## Implemented behavior
 - Player pulse laser resolves ordered intersections over 60 m. It hits multiple enemies, penetrates one concrete barrier, and stops at a second. Neither concrete barrier takes laser damage, including repeated or upgraded hits. Steel and other cover stop the beam; armor and boss vulnerability remain active.
 - All 16 stages / 48 levels now have route and supply configurations. Ten useful field objects and six off-road mines are generated per level. Seeded placement changes between stages and levels, while retry preserves the layout. Medical cases and shield cases have different silhouettes, symbols and colors.
