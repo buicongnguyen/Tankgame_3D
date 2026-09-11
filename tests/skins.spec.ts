@@ -12,3 +12,12 @@ test('shield and speed bonuses are isolated and materials are reused',async({pag
 test('phone skin shop shows real Blender previews and readable choices',async({browser})=>{
  const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});const page=await context.newPage();await page.goto('/?e2e');await page.locator('[data-action=hangar]').tap();await expect(page.locator('.skin-card img')).toHaveCount(5);await expect.poll(()=>page.locator('.skin-card img').evaluateAll(imgs=>imgs.every(i=>(i as HTMLImageElement).complete&&(i as HTMLImageElement).naturalWidth>0))).toBe(true);expect(await page.evaluate(()=>{const e=document.querySelector('#overlay')!;return e.scrollWidth<=e.clientWidth;})).toBe(true);await page.screenshot({path:'test-results/skin-shop-mobile.png'});await page.locator('[data-action=skin-equip][data-value=sunburst]').tap();await page.locator('[data-action=shop-back]').tap();await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();await context.close();
 });
+
+
+test('shop touch release cannot activate a link in the replacement menu',async({browser})=>{
+ const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const page=await context.newPage();await page.goto('/?e2e');await page.locator('[data-action=hangar]').tap();
+ // Deterministically retarget the first native compatibility click, as seen on the slower CI renderer.
+ await page.evaluate(()=>{document.querySelector('#overlay')!.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();const link=document.querySelector('a[href="./legacy.html"]')!;(window as any).__retargetAllowed=link.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,detail:1}));},{capture:true,once:true});});
+ await page.locator('[data-action=shop-back]').tap();expect(await page.evaluate(()=>(window as any).__retargetAllowed)).toBe(false);await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'DEPLOY'})).toBeFocused();await page.locator('a[href="./legacy.html"]').focus();await page.keyboard.press('Enter');await expect(page).toHaveURL(/legacy\.html/);await context.close();
+});

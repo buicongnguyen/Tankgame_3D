@@ -27,6 +27,7 @@ The Blender kit adds Sky Wraith (helicopter), Rift Stalker (eight-legged spider)
 | Terrain depth | Expanded pools can overlap. Each region uses a distinct shallow elevation, with rims/ripples above it and below the 0.14-meter wreck scorch height. Activity markers sit above the terrain. | Existing snow/ice wreck stability tests pass in both detail tiers. |
 | Hazards | Quakes must release movement and reset across missions; mud must permit escape. Ground movement and hazard clocks explicitly respect pause/mission state. | Lock duration, enemy/player freeze, pause, reset, sinking, recovery and escape checks. |
 | Quality switching | New rotor/leg meshes must remain attached to animated pivots when batching or swapping tiers. Rotor names are preserved with existing limbs, turret and core. | All three new rigs retain references, animation geometry and boss state across both swaps. |
+| Mobile compatibility clicks | CI exposed a shop-back tap activating the Original 2D link in the replacement menu. The handler now consumes the compatibility click from an already-handled touch, including default link navigation. A new pointer gesture resets the guard; keyboard activation remains available. | Deterministically reproduced before the fix; touch skin-shop and keyboard link regressions. |
 | Mobile HUD | A narrow desktop viewport does not activate touch CSS. The Crazy city visual fixture now uses actual touch emulation and asserts both sticks are visible. | 390 × 844 touch screenshot; mode/level selectors also tested at 390 and 844 pixels. |
 
 ## Validation
@@ -35,8 +36,9 @@ The Blender kit adds Sky Wraith (helicopter), Rift Stalker (eight-legged spider)
 - Blender validation: 29 models, matching Detailed/Low rigs, all geometry and payload budgets passed.
 - Full local sweep before the final review: 123 of 127 checks passed. The remaining four used obsolete stage-completion/reward fixtures; they were updated to clear all three levels or explicitly select Command battle, preserving their purchase and ending assertions.
 - After review fixes: all 36 focused browser checks passed, including those four adapted fixtures, new bosses, campaign expansion, terrain and navigation regressions.
-- The corrected touch-emulation Crazy city check also passed separately.
-- Current complete collection: **133 checks in 25 files**. The existing GitHub Pages workflow runs all checks across five runners and only builds/deploys when every runner passes. Deployment status is authoritative in [GitHub Actions](https://github.com/buicongnguyen/Tankgame_3D/actions/workflows/deploy-pages.yml).
+- The corrected touch-emulation Crazy city check and level-radio regression also passed separately.
+- The CI-discovered mobile compatibility-click fix passed the real skin-shop flow and a direct retargeted-click regression, including keyboard link activation. Twenty other focused mobile/joystick/graphics checks also passed. The complete suite now runs across eight groups to keep the expanded release gate manageable.
+- Current complete collection: **134 checks in 25 files**. The existing GitHub Pages workflow runs all checks across eight runners and only builds/deploys when every runner passes. Deployment status is authoritative in [GitHub Actions](https://github.com/buicongnguyen/Tankgame_3D/actions/workflows/deploy-pages.yml).
 - Existing desktop/mobile input, WebKit, weapons, shops, skins, destruction and winter regression coverage remains in the release gate.
 
 Visual inspection covered the three new boss rigs, frontier phone layouts, mode/level menus and the Crazy city touch HUD. The new assets use distinct silhouettes, material groups, structural details and animated attachments. This is detailed stylized browser artwork; it is not presented as AAA photorealism.

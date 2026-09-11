@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,7 +26,7 @@ jobs:
       - run: npm ci
       - run: npm run test:assets
       - run: npx playwright install --with-deps chromium webkit
-      - run: npx playwright test --shard=${{ matrix.shard }}/5
+      - run: npx playwright test --shard=${{ matrix.shard }}/8
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -65,16 +65,17 @@ export class Game {
     this.world.renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();if(this.phase==='playing')this.pause();this.overlay.innerHTML='<section class="panel"><h1>Graphics connection lost</h1><p>Your mission checkpoint is saved. Reload to reconnect.</p><button onclick="location.reload()">Reload game</button></section>';});
   }
   private bindActions(root:HTMLElement,run:(button:HTMLButtonElement)=>void,selector='button'){
-    const presses=new Map<number,{button:HTMLButtonElement;x:number;y:number}>();let lastTouch=-Infinity;
+    const presses=new Map<number,{button:HTMLButtonElement;x:number;y:number}>();let pendingTouchClick=false;
     const buttonAt=(target:EventTarget|null)=>target instanceof Element?target.closest<HTMLButtonElement>(selector):null;
-    root.addEventListener('pointerdown',e=>{const button=buttonAt(e.target);if(e.pointerType==='touch'&&button&&!button.disabled){presses.set(e.pointerId,{button,x:e.clientX,y:e.clientY});button.setPointerCapture(e.pointerId);}});
+    root.addEventListener('pointerdown',e=>{pendingTouchClick=false;const button=buttonAt(e.target);if(e.pointerType==='touch'&&button&&!button.disabled){presses.set(e.pointerId,{button,x:e.clientX,y:e.clientY});button.setPointerCapture(e.pointerId);}});
     root.addEventListener('pointercancel',e=>presses.delete(e.pointerId));
     root.addEventListener('pointerup',e=>{
       const press=presses.get(e.pointerId);presses.delete(e.pointerId);if(!press||press.button.disabled||!root.contains(press.button))return;
       const r=press.button.getBoundingClientRect();if(Math.hypot(e.clientX-press.x,e.clientY-press.y)>12||e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)return;
-      lastTouch=performance.now();e.preventDefault();run(press.button);
+      pendingTouchClick=true;e.preventDefault();run(press.button);
     });
-    root.addEventListener('click',e=>{const button=buttonAt(e.target);if(!button||button.disabled||(e.detail!==0&&performance.now()-lastTouch<700))return;run(button);});
+    // A handled touch can replace its button with a link before the browser sends its compatibility click.
+    root.addEventListener('click',e=>{if(pendingTouchClick&&e.detail!==0){pendingTouchClick=false;e.preventDefault();e.stopPropagation();return;}const button=buttonAt(e.target);if(!button||button.disabled)return;run(button);});
   }
   el(id:string){return document.getElementById(id)!;}
   async init(){

@@ -30,4 +30,4 @@
 
 ## Implementation record
 
-Steps 1–6 are implemented. The expanded Blender catalog, per-level checkpoints, four modes, two new scenarios, denser environments and independent boss behaviors are in the runtime. Code/logic review reproduced and fixed helicopter landing/pursuit and spider rest problems. All 36 focused checks and the touch-emulation follow-up passed; the release workflow gates publication on the complete 133-test suite. See [review findings, measurements and release procedure](CAMPAIGN_LEVELS_AND_EXTREME_MODES_REVIEW.md).
+Steps 1–6 are implemented. The expanded Blender catalog, per-level checkpoints, four modes, two new scenarios, denser environments and independent boss behaviors are in the runtime. Code/logic review reproduced and fixed helicopter landing/pursuit and spider rest problems. All 36 focused checks and the touch-emulation follow-up passed; the release workflow gates publication on the complete 134-test suite. See [review findings, measurements and release procedure](CAMPAIGN_LEVELS_AND_EXTREME_MODES_REVIEW.md).
