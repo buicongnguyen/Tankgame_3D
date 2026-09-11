@@ -235,10 +235,11 @@ export class Game {
     }
   }
   hitCover(cover:Cover,damage:number){
-    if(cover.hp<=0)return;cover.hp-=damage;this.world.burst(cover.mesh.position,2,5);
+    if(cover.hp<=0)return;cover.hp-=damage;
+    const surface=cover.kind==='barrel'||cover.kind==='fuelcrate'?'fuel':cover.kind==='pine'||cover.kind==='house'||cover.kind==='crate'?'wood':cover.kind==='stonewall'||cover.kind==='hill'?'stone':'metal';
+    this.world.fx.surface(cover.mesh.position.clone().setY(.7),surface,cover.hp<=0);
     if(cover.hp<=0){cover.mesh.visible=false;
-      if(['house','stonewall','pine'].includes(cover.kind))this.world.fx.impact(cover.mesh.position.clone().setY(1),true);
-if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.world.fx.impact(cover.mesh.position.clone().setY(1),true);this.explode(cover,cover.kind==='fuelcrate'?7:5,cover.kind==='fuelcrate'?110:65);}}
+if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kind==='fuelcrate'?7:5,cover.kind==='fuelcrate'?110:65);}}
   }
   explode(p:Point,radius:number,damage:number){
     for(const unit of [this.player,...this.enemies])if(!unit.dead&&distance(p,unit.visual.root.position)<radius)this.damageUnit(unit,damage*(1-distance(p,unit.visual.root.position)/radius*.6),p);

@@ -111,3 +111,9 @@ Shop upgrades have shield, damage and reload icons. Every second enemy tank dest
 Both defense missions start Kestrel near the uplink. Initial opposition and reinforcements spawn at map corners and approach the center; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, strike with R, shield with Q and locate a repair center with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
 
 Repair centers are large green circular service pads, marked with a green cross on the minimap. Drive within 3 m to restore up to 32 HP per second; each center provides 160 HP per mission. Tank wrecks, houses, weapon boxes and supply boxes do not heal. E / Find Repair reports the nearest available center and never restores health remotely.
+
+## Lightweight destruction feedback
+
+Hits on metal produce bright sparks; stone creates dust and gray chips; wood splinters and produces brief smoke. Destroyed wooden cover and fuel containers leave short flame/smoke effects and fading ground scorch marks. Existing fuel blast damage and chain reactions are unchanged; lingering flames are cosmetic.
+
+Effects reuse the existing shard geometry and a single small procedural texture. Particles remain capped at 230 (85 in low mode), with at most six active cover fires (two in low mode). Fire lasts 2.8-4 seconds and scorch marks fade over eight seconds. Low mode also reduces large-explosion clouds. There are no added lights, shadow casters, physics debris or downloaded effect textures. Tests check particle/fire limits, expiration, repeat-hit behavior and mission cleanup; actual-device frame rates depend on hardware.
