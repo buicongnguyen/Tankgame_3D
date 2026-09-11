@@ -137,7 +137,7 @@ export class Game {
   makeUnit(x:number,z:number,role:Unit['role'],kind:BossKind=bossKind(this.mission)):Unit{
     const boss=role==='boss',player=role==='player';
     const infantry=role==='rifleman'||role==='rocketeer';const radius=infantry?.55:boss?BOSS[kind].radius:1.25;
-    const free=(px:number,pz:number)=>Math.abs(px)<BOUNDS.x-radius&&Math.abs(pz)<BOUNDS.z-radius&&!this.world.covers.some(c=>c.hp>0&&circleBox({x:px,z:pz},radius,c))&&!this.enemies.some(e=>!e.dead&&distance({x:px,z:pz},e.visual.root.position)<radius+this.unitRadius(e)+.25)&&(player||!this.player||distance({x:px,z:pz},this.player.visual.root.position)>radius+3);
+    const free=(px:number,pz:number)=>Math.abs(px)<BOUNDS.x-radius&&Math.abs(pz)<BOUNDS.z-radius&&!this.world.covers.some(c=>c.hp>0&&circleBox({x:px,z:pz},radius,c))&&!this.enemies.some(e=>!e.dead&&!this.airborne(e)&&distance({x:px,z:pz},e.visual.root.position)<radius+this.unitRadius(e)+.25)&&(player||!this.player||distance({x:px,z:pz},this.player.visual.root.position)>radius+3);
     if(!free(x,z)){const origin={x,z};search:for(let r=3;r<=120;r+=3)for(let a=0;a<16;a++){const px=origin.x+Math.cos(a*Math.PI/8)*r,pz=origin.z+Math.sin(a*Math.PI/8)*r;if(free(px,pz)){x=px;z=pz;break search;}}}
     const visual=this.world.tank(!player,boss,infantry?role:boss?'boss-'+kind:'tank');visual.root.position.set(x,0,z);if(boss){const core=visual.root.getObjectByName('Core');if(core)core.visible=false;}
     const difficulty=mode(this.save.difficulty).health;
@@ -202,7 +202,7 @@ export class Game {
     // Short accepted segments preserve wall sliding and prevent contact through cover.
     const steps=Math.max(1,Math.ceil(Math.max(Math.abs(motion.x),Math.abs(motion.z))/.35)),sx=motion.x/steps,sz=motion.z/steps,stepTime=dt/steps;
     const candidateCrush=unit===this.player&&this.phase==='playing'&&Math.hypot(motion.x,motion.z)/dt>=3;
-    const blocked=(x:number,z:number,ignoreInfantry:boolean)=>this.world.covers.some(c=>c.hp>0&&circleBox({x,z},r,c))||[this.player,...this.enemies].some(other=>other!==unit&&!other.dead&&!(ignoreInfantry&&this.isInfantry(other))&&distance({x,z},other.visual.root.position)<this.unitRadius(other)+r)||!!(this.convoy&&distance({x,z},this.convoy.position)<2.3);
+    const blocked=(x:number,z:number,ignoreInfantry:boolean)=>this.world.covers.some(c=>c.hp>0&&circleBox({x,z},r,c))||[this.player,...this.enemies].some(other=>other!==unit&&!other.dead&&!this.airborne(other)&&!(ignoreInfantry&&this.isInfantry(other))&&distance({x,z},other.visual.root.position)<this.unitRadius(other)+r)||!!(this.convoy&&distance({x,z},this.convoy.position)<2.3);
     for(let i=0;i<steps;i++){
       const from={x:p.x,z:p.z};
       const resolve=(ignoreInfantry:boolean)=>{let x=clamp(from.x+sx,-BOUNDS.x,BOUNDS.x),z=clamp(from.z+sz,-BOUNDS.z,BOUNDS.z);if(blocked(x,from.z,ignoreInfantry))x=from.x;if(blocked(x,z,ignoreInfantry))z=from.z;return {x,z};};
@@ -353,7 +353,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
       this.dustClock=this.world.low?.3:.12;
       const movement=this.input.movement();
       if(Math.hypot(movement.x,movement.z)>.2){const dust=p.clone();dust.y=.15;dust.x-=Math.sin(this.player.heading)*1.8;dust.z-=Math.cos(this.player.heading)*1.8;this.world.fx.smoke(dust,.85,0xb5a17c);}
-      for(const unit of [this.player,...this.enemies])if(!unit.dead&&unit.hp<unit.max*.35)this.world.fx.smoke(unit.visual.root.position.clone().setY(1.6),.8);
+      for(const unit of [this.player,...this.enemies])if(!unit.dead&&unit.hp<unit.max*.35)this.world.fx.smoke(unit.visual.root.position.clone().setY(unit.visual.root.position.y+1.6),.8);
     }
     for(const activity of this.world.activities){
       if(activity.spent)continue;
@@ -394,7 +394,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     this.convoyBlocked=false;
     if(this.convoy&&!this.hazards.quaking&&distance(p,this.convoy.position)<12){
       const next={x:this.convoy.position.x,z:Math.max(-50,this.convoy.position.z-dt*3.4*terrainSpeed(this.world.environment.biome,this.convoy.position.x,this.convoy.position.z))};
-      this.convoyBlocked=[this.player,...this.enemies].some(u=>!u.dead&&distance(next,u.visual.root.position)<2.6&&distance(next,u.visual.root.position)<distance(this.convoy!.position,u.visual.root.position));
+      this.convoyBlocked=[this.player,...this.enemies].some(u=>!u.dead&&!this.airborne(u)&&distance(next,u.visual.root.position)<2.6&&distance(next,u.visual.root.position)<distance(this.convoy!.position,u.visual.root.position));
       if(!this.convoyBlocked)this.convoy.position.z=next.z;
     }
     if(['capture','defense'].includes(m.kind)){

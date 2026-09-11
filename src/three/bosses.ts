@@ -73,7 +73,7 @@ export class BossCombat{
  climb(g:Game,u:Unit,dx:number,dz:number,dt:number){
   if(g.hazards.quaking){u.velocity={x:0,z:0};return;}
   const p=u.visual.root.position,r=g.unitRadius(u),next={x:clamp(p.x+dx,-BOUNDS.x+r,BOUNDS.x-r),z:clamp(p.z+dz,-BOUNDS.z+r,BOUNDS.z-r)};
-  const blocked=[g.player,...g.enemies].some(e=>e!==u&&!e.dead&&distance(next,e.visual.root.position)<r+g.unitRadius(e))||!!(g.convoy&&distance(next,g.convoy.position)<r+2.4);
+  const blocked=[g.player,...g.enemies].some(e=>e!==u&&!e.dead&&!g.airborne(e)&&distance(next,e.visual.root.position)<r+g.unitRadius(e))||!!(g.convoy&&distance(next,g.convoy.position)<r+2.4);
   if(!blocked){p.x=next.x;p.z=next.z;u.visual.root.userData.walking=true;}
   const speed=Math.max(.01,Math.hypot(dx,dz)),ahead={x:p.x+dx/speed*2,z:p.z+dz/speed*2};let height=0;
   for(const c of g.world.covers)if(c.hp>0&&(circleBox(p,r,c)||circleBox(ahead,r,c)))height=Math.max(height,c.kind==='cityblock'?9:c.kind==='house'?5:c.kind==='hill'||c.kind==='glacier'?5:c.kind==='volcano'?13:2.5);
