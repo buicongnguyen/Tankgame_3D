@@ -36,6 +36,12 @@
     "bytes": 43608
   },
   {
+    "asset": "cityblock",
+    "detailedTriangles": 1376,
+    "lowTriangles": 973,
+    "bytes": 124720
+  },
+  {
     "asset": "crate",
     "detailedTriangles": 516,
     "lowTriangles": 237,
@@ -48,6 +54,12 @@
     "bytes": 22568
   },
   {
+    "asset": "glacier",
+    "detailedTriangles": 320,
+    "lowTriangles": 160,
+    "bytes": 24844
+  },
+  {
     "asset": "hill",
     "detailedTriangles": 92,
     "lowTriangles": 27,
@@ -58,6 +70,18 @@
     "detailedTriangles": 2212,
     "lowTriangles": 662,
     "bytes": 87684
+  },
+  {
+    "asset": "jungle-tree",
+    "detailedTriangles": 584,
+    "lowTriangles": 173,
+    "bytes": 26012
+  },
+  {
+    "asset": "palm",
+    "detailedTriangles": 692,
+    "lowTriangles": 200,
+    "bytes": 24292
   },
   {
     "asset": "pine",
@@ -112,5 +136,17 @@
     "detailedTriangles": 1988,
     "lowTriangles": 589,
     "bytes": 74264
+  },
+  {
+    "asset": "volcanic-rock",
+    "detailedTriangles": 212,
+    "lowTriangles": 63,
+    "bytes": 9160
+  },
+  {
+    "asset": "volcano",
+    "detailedTriangles": 410,
+    "lowTriangles": 154,
+    "bytes": 15248
   }
 ]

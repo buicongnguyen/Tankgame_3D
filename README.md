@@ -6,10 +6,12 @@ A playable 3D tank rescue campaign built with **Three.js + TypeScript**, using o
 
 ## The campaign
 
-Lead Kestrel through nine operations to reopen the Meridian evacuation route: clear patrols, capture a relay, escort a rescue transport, defend an uplink, break a siege battery, and defeat Warden, then reclaim river villages, escort a winter relief convoy, and defend the ridge transmitter. Each operation includes a story briefing and debrief. First-clear credits buy persistent armor, damage and reload upgrades.
+Lead Kestrel through fourteen operations to reopen the Meridian evacuation route: clear patrols, capture a relay, escort a rescue transport, defend an uplink, break a siege battery, and defeat Warden, then reclaim river villages, escort a winter relief convoy, and defend the ridge transmitter. The frontier chapter adds a polar relay, erupting volcano, desert convoy route, jungle defense and occupied city. Each operation includes a story briefing and debrief. First-clear credits buy persistent armor, damage and reload upgrades.
 
 - Independently aimed turret, directional armor and real projectile travel.
-- Blender trees, houses, stone/steel walls, bridges and rocky hills.
+- Blender trees, houses, stone/steel walls, bridges, rocky hills, glaciers, a volcano, palms, broadleaf trees and city blocks.
+- Polar ice carries momentum; desert sand traps reduce player and enemy speed to exactly one quarter.
+- Volcanic rocks warn for 2.6 seconds before landing and can damage either side, infantry and destructible cover.
 - Water, off-road snow and mud change tank speed; bridge and road routes preserve speed.
 - Destructible cover, supply crates, explosive fuel drums and gasoline crates.
 - Cannon, unlockable autocannon and siege rockets, plus collectible pulse laser and arc rockets.
@@ -20,7 +22,7 @@ Lead Kestrel through nine operations to reopen the Meridian evacuation route: cl
 - Responsive command screen, minimap, objective HUD and simultaneous touch sticks.
 - Optional synthesized combat audio; selectable Detailed / Low detail graphics; locally bundled fonts.
 
-This release is a nine-mission adaptation. The original fifteen-stage campaign, enterable infantry shelters, complete arsenal and chassis shop remain in the separate 2D reference; they are not all ported into this release.
+This release has fourteen original 3D missions inspired by the 2D game. The separate fifteen-stage 2D campaign and its enterable infantry shelters remain available through the legacy route. Completed nine-stage saves unlock the frontier chapter; existing progress and purchases are preserved.
 
 ## Run and verify
 
@@ -54,22 +56,22 @@ Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within
 
 Tap **Graphics** on the command screen or in **Pause** to choose **Detailed** or **Low detail**. Low detail uses simpler Blender models, a smaller rendering buffer, fewer effects, and no dynamic shadows or reflection lighting. Text and touch controls retain their normal resolution. The setting saves locally and applies to the current stage without resetting your tank or mission.
 
-Only the selected model tier downloads on startup. Low detail contains 19 models totaling about 1 MB; the tank uses 1,692 triangles instead of 5,712. Switch back to Detailed whenever desired. Actual frame rate depends on the phone.
+Only the selected model tier downloads on startup. Low detail contains 25 models totaling 1.18 MB; the tank uses 1,692 triangles instead of 5,712. Switch back to Detailed whenever desired. Actual frame rate depends on the phone.
 
 ## Rebuild the Blender assets
 
-Editable source: `assets/blender/steel-front.blend`. Generator: `tools/blender/build_assets.py`. Runtime exports: `public/models/*.glb`. After regenerating the detailed kit, run `tools/blender/build_low_detail.py` with Blender to rebuild `public/models/low/*.glb`.
+Editable sources include `assets/blender/steel-front.blend` and `assets/blender/frontier-environments.blend`. Generators: `tools/blender/build_assets.py` and `tools/blender/build_frontier.py`. Runtime exports: `public/models/*.glb`. After regenerating the detailed kit, run `tools/blender/build_low_detail.py` with Blender to rebuild `public/models/low/*.glb`.
 
 ```powershell
 & 'C:\Users\n\source\repos\3d_astra\.tools\blender-4.5.3-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_assets.py
 npm run test:assets
 ```
 
-Use your own Blender executable location on another machine. The 19 exported assets total 1,988,832 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
+Use your own Blender executable location on another machine. The 25 exported assets total 2,331,216 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
 
 ## Architecture and planning
 
-See [the detailed evaluation and production plan](docs/3D_PRODUCTION_PLAN.md), including scope, story, UX, Blender workflow, combat rules, acceptance checks, and future expansion. Runtime modules live in `src/three/`; original Phaser code is retained in `src/game/` and `src/legacy-main.ts`.
+See [the detailed evaluation and production plan](docs/3D_PRODUCTION_PLAN.md), including scope, story, UX, Blender workflow, combat rules, acceptance checks, and future expansion. See also the [frontier campaign plan and implementation record](docs/FRONTIER_CAMPAIGN_PLAN.md). Runtime modules live in `src/three/`; original Phaser code is retained in `src/game/` and `src/legacy-main.ts`.
 
 ## Deployment
 
@@ -84,7 +86,7 @@ The APK is a debug build. The default web route is the 3D campaign; `legacy.html
 
 ## Known limits
 
-Flat gameplay plane with 3D models; no terrain climbing or rigid-body simulation. Enemy navigation uses local steering, not a global pathfinding solver. The six operations share the Meridian arena, with mission-specific objectives and opposition. Audio is procedural effects rather than voiced dialogue or an authored soundtrack. Physical-phone framerate and thermal testing remain follow-up work.
+Flat gameplay plane with 3D models; no terrain climbing or rigid-body simulation. Enemy navigation uses local steering, not a global pathfinding solver. All fourteen operations use the 144 × 120 m battlefield bounds, with biome-specific scenery, terrain rules, hazards and objectives. Audio is procedural effects rather than voiced dialogue or an authored soundtrack. Physical-phone framerate and thermal testing remain follow-up work.
 
 ## Asset attribution
 
@@ -108,13 +110,13 @@ Mines hurt both sides. Gasoline crates damage nearby tanks, soldiers and destruc
 
 ## Between-stage shop
 
-Every stage completion, including the two campaign endings, offers **Shop · Upgrades & Weapons**. The command screen also opens the shop. Spend supply credits on permanent armor, damage and reload upgrades or weapon ownership. Autocannon costs 120 CR and siege rockets 180 CR; their existing free campaign unlocks still apply. Pulse laser costs 360 CR and starts each mission with 12 shots; arc rockets cost 420 CR and start with 6 rounds. Map caches supply extra ammo. Purchases persist across reloads and retries, and owned weapons cannot be purchased twice. Older saves migrate with their earned credits and upgrades intact.
+Every stage completion, including the chapter and campaign endings, offers **Shop · Upgrades & Weapons**. The command screen also opens the shop. Spend supply credits on permanent armor, damage and reload upgrades or weapon ownership. Autocannon costs 120 CR and siege rockets 180 CR; their existing free campaign unlocks still apply. Pulse laser costs 360 CR and starts each mission with 12 shots; arc rockets cost 420 CR and start with 6 rounds. Map caches supply extra ammo. Purchases persist across reloads and retries, and owned weapons cannot be purchased twice. Older saves migrate with their earned credits and upgrades intact.
 
 ## Combat usability update
 
 Shop upgrades have shield, damage and reload icons. Every second enemy tank destroyed drops a labeled weapon box, alternating 12 laser shots and 6 arc rockets; drive over it to collect. These field drops last for the sortie and do not purchase permanent ownership. Infantry do not trigger tank drops, and no health pickups are dropped.
 
-Both defense missions start Kestrel near the uplink. Initial opposition and reinforcements spawn at map corners and approach the center; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, strike with R, shield with Q and locate a repair center with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
+All defense missions start Kestrel near the uplink. Initial opposition and reinforcements spawn at map corners and approach the center; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, strike with R, shield with Q and locate a repair center with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
 
 Repair centers are large green circular service pads, marked with a green cross on the minimap. Drive within 3 m to restore up to 32 HP per second; each center provides 160 HP per mission. Tank wrecks, houses, weapon boxes and supply boxes do not heal. E / Find Repair reports the nearest available center and never restores health remotely.
 
@@ -128,7 +130,7 @@ Effects reuse the existing shard geometry and a single small procedural texture.
 
 A completed objective starts a 0.8-second finish sequence: combat stops while destruction effects keep playing. The results screen then shows elapsed time, remaining hull, defeated tanks and soldiers, base reward, time bonus, hull bonus and total credits. Boss endings include the same breakdown and Shop access.
 
-On the first clear, the hull bonus is 25% of the base reward multiplied by remaining hull percentage. The time bonus is 25% of the base reward multiplied by the fraction of the target time saved, clamped to zero for a late finish. Both round to whole credits. Target times for operations 1-9 are 90, 90, 150, fixed timer, 120, 150, 120, 150, fixed timer seconds. Fixed-duration defense stages have no time bonus. Replays show performance but do not grant duplicate rewards. Credits and progression save when the objective completes, before the short visual delay.
+On the first clear, the hull bonus is 25% of the base reward multiplied by remaining hull percentage. The time bonus is 25% of the base reward multiplied by the fraction of the target time saved, clamped to zero for a late finish. Both round to whole credits. Target times for operations 1-9 are 90, 90, 150, fixed timer, 120, 150, 120, 150, fixed timer seconds. The frontier targets for operations 10–14 are 110, 150, 180, fixed timer and 170 seconds. Fixed-duration defense stages have no time bonus. Replays show performance but do not grant duplicate rewards. Credits and progression save when the objective completes, before the short visual delay.
 
 ## Blender tank skins
 
@@ -164,4 +166,4 @@ Arc rockets now adapt their landing distance to live enemies in an 18-degree con
 
 The tank now has sloped armor, layered track shoes, wheel hubs, a gun mantlet and sleeve, optics, smoke launchers and engine louvres. Vehicles gain glazing, mirrors, grilles and cargo ribs; houses gain window frames, sills, roof seams, gutters and chimney details. Supplies, bosses, infantry and foliage have additional structural geometry. Metal, rubber, glass and paint use distinct PBR responses, with reflected studio lighting in normal mode and simplified lighting in low mode.
 
-The 19 models remain below the existing 3 MB combined budget (1,988,832 bytes). Runtime meshes are grouped by material within animated pivots; turrets, legs, muzzle/exhaust attachments and boss weak points remain independent. Five shop previews are rendered in Blender Eevee at 512 x 384. See [visual quality scope and rebuilding](docs/VISUAL_QUALITY.md). This is a more detailed browser art pass, not a claim of full AAA photorealism.
+The expanded 25-model kit remains below the existing 3 MB combined budget (2,331,216 bytes). Runtime meshes are grouped by material within animated pivots; turrets, legs, muzzle/exhaust attachments and boss weak points remain independent. Five shop previews are rendered in Blender Eevee at 512 x 384. See [visual quality scope and rebuilding](docs/VISUAL_QUALITY.md). This is a more detailed browser art pass, not a claim of full AAA photorealism.

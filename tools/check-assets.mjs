@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-const names=['tank','transport','barricade','crate','barrel','relay','pine','house','stonewall','steelwall','bridge','hill','rifleman','rocketeer','boss-rail','boss-missile','boss-walker','rocket','fuelcrate'];
+const names=JSON.parse(fs.readFileSync('src/three/model-catalog.json','utf8'));
 let total=0,lowTotal=0,highTriangles=0,lowTriangles=0;
 for(const name of names){
   const b=fs.readFileSync(`public/models/${name}.glb`);total+=b.length;

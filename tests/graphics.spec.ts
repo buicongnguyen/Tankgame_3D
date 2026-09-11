@@ -1,3 +1,4 @@
+import MODEL_NAMES from '../src/three/model-catalog.json' with {type:'json'};
 import {test,expect,webkit} from '@playwright/test';
 
 for(const viewport of [{width:390,height:844},{width:844,height:390}])test(`mobile detail selection reduces geometry and survives reload ${viewport.width}`,async({browser})=>{
@@ -9,7 +10,7 @@ for(const viewport of [{width:390,height:844},{width:844,height:390}])test(`mobi
  expect(low.triangles).toBeLessThan(high.triangles*.4);expect(low.ratio).toBeLessThanOrEqual(.8);expect(low.shadow||low.reflection).toBe(false);expect(low.width).toBeLessThanOrEqual(viewport.width);expect(low.phase).toBe('menu');
  await graphics.scrollIntoViewIfNeeded();await page.screenshot({path:`test-results/mobile-graphics-${viewport.width}.png`});
  const requests:string[]=[];page.on('request',r=>{if(r.url().endsWith('.glb'))requests.push(r.url());});await page.reload();await expect(graphics).toHaveAttribute('aria-pressed','true');
- expect(requests).toHaveLength(19);expect(requests.every(url=>url.includes('/models/low/'))).toBe(true);expect((await sample()).triangles).toBe(low.triangles);
+ expect(requests).toHaveLength(MODEL_NAMES.length);expect(requests.every(url=>url.includes('/models/low/'))).toBe(true);expect((await sample()).triangles).toBe(low.triangles);
  // Switching back from a cold low-detail start must also restore every surface.
  await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','false');expect((await sample()).triangles).toBe(high.triangles);
  await page.getByRole('button',{name:'DEPLOY'}).tap();await expect(page.locator('#hud')).toBeVisible();expect(errors).toEqual([]);await context.close();

@@ -1,20 +1,20 @@
 import * as T from 'three';
 import type {World,Cover} from './world';
-export const BIOMES=['grove','village','river','ridge','industrial','wastes','river','snow','ridge'] as const;
-export type Biome=typeof BIOMES[number];
-export function terrainSpeed(biome:Biome,x:number,z:number){
- if(biome==='river'&&Math.abs(z-32)<4&&![-35,0,35].some(bridge=>Math.abs(x-bridge)<4.4))return .45;
- if(biome==='snow'&&Math.abs(x)>8.5)return .72;
- if(biome==='ridge'&&Math.hypot(x-36,z-17)<10)return .6;
- return 1;
-}
+import {MISSIONS} from './campaign';
+import {buildFrontier,FRONTIER_BIOMES,SKY_COLORS} from './frontier-environment';
+import type {Biome} from './terrain';
+export {terrainSpeed} from './terrain';
+export type {Biome} from './terrain';
+export const BIOMES=MISSIONS.map(m=>m.biome);
 export class Environment{
  biome:Biome='grove';water:T.Mesh|null=null;weather:T.Points|null=null;time=0;
  build(world:World,index:number){
   this.biome=BIOMES[index]??'grove';this.water=null;this.weather=null;this.time=0;
   const snow=this.biome==='snow',river=this.biome==='river';
-  const sky=snow?0x9cadb9:river?0x9bbfbb:this.biome==='ridge'?0xb5a18a:0xb1ad90;
+  const sky=SKY_COLORS[this.biome]??(snow?0x9cadb9:river?0x9bbfbb:this.biome==='ridge'?0xb5a18a:0xb1ad90);
   world.scene.background=new T.Color(sky);world.scene.fog=new T.Fog(sky,85,160);
+  world.sun.color.setHex(this.biome==='glacier'?0xe6f3ff:this.biome==='volcanic'?0xffb279:0xffe4b4);
+  if(FRONTIER_BIOMES.includes(this.biome)){this.weather=buildFrontier(world,this.biome);return;}
   const add=(name:Cover['kind'],x:number,z:number,w:number,d:number,hp:number)=>{
    const mesh=world.clone(name);mesh.position.set(x,0,z);world.arena.add(mesh);world.covers.push({kind:name,x,z,w,d,hp,mesh});return mesh;
   };
@@ -43,6 +43,6 @@ export class Environment{
    const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(coords,3));this.weather=new T.Points(geo,new T.PointsMaterial({color:snow?0xffffff:0xa0dfe3,size:snow?.23:.12,transparent:true,opacity:.65,depthWrite:false}));world.arena.add(this.weather);
   }
  }
- update(dt:number,low:boolean){this.time+=dt;if(this.water)(this.water.material as T.MeshStandardMaterial).color.setHSL(.52,.42,.37+Math.sin(this.time*1.5)*.025);if(this.weather){this.weather.visible=!low;const p=this.weather.geometry.attributes.position;for(let i=0;i<p.count;i++){let y=p.getY(i)-dt*(this.biome==='snow'?2:12);if(y<0)y=26;p.setY(i,y);}p.needsUpdate=true;}}
+ update(dt:number,low:boolean){this.time+=dt;if(this.water)(this.water.material as T.MeshStandardMaterial).color.setHSL(.52,.42,.37+Math.sin(this.time*1.5)*.025);if(this.weather){this.weather.visible=!low;const p=this.weather.geometry.attributes.position;for(let i=0;i<p.count;i++){let y=p.getY(i)-dt*(['snow','glacier','volcanic','jungle'].includes(this.biome)?2:12);if(y<0)y=26;p.setY(i,y);}p.needsUpdate=true;}}
  clear(){if(this.weather){this.weather.geometry.dispose();(this.weather.material as T.Material).dispose();}this.weather=null;this.water=null;}
 }

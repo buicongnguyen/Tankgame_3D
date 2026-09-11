@@ -1,3 +1,5 @@
+import {BiomeHazards} from './hazards';
+import {terrainAt,terrainLabel,terrainRegions,tractionMotion} from './terrain';
 import { rocketTarget } from './rocket-target';
 import { SKINS, getSkin, buySkin } from './skins';
 import * as T from 'three';
@@ -16,14 +18,14 @@ import type { Save, Difficulty } from './campaign';
 import { armorMultiplier, clamp, circleBox, distance, purchase, segmentBox, segmentCircle, turnToward, upgradeCost } from './rules';
 import type { Point, Upgrade } from './rules';
 type Phase='menu'|'finishing'|'playing'|'paused'|'depot'|'failed'|'victory';
-export interface Unit { visual:TankVisual; hp:number; max:number; heading:number; aim:number; cooldown:number; role:'player'|'raider'|'sentry'|'heavy'|'boss'|'rifleman'|'rocketeer'; dead:boolean; }
+export interface Unit { velocity:Point; visual:TankVisual; hp:number; max:number; heading:number; aim:number; cooldown:number; role:'player'|'raider'|'sentry'|'heavy'|'boss'|'rifleman'|'rocketeer'; dead:boolean; }
 interface Shot { mesh:T.Mesh; p:Point; from:Point; dx:number; dz:number; speed:number; damage:number; life:number; friendly:boolean; splash:number; }
 export class Game {
   root:HTMLElement; world:World; input:Input; save:Save=freshSave(); phase:Phase='menu'; mission=0;
   player!:Unit; enemies:Unit[]=[]; shots:Shot[]=[];
   finishDelay=0;finishDeadline=0;stageResult:StageResult|null=null;
   elapsed=0; capture=0; spawnTimer=0; kills=0; shotsFired=0; lastReward=0;
-  bosses=new BossCombat();
+  bosses=new BossCombat();hazards=new BiomeHazards();
   special=new SpecialWeapons();specialAmmo=[0,0];infantryKills=0;
   weaponPickerOpen=false;
   qualityChanging=false;qualityError=false;
@@ -135,16 +137,16 @@ export class Game {
     const visual=this.world.tank(!player,boss,infantry?role:boss?'boss-'+bossKind(this.mission):'tank');visual.root.position.set(x,0,z);if(boss){const core=visual.root.getObjectByName('Core');if(core)core.visible=false;}
     const difficulty=this.save.difficulty==='story'?1.4:this.save.difficulty==='veteran'?.8:1;
     const hp=player?(240+this.save.upgrades.armor*65)*difficulty:infantry?(role==='rifleman'?35:55):boss?BOSS[bossKind(this.mission)].health:role==='heavy'?160:role==='sentry'?90:65;
-    return {visual,hp,max:hp,heading:player?Math.PI:0,aim:player?Math.PI:0,cooldown:2+(this.enemies.length%3)*.8,role,dead:false};
+    return {velocity:{x:0,z:0},visual,hp,max:hp,heading:player?Math.PI:0,aim:player?Math.PI:0,cooldown:2+(this.enemies.length%3)*.8,role,dead:false};
   }
   defenseSpawn(i:number,role:Unit['role']){const corners=[[-66,-52],[66,52],[66,-52],[-66,52]];const [x,z]=corners[i%4];return this.makeUnit(x,z,role);}
   prepare(index:number){
     this.finishDelay=0;this.finishDeadline=0;this.stageResult=null;
-    this.bosses.clear();this.special.clear();this.specialAmmo=[this.save.weapons.includes(3)?12:0,this.save.weapons.includes(4)?6:0];this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.strikes=[];this.mission=index;this.world.build(index,MISSIONS[index].kind);this.shots=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;
+    this.hazards.reset(index);this.bosses.clear();this.special.clear();this.specialAmmo=[this.save.weapons.includes(3)?12:0,this.save.weapons.includes(4)?6:0];this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.strikes=[];this.mission=index;this.world.build(index,MISSIONS[index].kind);this.shots=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;
     this.elapsed=0;this.capture=0;this.spawnTimer=0;this.kills=0;this.shotsFired=0;this.reload=0;this.weapon=this.save.equippedWeapon;this.shieldTime=0;this.shieldCooldown=0;this.relayHealth=300;this.convoyHealth=260;
     this.player=this.makeUnit(-4,MISSIONS[index].kind==='defense'?-3:22,'player');this.world.applySkin(this.player.visual.root,this.save.skin);this.player.visual.hull.rotation.y=Math.PI;this.player.visual.turret.rotation.y=Math.PI;
     const points=[[-17,-17],[17,-21],[25,0],[-28,0],[8,-25],[-6,-23]];
-    for(let i=0;i<MISSIONS[index].count;i++){const p=points[i],role:Unit['role']=[5,6,8].includes(index)&&i===0?'boss':index>=4&&i%2===0?'heavy':i%3===1?'sentry':'raider';this.enemies.push(MISSIONS[index].kind==='defense'?this.defenseSpawn(i,role):this.makeUnit(p[0]*(index>=4?1.7:1),p[1]*(index>=4?1.8:1),role));}
+    for(let i=0;i<MISSIONS[index].count;i++){const p=points[i],role:Unit['role']=!!MISSIONS[index].boss&&i===0?'boss':index>=4&&i%2===0?'heavy':i%3===1?'sentry':'raider';this.enemies.push(MISSIONS[index].kind==='defense'?this.defenseSpawn(i,role):this.makeUnit(p[0]*(index>=4?1.7:1),p[1]*(index>=4?1.8:1),role));}
     for(let i=0;i<(index<2?4:6);i++){const pos=[[-12,28],[13,28],[-20,-24],[20,-29],[-38,10],[38,12]][i];this.enemies.push(MISSIONS[index].kind==='defense'?this.defenseSpawn(i+MISSIONS[index].count,i%2?'rocketeer':'rifleman'):this.makeUnit(pos[0],pos[1],i%2?'rocketeer':'rifleman'));}
     if(MISSIONS[index].kind==='escort'){this.convoy=this.world.clone('transport');this.convoy.position.set(0,0,48);this.player.visual.root.position.set(-4,0,48);this.convoy.rotation.y=Math.PI;this.world.entities.add(this.convoy);}
     this.world.shield.visible=false;this.world.cursor.visible=false;
@@ -170,13 +172,13 @@ export class Game {
   playerDamageMultiplier(){return (1+this.save.upgrades.power*.2+(this.powerBoost>0?.35:0))*getSkin(this.save.skin).damage;}
   weaponStats(){return [{damage:44,speed:48,reload:.85,splash:0},{damage:13,speed:58,reload:.19,splash:0},{damage:70,speed:30,reload:1.6,splash:4.5},{damage:150,speed:0,reload:.6,splash:0},{damage:170,speed:0,reload:2.4,splash:7}][this.weapon];}
   reloadDuration(){return this.weaponStats().reload*(1-this.save.upgrades.reload*.13);}
-  moveUnit(unit:Unit,dx:number,dz:number){
+  moveUnit(unit:Unit,dx:number,dz:number,dt=1/60){
     const p=unit.visual.root.position,r=this.unitRadius(unit);
-    const traction=terrainSpeed(this.world.environment.biome,p.x,p.z);dx*=traction;dz*=traction;
+    const motion=tractionMotion(this.world.environment.biome,p,unit.velocity,dx,dz,dt);dx=motion.x;dz=motion.z;
     const blocked=(x:number,z:number)=>this.world.covers.some(c=>c.hp>0&&circleBox({x,z},r,c))||[this.player,...this.enemies].some(other=>other!==unit&&!other.dead&&distance({x,z},other.visual.root.position)<this.unitRadius(other)+r)||!!(this.convoy&&distance({x,z},this.convoy.position)<2.3);
     const previous=p.clone();
-    const x=clamp(p.x+dx,-BOUNDS.x,BOUNDS.x);if(!blocked(x,p.z))p.x=x;
-    const z=clamp(p.z+dz,-BOUNDS.z,BOUNDS.z);if(!blocked(p.x,z))p.z=z;unit.visual.root.userData.walking=p.distanceToSquared(previous)>.000001;
+    const x=clamp(p.x+dx,-BOUNDS.x,BOUNDS.x);if(!blocked(x,p.z))p.x=x;else unit.velocity.x=0;if(x!==previous.x+dx)unit.velocity.x=0;
+    const z=clamp(p.z+dz,-BOUNDS.z,BOUNDS.z);if(!blocked(p.x,z))p.z=z;else unit.velocity.z=0;if(z!==previous.z+dz)unit.velocity.z=0;unit.visual.root.userData.walking=p.distanceToSquared(previous)>.000001;
   }
   syncVisual(unit:Unit){
     if(this.isInfantry(unit)){const swing=unit.visual.root.userData.walking?Math.sin(this.elapsed*9)*.5:0;for(const [name,sign] of [['LeftLeg',1],['RightLeg',-1]] as const){const leg=unit.visual.root.getObjectByName(name);if(leg)leg.rotation.x=swing*sign;}}
@@ -208,7 +210,7 @@ export class Game {
   }
   updatePlayer(dt:number){
     const movement=this.input.movement(),length=Math.hypot(movement.x,movement.z);
-    if(length>.06){const dx=movement.x/Math.max(1,length),dz=movement.z/Math.max(1,length);this.moveUnit(this.player,dx*9*getSkin(this.save.skin).speed*dt,dz*9*getSkin(this.save.skin).speed*dt);this.player.heading=turnToward(this.player.heading,Math.atan2(dx,dz),dt*4.5);}
+    if(length>.06){const dx=movement.x/Math.max(1,length),dz=movement.z/Math.max(1,length);this.moveUnit(this.player,dx*9*getSkin(this.save.skin).speed*dt,dz*9*getSkin(this.save.skin).speed*dt,dt);this.player.heading=turnToward(this.player.heading,Math.atan2(dx,dz),dt*4.5);}else this.moveUnit(this.player,0,0,dt);
     const p=this.player.visual.root.position;
     const aimX=Number(this.input.keys.has('KeyL'))-Number(this.input.keys.has('KeyJ')),aimZ=Number(this.input.keys.has('KeyK'))-Number(this.input.keys.has('KeyI'));
     if(aimX||aimZ){const length=Math.hypot(aimX,aimZ);this.input.aim={x:aimX/length,z:aimZ/length};this.input.hasTouchAim=true;}
@@ -240,8 +242,9 @@ export class Game {
         const direction=desired+Math.sin(this.elapsed*.8+i)*.2;
         const speed=this.isInfantry(e)?2.4:e.role==='heavy'?2.9:4;
         const dx=(Math.sin(direction)*advance+Math.cos(direction)*side)*speed*dt,dz=(Math.cos(direction)*advance-Math.sin(direction)*side)*speed*dt;
-        this.moveUnit(e,dx,dz);if(Math.abs(dx)+Math.abs(dz)>.001)e.heading=turnToward(e.heading,Math.atan2(dx,dz),dt*2);
+        this.moveUnit(e,dx,dz,dt);if(Math.abs(dx)+Math.abs(dz)>.001)e.heading=turnToward(e.heading,Math.atan2(dx,dz),dt*2);
       }
+      if(e.role==='sentry'&&dist<=26&&!obstruction&&terrainAt(this.world.environment.biome,p)==='ice')this.moveUnit(e,0,0,dt);
       const range=m.kind==='defense'&&target!==playerPos?24:38;
       if(dist<range)e.cooldown-=dt;else e.cooldown=Math.max(e.cooldown,.85);
       const beam=e.visual.beam;beam.visible=e.cooldown<.85&&dist<range;beam.scale.z=dist;beam.position.set(p.x+Math.sin(e.aim)*dist/2,.12,p.z+Math.cos(e.aim)*dist/2);beam.rotation.y=e.aim;
@@ -263,7 +266,7 @@ export class Game {
   }
   hitCover(cover:Cover,damage:number){
     if(cover.hp<=0)return;cover.hp-=damage;
-    const surface=cover.kind==='barrel'||cover.kind==='fuelcrate'?'fuel':cover.kind==='pine'||cover.kind==='house'||cover.kind==='crate'?'wood':cover.kind==='stonewall'||cover.kind==='hill'?'stone':'metal';
+    const surface=cover.kind==='barrel'||cover.kind==='fuelcrate'?'fuel':['pine','palm','jungle-tree','house','crate'].includes(cover.kind)?'wood':['stonewall','hill','glacier','volcano','volcanic-rock','cityblock'].includes(cover.kind)?'stone':'metal';
     this.world.fx.surface(cover.mesh.position.clone().setY(.7),surface,cover.hp<=0);
     if(cover.hp<=0){cover.mesh.visible=false;
 if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kind==='fuelcrate'?7:5,cover.kind==='fuelcrate'?110:65);}}
@@ -335,16 +338,16 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   }
   objectiveProgress(){const m=MISSIONS[this.mission];if(m.kind==='capture')return this.capture/m.duration;if(m.kind==='defense')return this.elapsed/m.duration;if(m.kind==='escort')return this.convoy?(48-this.convoy.position.z)/98:0;if(m.kind==='boss'){const b=this.enemies.find(e=>e.role==='boss');return b?1-b.hp/b.max:0;}return this.kills/m.count;}
   step(dt:number){
-    if(this.phase==='finishing'){this.finishDelay=Math.max(0,this.finishDelay-dt);if(this.finishDelay<1e-6){if(this.mission===5||this.mission===MISSIONS.length-1){this.setPhase('victory');this.showVictory();}else this.showDepot();}return;}
+    if(this.phase==='finishing'){this.finishDelay=Math.max(0,this.finishDelay-dt);if(this.finishDelay<1e-6){if(this.mission===5||this.mission===8||this.mission===MISSIONS.length-1){this.setPhase('victory');this.showVictory();}else this.showDepot();}return;}
     if(this.phase!=='playing')return;
-    this.trailClock-=dt;this.elapsed+=dt;this.updatePlayer(dt);this.updateEnemies(dt);this.updateShots(dt);this.updateActivities(dt);this.special.update(this,dt);if(this.trailClock<=0)this.trailClock=.06;
+    this.trailClock-=dt;this.elapsed+=dt;this.updatePlayer(dt);this.updateEnemies(dt);this.updateShots(dt);this.updateActivities(dt);this.special.update(this,dt);this.hazards.update(this,dt);if(this.trailClock<=0)this.trailClock=.06;
     for(const unit of [this.player,...this.enemies])if(!this.isInfantry(unit))unit.visual.turret.position.y+=(1.17-unit.visual.turret.position.y)*Math.min(1,dt*12);
     this.syncVisual(this.player);
     const m=MISSIONS[this.mission],p=this.player.visual.root.position;
     if(m.kind==='capture'&&distance(p,{x:0,z:-13})<6.7&&!this.enemies.some(e=>!e.dead&&distance(e.visual.root.position,{x:0,z:-13})<6.7))this.capture+=dt;
     this.convoyBlocked=false;
     if(this.convoy&&distance(p,this.convoy.position)<12){
-      const next={x:this.convoy.position.x,z:Math.max(-50,this.convoy.position.z-dt*3.4)};
+      const next={x:this.convoy.position.x,z:Math.max(-50,this.convoy.position.z-dt*3.4*terrainSpeed(this.world.environment.biome,this.convoy.position.x,this.convoy.position.z))};
       this.convoyBlocked=[this.player,...this.enemies].some(u=>!u.dead&&distance(next,u.visual.root.position)<2.6&&distance(next,u.visual.root.position)<distance(this.convoy!.position,u.visual.root.position));
       if(!this.convoyBlocked)this.convoy.position.z=next.z;
     }
@@ -364,13 +367,13 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     const m=MISSIONS[this.mission];this.el('mission-number').textContent=`OP ${String(this.mission+1).padStart(2,'0')} / ${m.sector}`;this.el('mission-name').textContent=m.name;
     let objective=m.objective;
     if(m.kind==='assault')objective=`${this.kills} / ${m.count} tanks eliminated`;
-    if(m.kind==='capture')objective=`UPLINK ${Math.min(18,Math.floor(this.capture))} / 18s · ${this.enemies.some(e=>!e.dead&&distance(e.visual.root.position,{x:0,z:-13})<6.7)?'CONTESTED':'HOLD THE AMBER RING'}`;
+    if(m.kind==='capture')objective=`UPLINK ${Math.min(m.duration,Math.floor(this.capture))} / ${m.duration}s · ${this.enemies.some(e=>!e.dead&&distance(e.visual.root.position,{x:0,z:-13})<6.7)?'CONTESTED':'HOLD THE AMBER RING'}`;
     if(m.kind==='defense')objective=`${Math.max(0,Math.ceil(m.duration-this.elapsed))}s remaining · RELAY ${Math.max(0,Math.ceil(this.relayHealth/3))}%`;
     if(m.kind==='escort')objective=`TRANSPORT ${Math.max(0,Math.ceil(this.convoyHealth/2.6))}% · ${this.convoy&&distance(this.player.visual.root.position,this.convoy.position)<12?(this.convoyBlocked?'CLEAR THE ROAD':'MOVING TO EXTRACTION'):'MOVE CLOSER TO ESCORT'}`;
     if(m.kind==='boss'){const b=this.enemies.find(e=>e.role==='boss');objective=`WARDEN ${Math.max(0,Math.ceil((b?.hp||0)/(b?.max||1)*100))}% · ${b&&b.hp<b.max*.5?'OVERDRIVE — KEEP MOVING':'WATCH THE TARGETING LINE'}`;}
     const boss=this.enemies.find(u=>u.role==='boss'&&!u.dead),readout=this.el('boss-readout');readout.hidden=!boss;if(boss)readout.textContent=`${BOSS[bossKind(this.mission)].name} · ${Math.ceil(boss.hp/boss.max*100)}% · ${this.bosses.status(boss)}`;this.el('objective').textContent=objective;this.radio.style.top=(this.el('mission-name').parentElement!.getBoundingClientRect().bottom+8)+'px';this.el('objective-fill').style.width=`${clamp(this.objectiveProgress()*100,0,100)}%`;
     this.el('health-label').textContent=`${Math.ceil(this.player.hp)} / ${Math.ceil(this.player.max)}`;this.el('health-fill').style.width=`${this.player.hp/this.player.max*100}%`;
-    this.el('status-line').textContent=this.shieldTime>0?'PROTECTIVE FIELD ACTIVE':this.player.hp<this.player.max*.3?'HULL CRITICAL — SEEK COVER':terrainSpeed(this.world.environment.biome,this.player.visual.root.position.x,this.player.visual.root.position.z)<1?'ROUGH GROUND · REDUCED SPEED':'FRONT ARMOR ONLINE';
+    this.el('status-line').textContent=this.shieldTime>0?'PROTECTIVE FIELD ACTIVE':this.player.hp<this.player.max*.3?'HULL CRITICAL — SEEK COVER':this.hazards.danger(this.player.visual.root.position)?'ROCKFALL · LEAVE THE RED CIRCLE':terrainLabel(this.world.environment.biome,this.player.visual.root.position);
     const available=Math.max(this.fieldWeaponCount,weaponCount(this.save));
     this.el('weapon').setAttribute('aria-expanded',String(this.weaponPickerOpen));
     const picker=this.el('weapon-picker');picker.hidden=!this.weaponPickerOpen;
@@ -384,7 +387,9 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     const ctx=this.mini.getContext('2d')!;ctx.fillStyle='#142328';ctx.fillRect(0,0,176,132);ctx.strokeStyle='#3b5557';ctx.strokeRect(5,5,166,122);
     const map=(point:Point)=>({x:point.x/(BOUNDS.x*2)*166+88,y:point.z/(BOUNDS.z*2)*122+66});
     if(this.world.environment.biome==='river'){const q=map({x:0,z:28});ctx.fillStyle='#398d9f';ctx.fillRect(5,q.y,166,8/120*122);for(const x of [-35,0,35]){const b=map({x,z:26});ctx.fillStyle='#baac82';ctx.fillRect(b.x-5,b.y,10,12/120*122);}}
-    for(const c of this.world.covers){if(c.hp<=0)continue;const q=map(c);ctx.fillStyle=c.kind==='pine'?'#51845b':c.kind==='house'?'#ac7858':c.kind==='fuelcrate'?'#ff8955':'#667770';ctx.fillRect(q.x-2,q.y-2,4,4);}
+    for(const r of terrainRegions(this.world.environment.biome)){const q=map(r);ctx.fillStyle=r.kind==='ice'?'#72bad0':'#936d3d';ctx.beginPath();ctx.ellipse(q.x,q.y,r.rx/144*166,r.rz/120*122,0,0,Math.PI*2);ctx.fill();}
+    for(const r of this.hazards.rocks){const q=map(r);ctx.strokeStyle='#ff6544';ctx.beginPath();ctx.arc(q.x,q.y,5,0,Math.PI*2);ctx.stroke();}
+    for(const c of this.world.covers){if(c.hp<=0)continue;const q=map(c);ctx.fillStyle=['pine','palm','jungle-tree'].includes(c.kind)?'#51845b':['house','cityblock'].includes(c.kind)?'#ac7858':c.kind==='fuelcrate'?'#ff8955':'#667770';const w=Math.max(3,c.w/144*166),h=Math.max(3,c.d/120*122);ctx.fillRect(q.x-w/2,q.y-h/2,w,h);}
     if(this.world.ring.visible){const q=map(this.world.ring.position);ctx.strokeStyle='#ffbd70';ctx.beginPath();ctx.arc(q.x,q.y,9,0,Math.PI*2);ctx.stroke();}
     for(const a of this.world.activities){if(a.spent)continue;const q=map(a);ctx.fillStyle=a.kind==='repair'?'#75ffbd':a.kind==='supply'?'#70d9ff':a.kind==='laser'?'#8bffff':a.kind==='arc'?'#c392ff':'#ff7055';if(a.kind==='repair'){ctx.fillRect(q.x-3,q.y-1,6,2);ctx.fillRect(q.x-1,q.y-3,2,6);}else ctx.fillRect(q.x-2,q.y-2,4,4);}
     for(const u of [this.player,...this.enemies]){if(u.dead)continue;const q=map(u.visual.root.position);ctx.fillStyle=u===this.player?'#a4ffe0':'#ff7a5d';ctx.beginPath();ctx.arc(q.x,q.y,u===this.player?3:this.isInfantry(u)?1.2:2,0,Math.PI*2);ctx.fill();}
@@ -392,6 +397,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   }
   complete(){
     if(this.phase!=='playing')return;
+    this.hazards.clear();
     this.stageResult={...awardStage(this.save,this.mission,this.elapsed,this.player.hp,this.player.max),tanks:this.kills,infantry:this.infantryKills};
     this.lastReward=this.stageResult.total;this.persist();this.finishDelay=.8;this.finishDeadline=performance.now()+800;this.setPhase('finishing');
     for(const enemy of this.enemies)enemy.visual.beam.visible=false;
@@ -413,8 +419,8 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     this.overlay.innerHTML=`<section class="panel depot-panel"><div class="debrief-title"><h1>Tank skins</h1><span class="credit-total">${this.save.credits}<small>SUPPLY CREDITS</small></span></div><nav class="shop-tabs"><button data-action="shop-tab" data-value="equipment">UPGRADES & WEAPONS</button><button data-action="shop-tab" data-value="skins" aria-pressed="true">TANK SKINS</button></nav><p>Buy once. Equip one skin. Bonuses apply next mission.</p><div class="skin-grid">${SKINS.map(skin=>{const owned=this.save.skins.includes(skin.id),selected=this.save.skin===skin.id;return `<article class="skin-card ${selected?'selected':''}"><img src="${import.meta.env.BASE_URL}skins/${skin.id}.png" alt="${skin.name} tank paint"/><h2>${skin.name}</h2><p>${skin.bonus}</p><button data-action="${owned?'skin-equip':'skin-buy'}" data-value="${skin.id}" ${selected||!owned&&this.save.credits<skin.price?'disabled':''}>${selected?'EQUIPPED':owned?'EQUIP':`BUY & EQUIP · ${skin.price} CR`}</button></article>`;}).join('')}</div><button class="primary" data-action="shop-back">DONE →</button></section>`;this.focusPrimary();
   }
   buy(id:Upgrade){if(!['armor','power','reload'].includes(id))return;const result=purchase(this.save.credits,this.save.upgrades[id]);if(!result)return;this.save.credits=result.credits;this.save.upgrades[id]=result.level;this.persist();this.tone(560,.08,.03);this.showShop();}
-  fail(){this.setPhase('failed');this.overlay.innerHTML=`<section class="panel pause-panel"><span class="eyebrow">OPERATION INTERRUPTED</span><h1>We go again.</h1><p>${this.convoyHealth<=0?'The rescue transport was lost. Stay close and intercept the ambushers.':this.relayHealth<=0?'The uplink was destroyed. Intercept enemies before they reach the relay.':'Kestrel is disabled. Use hard cover, keep your front toward incoming fire, and activate your shield before crossing a firing lane.'}</p><button class="primary" data-action="retry">RETRY ${MISSIONS[this.mission].name.toUpperCase()} →</button><button data-action="menu">Return to command</button><small>Your purchased upgrades and unlocked operations are safe.</small></section>`;this.focusPrimary();}
-  showVictory(){this.overlay.innerHTML=`<section class="panel victory-panel"><span class="eyebrow">MERIDIAN / SIGNAL RESTORED</span><div class="victory-symbol">◈</div><h1>Everyone<br>comes home.</h1><p>${MISSIONS[this.mission].debrief}</p>${this.resultSummary()}<span class="eyebrow">${this.mission===5?'VALLEY SECURED · THREE RECOVERY OPERATIONS UNLOCKED':'NINE OPERATIONS · MERIDIAN RECLAIMED'}</span><button class="primary" data-action="shop">SHOP · UPGRADES & WEAPONS →</button><button data-action="menu">RETURN TO COMMAND →</button><small>Choose unlocked operations from the command route.</small></section>`;this.focusPrimary();}
+  fail(){this.hazards.clear();this.setPhase('failed');this.overlay.innerHTML=`<section class="panel pause-panel"><span class="eyebrow">OPERATION INTERRUPTED</span><h1>We go again.</h1><p>${this.convoyHealth<=0?'The rescue transport was lost. Stay close and intercept the ambushers.':this.relayHealth<=0?'The uplink was destroyed. Intercept enemies before they reach the relay.':'Kestrel is disabled. Use hard cover, keep your front toward incoming fire, and activate your shield before crossing a firing lane.'}</p><button class="primary" data-action="retry">RETRY ${MISSIONS[this.mission].name.toUpperCase()} →</button><button data-action="menu">Return to command</button><small>Your purchased upgrades and unlocked operations are safe.</small></section>`;this.focusPrimary();}
+  showVictory(){this.overlay.innerHTML=`<section class="panel victory-panel"><span class="eyebrow">MERIDIAN / SIGNAL RESTORED</span><div class="victory-symbol">◈</div><h1>Everyone<br>comes home.</h1><p>${MISSIONS[this.mission].debrief}</p>${this.resultSummary()}<span class="eyebrow">${this.mission===5?'VALLEY SECURED · RECOVERY ROUTE OPEN':this.mission===8?'MERIDIAN CONNECTED · FRONTIER CAMPAIGN UNLOCKED':`${MISSIONS.length} OPERATIONS · EVERY SIGNAL CONNECTED`}</span><button class="primary" data-action="shop">SHOP · UPGRADES & WEAPONS →</button><button data-action="menu">${this.mission<MISSIONS.length-1?'CONTINUE CAMPAIGN →':'RETURN TO COMMAND →'}</button><small>Choose unlocked operations from the command route.</small></section>`;this.focusPrimary();}
   tone(frequency:number,duration:number,volume:number){
     if(!this.save.sound)return;
     try{this.audio??=new AudioContext();void this.audio.resume();const osc=this.audio.createOscillator(),gain=this.audio.createGain();osc.type='triangle';osc.frequency.setValueAtTime(frequency,this.audio.currentTime);osc.frequency.exponentialRampToValueAtTime(frequency*.4,this.audio.currentTime+duration);gain.gain.setValueAtTime(volume,this.audio.currentTime);gain.gain.exponentialRampToValueAtTime(.0001,this.audio.currentTime+duration);osc.connect(gain);gain.connect(this.audio.destination);osc.start();osc.stop(this.audio.currentTime+duration);}catch{/* Audio is optional. */}

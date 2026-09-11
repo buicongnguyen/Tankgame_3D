@@ -14,7 +14,7 @@ Improve silhouettes, mechanical credibility, material separation and lighting at
 
 ## Runtime constraints
 
-Tank: 5,712 triangles versus 2,024 before. All other assets remain below 3,000 triangles each. Total 19 GLBs: 1,988,832 bytes, below the unchanged 3,000,000-byte validation limit. No downloaded texture packs, per-object dynamic lights, physics debris or postprocessing passes are added. Static meshes are batched by material within each animated pivot; named boss Core and limb groups are preserved. Low mode now also swaps in simpler Blender geometry; see the mobile detail tier below.
+Tank: 5,712 triangles versus 2,024 before. All other assets remain below 3,000 triangles each. Total 25 GLBs after the frontier expansion: 2,331,216 bytes, below the unchanged 3,000,000-byte validation limit. No downloaded texture packs, per-object dynamic lights, physics debris or postprocessing passes are added. Static meshes are batched by material within each animated pivot; named boss Core and limb groups are preserved. Low mode now also swaps in simpler Blender geometry; see the mobile detail tier below.
 
 Browser tests verify model loading, bounded batches, preserved moving limbs and weak points, rocket exhaust, destruction, skins, all mission conditions, and mobile input/layout. Software-rendered CI gets a 120-second per-test budget and 15-second UI readiness allowance; dedicated mission finish timing tests still check the actual 0.8-second sequence. Physical-device frame rate and thermal performance require hardware testing.
 
@@ -28,7 +28,8 @@ Run the existing Blender generators from the repository root, in this order, wit
 4. `tools/blender/build_infantry.py`
 5. `tools/blender/build_rocket_fuel.py`
 6. `tools/blender/build_skins.py`
-7. `tools/blender/build_low_detail.py`
+7. `tools/blender/build_frontier.py`
+8. `tools/blender/build_low_detail.py`
 
 The first five generators call `tools/blender/asset_detail.py` before export. The skin generator imports the completed tank and renders the five matching material variants. Every generator starts a clean Blender scene. Editable `.blend` sources, GLBs and previews are committed; Blender is not required for the web build. Run `npm run test:assets`, `npm run build` and `npm test` afterward.
 
@@ -46,10 +47,16 @@ Quick mouse clicks are retained until the next simulation frame, then consumed o
 
 The Graphics button in the command and pause screens switches between Detailed and Low detail. The existing saved `low` preference is retained. Low detail loads only `public/models/low/` on startup; the other tier loads on demand and is cached for later switches. Failed downloads retain the current setting and show a retry message.
 
-Blender imports each detailed GLB, dissolves coplanar triangles and decimates curved/beveled meshes while retaining surfaces, rigs and attachment names. `build_low_detail.py` reproduces all 19 variants directly from the detailed exports. The low tank has 1,692 triangles versus 5,712. Asset validation checks genuine triangle reductions, budgets and matching rig transforms for both tiers.
+Blender imports each detailed GLB, dissolves coplanar triangles and decimates curved/beveled meshes while retaining surfaces, rigs and attachment names. `build_low_detail.py` reproduces all 25 variants directly from the detailed exports. The low tank has 1,692 triangles versus 5,712. Asset validation checks genuine triangle reductions, budgets and matching rig transforms for both tiers.
 
 Runtime switching replaces geometry within the existing material batches. It preserves unit references, moving pivots, health, positions, collision footprints, skins, boss weak points, destruction state and in-flight rockets. Loading is confined to the command/pause screens; resume and other actions wait until loading finishes. The gameplay simulation stays paused.
 
 Low mode caps the pixel ratio at 0.8 and the longest rendering-buffer edge at 960 pixels, disables reflection lighting, dynamic shadows and overlay blur, and uses the existing reduced effect budgets. CSS text and controls remain at native resolution. Detailed rendering remains at a maximum 1.6 pixel ratio. These settings reduce GPU work; physical-device frame rate, battery and thermal performance still require hardware testing.
 
 Regression coverage includes portrait/landscape touch selection, cold reload fetching only the chosen tier, both switch directions, paused battle preservation, download failure/retry and iPhone WebKit touch/resume.
+
+## Frontier environment kit
+
+`build_frontier.py` creates six additional Blender assets: faceted glacier outcrops, a caldera volcano, ember-veined volcanic rocks, palms, broadleaf jungle trees and three-floor city blocks. The editable scene is `assets/blender/frontier-environments.blend`. The shared runtime/test catalog is `src/three/model-catalog.json`.
+
+The complete detailed kit uses 27,384 triangles; Low detail uses 9,059 triangles (67% fewer), with 1,175,396 bytes of GLBs. Hazard rings, terrain footprints and collision remain identical across detail settings. Rockfalls reuse pooled smoke/impact effects, allow at most three active rocks and eight fading scars, and add no dynamic lights or rigid-body debris. See the [frontier implementation plan](FRONTIER_CAMPAIGN_PLAN.md).

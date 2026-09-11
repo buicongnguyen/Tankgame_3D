@@ -1,10 +1,11 @@
+import {MISSIONS} from './campaign';
 import * as T from 'three';
 import type {Game,Unit} from './game';
 import {distance,segmentBox,segmentCircle,turnToward,clamp} from './rules';
 import type {Point} from './rules';
 import {BOUNDS} from './activities';
 export type BossKind='rail'|'missile'|'walker';
-export const bossKind=(mission:number):BossKind=>mission===6?'missile':mission===8?'walker':'rail';
+export const bossKind=(mission:number):BossKind=>MISSIONS[mission]?.boss??'rail';
 export const BOSS={rail:{name:'Rail Titan',health:800,radius:2.5,charge:1.4},missile:{name:'Tempest Carrier',health:850,radius:2.5,charge:1.6},walker:{name:'Iron Sovereign',health:1050,radius:3.4,charge:1.0}};
 interface State{phase:'tracking'|'charging'|'exposed';time:number;heading:number;targets:Point[];markers:T.Mesh[];rockets:T.Mesh[];}
 export class BossCombat{
@@ -19,7 +20,7 @@ export class BossCombat{
   const core=u.visual.root.getObjectByName('Core');if(core)core.visible=s.phase==='exposed';u.visual.beam.visible=false;u.visual.root.userData.walking=false;
   if(s.phase==='tracking'){
    const dist=distance(p,target),aim=Math.atan2(target.x-p.x,target.z-p.z);u.aim=turnToward(u.aim,aim,dt*1.4);
-   if(dist>24||kind==='walker') {const forward=dist>24?1:dist<15?-.6:0,side=kind==='walker'?.6:0;g.moveUnit(u,(Math.sin(aim)*forward+Math.cos(aim)*side)*2.3*dt,(Math.cos(aim)*forward-Math.sin(aim)*side)*2.3*dt);u.heading=turnToward(u.heading,aim,dt);}
+   if(dist>24||kind==='walker') {const forward=dist>24?1:dist<15?-.6:0,side=kind==='walker'?.6:0;g.moveUnit(u,(Math.sin(aim)*forward+Math.cos(aim)*side)*2.3*dt,(Math.cos(aim)*forward-Math.sin(aim)*side)*2.3*dt,dt);u.heading=turnToward(u.heading,aim,dt);}
    if(dist>52){g.syncVisual(u);return;}s.time-=dt;
    if(s.time<=0){s.phase='charging';s.time=cfg.charge;s.heading=aim;u.aim=aim;s.targets=kind==='missile'?[-5,0,5].map(dx=>({x:clamp(target.x+dx,-BOUNDS.x,BOUNDS.x),z:clamp(target.z+(dx===0?3:-2),-BOUNDS.z,BOUNDS.z)})):[];
     for(const t of s.targets){const marker=new T.Mesh(new T.RingGeometry(4.3,4.5,48),new T.MeshBasicMaterial({color:0xff6655,transparent:true,opacity:.8,side:T.DoubleSide}));marker.rotation.x=-Math.PI/2;marker.position.set(t.x,.1,t.z);g.world.entities.add(marker);s.markers.push(marker);const rocket=g.world.rocket();rocket.visible=false;rocket.rotation.x=Math.PI/2;rocket.position.set(t.x,28,t.z);g.world.entities.add(rocket);s.rockets.push(rocket);}

@@ -1,3 +1,5 @@
+import {GROUND_COLORS} from './frontier-environment';
+import MODEL_NAMES from './model-catalog.json';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { skinPalette } from './skins';
 import * as T from 'three';
@@ -9,7 +11,7 @@ import { CombatEffects } from './effects';
 import { BOUNDS, buildActivities } from './activities';
 import type { Activity } from './activities';
 export interface TankVisual { root: T.Group; hull: T.Object3D; turret: T.Object3D; muzzle: T.Object3D; bar: T.Mesh; beam: T.Mesh; }
-export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate'; hp: number; mesh: T.Group; }
+export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock'; hp: number; mesh: T.Group; }
 interface Effect { mesh: T.Mesh; life: number; max: number; velocity: T.Vector3; }
 const scratch = new T.Vector3();
 export class World {
@@ -70,7 +72,7 @@ export class World {
     if(!templates){
       templates=new Map<string,T.Group>();
       const loader=new GLTFLoader();
-      await Promise.all(['tank','transport','barricade','crate','barrel','relay','pine','house','stonewall','steelwall','bridge','hill','rifleman','rocketeer','boss-rail','boss-missile','boss-walker','rocket','fuelcrate'].map(async name=>{
+      await Promise.all(MODEL_NAMES.map(async name=>{
         const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/${low?'low/':''}${name}.glb`);
         const root=gltf.scene;
         root.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true; o.receiveShadow=true;}});
@@ -192,13 +194,14 @@ export class World {
   }
   build(index:number,kind:string) {
     this.clear();
-    const ground=this.box(164,.7,144,index===3?0x74776c:0xa69c78,0,-.4,0);ground.castShadow=false;
-    this.box(8,.035,130,0x817e65,0,-.02,0);
+    const ground=this.box(164,.7,144,GROUND_COLORS[BIOMES[index]]??(index===3?0x74776c:0xa69c78),0,-.4,0);ground.castShadow=false;
+    this.box(8,.035,130,BIOMES[index]==='city'?0x465358:BIOMES[index]==='glacier'?0x8eabb7:BIOMES[index]==='desert'?0xd8bd82:0x817e65,0,-.02,0);
     for(let z=-60;z<62;z+=5)this.box(.15,.025,2,0xc3b993,0,.01,z);
     // Winter snow replaces dirt detail; nearly coplanar patches underneath can shimmer.
-    for(let i=0;i<(BIOMES[index]==='snow'?0:86);i++){
+    for(let i=0;i<(['snow','glacier','city'].includes(BIOMES[index])?0:86);i++){
       const x=Math.sin(i*19.73)*72,z=Math.cos(i*8.2)*60;
-      const patch=this.box(1.2+(i%4),.035,1.3+(i%3),i%2?0x98936f:0xb1a680,x,.005,z);patch.rotation.y=i;patch.castShadow=false;
+      if(GROUND_COLORS[BIOMES[index]]!==undefined&&Math.abs(x)<7)continue;
+      const patch=this.box(1.2+(i%4),.035,1.3+(i%3),GROUND_COLORS[BIOMES[index]]??(i%2?0x98936f:0xb1a680),x,.005,z);patch.rotation.y=i;patch.castShadow=false;
     }
     // Keep the central convoy road clear. Every obstacle uses the same footprint for rendering and collision.
     const layout:[number,number,'barricade'|'crate'|'barrel'][]=[[-14,13,'barricade'],[12,8,'barricade'],[-15,-6,'barricade'],[15,-15,'barricade'],[-27,-15,'barricade'],[28,0,'barricade'],[-9,12,'crate'],[16,8,'crate'],[-20,-6,'crate'],[10,-16,'crate'],[-24,7,'barrel'],[20,-11,'barrel'],[-13,-18,'barrel'],[25,14,'crate']];

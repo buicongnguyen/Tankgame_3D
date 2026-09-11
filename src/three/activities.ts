@@ -3,9 +3,10 @@ import type { Point } from './rules';
 export const BOUNDS={x:72,z:60};
 export type ActivityKind='repair'|'supply'|'mine'|'laser'|'arc';
 export interface Activity extends Point {kind:ActivityKind;mesh:T.Group;spent:boolean;remaining:number;}
+export const ACTIVITY_LAYOUT:[ActivityKind,number,number][]=[['laser',-10,35],['arc',10,35],['repair',-43,20],['repair',42,-30],['supply',45,24],['supply',-45,-30],['mine',-34,4],['mine',33,-6],['mine',-41,-11],['mine',44,8],['mine',25,-38],['mine',-24,40]];
 export function buildActivities(parent:T.Group):Activity[]{
- const entries:[ActivityKind,number,number][]=[['laser',-10,35],['arc',10,35],['repair',-43,20],['repair',42,-30],['supply',45,24],['supply',-45,-30],['mine',-34,4],['mine',33,-6],['mine',-41,-11],['mine',44,8],['mine',25,-38],['mine',-24,40]];
- return entries.map(([kind,x,z])=>createActivity(parent,kind,x,z));
+
+ return ACTIVITY_LAYOUT.map(([kind,x,z])=>createActivity(parent,kind,x,z));
 }
 export function createActivity(parent:T.Group,kind:ActivityKind,x:number,z:number):Activity{
   const mesh=new T.Group();mesh.position.set(x,0,z);parent.add(mesh);
