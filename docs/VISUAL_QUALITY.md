@@ -34,3 +34,7 @@ The first five generators call `tools/blender/asset_detail.py` before export. Th
 ## Honest quality target
 
 This is a detailed, lightweight stylized 3D kit. Full AAA realism would additionally require sculpted and baked normal maps, authored wear/dirt textures, vegetation LODs, richer terrain, character animation and a larger lighting/art production effort. Those are not claimed as delivered by this pass.
+
+## Frame-clock correction
+
+Slower rendering exposed a queued-animation-frame timestamp that can predate the mission start/resume clock. Frame time now stays monotonic, preventing negative simulation debt, invalid camera interpolation and stalled driving/firing. A regression test supplies stale timestamps across both start and resume, then verifies movement on the next valid frame.

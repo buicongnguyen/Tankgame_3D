@@ -1,0 +1,4 @@
+import {test,expect} from '@playwright/test';
+test('stale animation timestamps cannot create time debt or stall driving after start/resume',async({page})=>{
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(()=>{const g=(window as any).__steel,frame=g.frame.bind(g);g.frame=()=>{};g.start(0);g.input.keys.add('KeyW');g.last=10000;const before=g.player.visual.root.position.z;frame(5000);const stale={elapsed:g.elapsed,accumulator:g.accumulator,last:g.last,camera:[g.world.camera.position.x,g.world.camera.position.y,g.world.camera.position.z].every(Number.isFinite)};frame(10100);const moved=g.player.visual.root.position.z<before,advanced=g.elapsed>0;g.pause();g.resume();g.last=20000;frame(15000);const resume=g.accumulator>=0&&g.last===20000;return {stale,moved,advanced,resume};});expect(r.stale).toEqual({elapsed:0,accumulator:0,last:10000,camera:true});expect(r.moved&&r.advanced&&r.resume).toBe(true);
+});
