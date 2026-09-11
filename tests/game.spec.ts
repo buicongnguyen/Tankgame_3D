@@ -23,11 +23,11 @@ test('campaign mission conditions, workshop, checkpoint, failure and ending',asy
   test.setTimeout(120000);
   await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();await page.getByRole('button',{name:'DEPLOY'}).click();
   await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(1/60);});
-  await expect(page.getByRole('heading',{name:'A road reclaimed.'})).toBeVisible();await page.locator('[data-action=shop]').click();await page.locator('[data-action=buy][data-value=armor]').click();
+  await expect(page.getByRole('heading',{name:'Mission accomplished'})).toBeVisible();await page.locator('[data-action=shop]').click();await page.locator('[data-action=buy][data-value=armor]').click();
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('steel-front-3d-v1')!).upgrades.armor)).toBe(1);
   await page.screenshot({path:'test-results/depot-desktop.png'});await page.reload();await expect(page.locator('.briefing h2')).toHaveText('Open Frequency');
   await page.getByRole('button',{name:'DEPLOY'}).click();
-  const capture=await page.evaluate(()=>{const g=(window as any).__steel;g.player.visual.root.position.set(0,0,-13);g.enemies[0].visual.root.position.set(3,0,-13);g.step(.1);const contested=g.capture===0;for(const e of g.enemies)e.dead=true;g.capture=17.99;g.step(.02);return {contested,phase:g.phase};});expect(capture).toEqual({contested:true,phase:'depot'});
+  const capture=await page.evaluate(()=>{const g=(window as any).__steel;g.player.visual.root.position.set(0,0,-13);g.enemies[0].visual.root.position.set(3,0,-13);g.step(.1);const contested=g.capture===0;for(const e of g.enemies)e.dead=true;g.capture=17.99;g.step(.02);g.step(.8);return {contested,phase:g.phase};});expect(capture).toEqual({contested:true,phase:'depot'});
   await page.evaluate(()=>{const g=(window as any).__steel;g.start(2);for(const e of g.enemies)e.dead=true;g.player.visual.root.position.set(0,0,-48);g.convoy.position.z=-49.99;g.step(.1);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
   await page.evaluate(()=>{const g=(window as any).__steel;g.start(3);g.elapsed=44.99;g.relayHealth=0;g.step(.02);});await expect(page.getByRole('heading',{name:'We go again.'})).toBeVisible();
   await page.getByRole('button',{name:/RETRY LONG NIGHT/}).click();expect(await page.evaluate(()=>(window as any).__steel.relayHealth)).toBe(300);

@@ -117,3 +117,9 @@ Repair centers are large green circular service pads, marked with a green cross 
 Hits on metal produce bright sparks; stone creates dust and gray chips; wood splinters and produces brief smoke. Destroyed wooden cover and fuel containers leave short flame/smoke effects and fading ground scorch marks. Existing fuel blast damage and chain reactions are unchanged; lingering flames are cosmetic.
 
 Effects reuse the existing shard geometry and a single small procedural texture. Particles remain capped at 230 (85 in low mode), with at most six active cover fires (two in low mode). Fire lasts 2.8-4 seconds and scorch marks fade over eight seconds. Low mode also reduces large-explosion clouds. There are no added lights, shadow casters, physics debris or downloaded effect textures. Tests check particle/fire limits, expiration, repeat-hit behavior and mission cleanup; actual-device frame rates depend on hardware.
+
+## Stage finish and performance bonuses
+
+A completed objective starts a 0.8-second finish sequence: combat stops while destruction effects keep playing. The results screen then shows elapsed time, remaining hull, defeated tanks and soldiers, base reward, time bonus, hull bonus and total credits. Boss endings include the same breakdown and Shop access.
+
+On the first clear, the hull bonus is 25% of the base reward multiplied by remaining hull percentage. The time bonus is 25% of the base reward multiplied by the fraction of the target time saved, clamped to zero for a late finish. Both round to whole credits. Target times for operations 1-9 are 90, 90, 150, fixed timer, 120, 150, 120, 150, fixed timer seconds. Fixed-duration defense stages have no time bonus. Replays show performance but do not grant duplicate rewards. Credits and progression save when the objective completes, before the short visual delay.

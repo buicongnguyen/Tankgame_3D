@@ -7,16 +7,19 @@ import { Input } from './input';
 import { terrainSpeed } from './environment';
 import { BOUNDS, createActivity } from './activities';
 import { upgradeIcon } from './shop-icons';
-import { MISSIONS, freshSave, parseSave, rewardClear, SAVE_KEY, weaponCount, weaponNames, weaponPrices, ownsWeapon, buyWeapon } from './campaign';
+import { awardStage } from './results';
+import type { StageResult } from './results';
+import { MISSIONS, freshSave, parseSave, SAVE_KEY, weaponCount, weaponNames, weaponPrices, ownsWeapon, buyWeapon } from './campaign';
 import type { Save, Difficulty } from './campaign';
 import { armorMultiplier, clamp, circleBox, distance, purchase, segmentBox, segmentCircle, turnToward, upgradeCost } from './rules';
 import type { Point, Upgrade } from './rules';
-type Phase='menu'|'playing'|'paused'|'depot'|'failed'|'victory';
+type Phase='menu'|'finishing'|'playing'|'paused'|'depot'|'failed'|'victory';
 export interface Unit { visual:TankVisual; hp:number; max:number; heading:number; aim:number; cooldown:number; role:'player'|'raider'|'sentry'|'heavy'|'boss'|'rifleman'|'rocketeer'; dead:boolean; }
 interface Shot { mesh:T.Mesh; p:Point; from:Point; dx:number; dz:number; speed:number; damage:number; life:number; friendly:boolean; splash:number; }
 export class Game {
   root:HTMLElement; world:World; input:Input; save:Save=freshSave(); phase:Phase='menu'; mission=0;
   player!:Unit; enemies:Unit[]=[]; shots:Shot[]=[];
+  finishDelay=0;stageResult:StageResult|null=null;
   elapsed=0; capture=0; spawnTimer=0; kills=0; shotsFired=0; lastReward=0;
   bosses=new BossCombat();
   special=new SpecialWeapons();specialAmmo=[0,0];infantryKills=0;
@@ -73,7 +76,7 @@ export class Game {
     if(import.meta.env.DEV && new URLSearchParams(location.search).has('e2e'))(window as unknown as {__steel:Game}).__steel=this;
   }
   persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(this.save));}catch{this.saveWarning=true;}}
-  setPhase(phase:Phase){this.phase=phase;document.body.dataset.phase=phase;this.hud.hidden=!['playing','paused'].includes(phase);this.input.active=phase==='playing';this.input.reset();this.weaponPickerOpen=false;this.el('weapon-picker').hidden=true;this.overlay.hidden=phase==='playing';if(phase!=='playing')this.world.cursor.visible=false;}
+  setPhase(phase:Phase){this.phase=phase;document.body.dataset.phase=phase;this.hud.hidden=!['playing','paused','finishing'].includes(phase);this.input.active=phase==='playing';this.input.reset();this.weaponPickerOpen=false;this.el('weapon-picker').hidden=true;this.overlay.hidden=phase==='playing'||phase==='finishing';if(phase!=='playing')this.world.cursor.visible=false;}
   focusPrimary(){requestAnimationFrame(()=>this.overlay.querySelector<HTMLButtonElement>('.primary')?.focus({preventScroll:true}));}
   route(){const frontier=this.save.cleared.indexOf(false);return MISSIONS.map((m,i)=>`<button class="route-item ${i===this.mission?'selected':''}" data-action="mission" data-value="${i}" ${frontier>=0&&i>frontier?'disabled':''}><span class="route-index">${this.save.cleared[i]?'✓':String(i+1).padStart(2,'0')}</span><span><small>${m.kind.toUpperCase()}</small><strong>${m.name}</strong></span><span class="route-state">${frontier>=0&&i>frontier?'LOCKED':i===this.mission?'◂':'↗'}</span></button>`).join('');}
   settings(){return `<div class="settings"><button data-action="sound">SOUND <b>${this.save.sound?'ON':'OFF'}</b></button><button data-action="quality">GRAPHICS <b>${this.save.low?'LOW':'HIGH'}</b></button><a href="./legacy.html">Original 2D ↗</a></div>`;}
@@ -116,6 +119,7 @@ export class Game {
   }
   defenseSpawn(i:number,role:Unit['role']){const corners=[[-66,-52],[66,52],[66,-52],[-66,52]];const [x,z]=corners[i%4];return this.makeUnit(x,z,role);}
   prepare(index:number){
+    this.finishDelay=0;this.stageResult=null;
     this.bosses.clear();this.special.clear();this.specialAmmo=[this.save.weapons.includes(3)?12:0,this.save.weapons.includes(4)?6:0];this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.strikes=[];this.mission=index;this.world.build(index,MISSIONS[index].kind);this.shots=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;
     this.elapsed=0;this.capture=0;this.spawnTimer=0;this.kills=0;this.shotsFired=0;this.reload=0;this.weapon=0;this.shieldTime=0;this.shieldCooldown=0;this.relayHealth=300;this.convoyHealth=260;
     this.player=this.makeUnit(-4,MISSIONS[index].kind==='defense'?-3:22,'player');this.player.visual.hull.rotation.y=Math.PI;this.player.visual.turret.rotation.y=Math.PI;
@@ -308,6 +312,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   }
   objectiveProgress(){const m=MISSIONS[this.mission];if(m.kind==='capture')return this.capture/m.duration;if(m.kind==='defense')return this.elapsed/m.duration;if(m.kind==='escort')return this.convoy?(48-this.convoy.position.z)/98:0;if(m.kind==='boss'){const b=this.enemies.find(e=>e.role==='boss');return b?1-b.hp/b.max:0;}return this.kills/m.count;}
   step(dt:number){
+    if(this.phase==='finishing'){this.finishDelay=Math.max(0,this.finishDelay-dt);if(this.finishDelay<1e-6){if(this.mission===5||this.mission===MISSIONS.length-1){this.setPhase('victory');this.showVictory();}else this.showDepot();}return;}
     if(this.phase!=='playing')return;
     this.trailClock-=dt;this.elapsed+=dt;this.updatePlayer(dt);this.updateEnemies(dt);this.updateShots(dt);this.updateActivities(dt);this.special.update(this,dt);if(this.trailClock<=0)this.trailClock=.06;
     for(const unit of [this.player,...this.enemies])if(!this.isInfantry(unit))unit.visual.turret.position.y+=(1.17-unit.visual.turret.position.y)*Math.min(1,dt*12);
@@ -362,9 +367,18 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     for(const u of [this.player,...this.enemies]){if(u.dead)continue;const q=map(u.visual.root.position);ctx.fillStyle=u===this.player?'#a4ffe0':'#ff7a5d';ctx.beginPath();ctx.arc(q.x,q.y,u===this.player?3:this.isInfantry(u)?1.2:2,0,Math.PI*2);ctx.fill();}
     if(this.convoy){const q=map(this.convoy.position);ctx.fillStyle='#ffcb84';ctx.fillRect(q.x-3,q.y-3,6,6);}
   }
-  complete(){if(this.phase!=='playing')return;this.lastReward=rewardClear(this.save,this.mission);this.persist();this.setPhase((this.mission===5||this.mission===MISSIONS.length-1)?'victory':'depot');this.tone(660,.22,.06);if(this.mission===5||this.mission===MISSIONS.length-1)this.showVictory();else this.showDepot();}
+  complete(){
+    if(this.phase!=='playing')return;
+    this.stageResult={...awardStage(this.save,this.mission,this.elapsed,this.player.hp,this.player.max),tanks:this.kills,infantry:this.infantryKills};
+    this.lastReward=this.stageResult.total;this.persist();this.finishDelay=.8;this.setPhase('finishing');
+    for(const enemy of this.enemies)enemy.visual.beam.visible=false;
+    this.tone(660,.22,.06);
+  }
+  resultSummary(){const r=this.stageResult;if(!r)return '';const seconds=Math.ceil(r.time),time=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
+    return `<section class="stage-summary" aria-label="Stage results"><div class="stage-metrics"><span>TIME<strong>${time}</strong></span><span>HULL<strong>${r.healthPercent}%</strong></span><span>TANKS<strong>${r.tanks}</strong></span><span>SOLDIERS<strong>${r.infantry}</strong></span></div><dl class="stage-rewards"><div><dt>Stage reward</dt><dd>${r.base} CR</dd></div><div><dt>Time bonus ${r.target?`<small>target ${r.target}s</small>`:'<small>fixed timer</small>'}</dt><dd>+${r.timeBonus} CR</dd></div><div><dt>Hull bonus</dt><dd>+${r.healthBonus} CR</dd></div><div class="stage-total"><dt>Total earned</dt><dd>+${r.total} CR</dd></div></dl><p class="reward-note">${r.replay?'Replay · rewards already claimed.':'First-clear bonuses: up to 25% each for speed and remaining hull.'}</p></section>`;
+  }
   showDepot(){
-    this.setPhase('depot');this.overlay.innerHTML=`<section class="panel pause-panel"><span class="eyebrow">OPERATION COMPLETE</span><h1>A road reclaimed.</h1><p>${MISSIONS[this.mission].debrief}</p><p>+${this.lastReward} CR · Balance ${this.save.credits} CR</p><button class="primary" data-action="shop">SHOP · UPGRADES & WEAPONS →</button><button data-action="next">NEXT BRIEFING →</button><button class="quiet" data-action="menu">Return to command</button></section>`;this.focusPrimary();
+    this.setPhase('depot');this.overlay.innerHTML=`<section class="panel pause-panel"><span class="eyebrow">OPERATION COMPLETE</span><h1>Mission accomplished</h1><p>${MISSIONS[this.mission].debrief}</p>${this.resultSummary()}<p>Balance ${this.save.credits} CR</p><button class="primary" data-action="shop">SHOP · UPGRADES & WEAPONS →</button><button data-action="next">NEXT BRIEFING →</button><button class="quiet" data-action="menu">Return to command</button></section>`;this.focusPrimary();
   }
   showShop(){
     this.setPhase('depot');
@@ -373,14 +387,14 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   }
   buy(id:Upgrade){if(!['armor','power','reload'].includes(id))return;const result=purchase(this.save.credits,this.save.upgrades[id]);if(!result)return;this.save.credits=result.credits;this.save.upgrades[id]=result.level;this.persist();this.tone(560,.08,.03);this.showShop();}
   fail(){this.setPhase('failed');this.overlay.innerHTML=`<section class="panel pause-panel"><span class="eyebrow">OPERATION INTERRUPTED</span><h1>We go again.</h1><p>${this.convoyHealth<=0?'The rescue transport was lost. Stay close and intercept the ambushers.':this.relayHealth<=0?'The uplink was destroyed. Intercept enemies before they reach the relay.':'Kestrel is disabled. Use hard cover, keep your front toward incoming fire, and activate your shield before crossing a firing lane.'}</p><button class="primary" data-action="retry">RETRY ${MISSIONS[this.mission].name.toUpperCase()} →</button><button data-action="menu">Return to command</button><small>Your purchased upgrades and unlocked operations are safe.</small></section>`;this.focusPrimary();}
-  showVictory(){this.overlay.innerHTML=`<section class="panel victory-panel"><span class="eyebrow">MERIDIAN / SIGNAL RESTORED</span><div class="victory-symbol">◈</div><h1>Everyone<br>comes home.</h1><p>${MISSIONS[this.mission].debrief}</p><blockquote>“Kestrel, this is the last transport.<br>We made it. We all made it.”</blockquote><span class="eyebrow">${this.mission===5?'VALLEY SECURED · THREE RECOVERY OPERATIONS UNLOCKED':'NINE OPERATIONS · MERIDIAN RECLAIMED'}</span><button class="primary" data-action="shop">SHOP · UPGRADES & WEAPONS →</button><button data-action="menu">RETURN TO COMMAND →</button><small>Choose unlocked operations from the command route.</small></section>`;this.focusPrimary();}
+  showVictory(){this.overlay.innerHTML=`<section class="panel victory-panel"><span class="eyebrow">MERIDIAN / SIGNAL RESTORED</span><div class="victory-symbol">◈</div><h1>Everyone<br>comes home.</h1><p>${MISSIONS[this.mission].debrief}</p>${this.resultSummary()}<span class="eyebrow">${this.mission===5?'VALLEY SECURED · THREE RECOVERY OPERATIONS UNLOCKED':'NINE OPERATIONS · MERIDIAN RECLAIMED'}</span><button class="primary" data-action="shop">SHOP · UPGRADES & WEAPONS →</button><button data-action="menu">RETURN TO COMMAND →</button><small>Choose unlocked operations from the command route.</small></section>`;this.focusPrimary();}
   tone(frequency:number,duration:number,volume:number){
     if(!this.save.sound)return;
     try{this.audio??=new AudioContext();void this.audio.resume();const osc=this.audio.createOscillator(),gain=this.audio.createGain();osc.type='triangle';osc.frequency.setValueAtTime(frequency,this.audio.currentTime);osc.frequency.exponentialRampToValueAtTime(frequency*.4,this.audio.currentTime+duration);gain.gain.setValueAtTime(volume,this.audio.currentTime);gain.gain.exponentialRampToValueAtTime(.0001,this.audio.currentTime+duration);osc.connect(gain);gain.connect(this.audio.destination);osc.start();osc.stop(this.audio.currentTime+duration);}catch{/* Audio is optional. */}
   }
   frame(now:number){
     const dt=Math.min((now-this.last)/1000,.1);this.last=now;
-    if(this.phase==='playing'){this.accumulator+=dt;let steps=0;while(this.accumulator>=1/60&&steps++<6){this.step(1/60);this.accumulator-=1/60;}}
+    if(this.phase==='playing'||this.phase==='finishing'){this.accumulator+=dt;let steps=0;while(this.accumulator>=1/60&&steps++<6){this.step(1/60);this.accumulator-=1/60;}}
     else {this.accumulator=0;if(this.phase==='menu')this.player.visual.turret.rotation.y=Math.PI+Math.sin(now*.0003)*.45;}
     this.hurtTimer=Math.max(0,this.hurtTimer-dt);document.body.classList.toggle('hurt',this.hurtTimer>0&&!matchMedia('(prefers-reduced-motion: reduce)').matches);
     this.world.update(this.phase!=='paused'?dt:0,this.player.visual.root.position,this.phase==='menu');
