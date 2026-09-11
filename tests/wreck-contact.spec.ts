@@ -4,7 +4,7 @@ test('track contact requires actual speed, respects cover and counts only infant
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
  const result=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};
   const setup=(mission=0)=>{g.start(mission);g.world.covers=[];for(const e of g.enemies)e.dead=true;const e=g.enemies.find((e:any)=>g.isInfantry(e));e.dead=false;e.hp=e.max=35;e.visual.root.visible=true;g.player.visual.root.position.set(-4,0,0);e.visual.root.position.set(0,0,0);return e;};
-  let e=setup();g.moveUnit(g.player,7,0,.7);const fast=e.dead&&g.infantryKills===1&&g.kills===0&&g.world.activities.length===12;g.moveUnit(g.player,-7,0,.7);const once=g.infantryKills===1;
+  let e=setup();g.moveUnit(g.player,7,0,.7);const fast=e.dead&&g.infantryKills===1&&g.kills===0&&g.world.activities.length===16;g.moveUnit(g.player,-7,0,.7);const once=g.infantryKills===1;
   e=setup();g.player.visual.root.position.set(-1.7,0,0);g.moveUnit(g.player,0,0,.1);const still=!e.dead;g.moveUnit(g.player,.15,0,.1);const slow=!e.dead;
   e=setup();g.world.covers=[{x:-1,z:0,w:.5,d:6,hp:Infinity}];g.moveUnit(g.player,7,0,.7);const wall=!e.dead&&g.player.visual.root.position.x<-2;
   e=setup(11);g.player.visual.root.position.set(-25,0,30);e.visual.root.position.set(-23,0,30);g.moveUnit(g.player,4.5,0,.5);const sand=!e.dead&&g.player.visual.root.position.x<-24;

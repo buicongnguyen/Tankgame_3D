@@ -1,7 +1,7 @@
 import {groundTexture,sandRipples} from './frontier-surfaces';
 import * as T from 'three';
 import type {World,Cover} from './world';
-import {ACTIVITY_LAYOUT} from './activities';
+
 import {terrainRegions} from './terrain';
 import type {Biome} from './terrain';
 export const VOLCANO={x:-28,z:-38,width:23,scale:.85,height:11};
@@ -9,8 +9,9 @@ export const FRONTIER_BIOMES:Biome[]=['glacier','volcanic','desert','jungle','ci
 export const GROUND_COLORS:Partial<Record<Biome,number>>={glacier:0xc9dce0,volcanic:0x51454a,desert:0xc6a465,jungle:0x566a40,city:0x68777a,quake:0x877663,marsh:0x535f3d};
 export const SKY_COLORS:Partial<Record<Biome,number>>={glacier:0xb3d1e0,volcanic:0xa98176,desert:0xddc5a0,jungle:0x8baa92,city:0xa6b9c2,quake:0xb7a58e,marsh:0x92a58a};
 export function buildFrontier(world:World,biome:Biome){
- const reserved=[{x:0,z:0,w:16,d:128},...ACTIVITY_LAYOUT.map(([,x,z])=>({x,z,w:8,d:8}))];
+ const reserved=world.layout.reserved;
  const add=(kind:Cover['kind'],x:number,z:number,w:number,d:number,hp:number,force=false)=>{
+  if(kind==='fuelcrate'&&world.layout.supplies.some(p=>Math.hypot(x-p.x,z-p.z)<9))return null;
   if(!force&&[...reserved,...world.covers.filter(c=>c.hp>0)].some(c=>Math.abs(c.x-x)<(c.w+w)/2+1.4&&Math.abs(c.z-z)<(c.d+d)/2+1.4))return null;
   const mesh=world.clone(kind);mesh.position.set(x,0,z);if(['white-pine','jungle-tree','palm'].includes(kind)){mesh.rotation.y=x*12.31+z*4.21;mesh.scale.y=.82+(Math.sin(x*7+z*11)+1)*.17;}world.arena.add(mesh);world.covers.push({kind,x,z,w,d,hp,mesh});return mesh;
  };

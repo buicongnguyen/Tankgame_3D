@@ -1,3 +1,5 @@
+import {stageLayout,overlapsReservation,roadDistance} from './stage-layout';
+import {terrainAt,terrainSpeed} from './terrain';
 import {groundTexture,frontierBoundary} from './frontier-surfaces';
 import {GROUND_COLORS} from './frontier-environment';
 import MODEL_NAMES from './model-catalog.json';
@@ -12,7 +14,7 @@ import { CombatEffects } from './effects';
 import { BOUNDS, buildActivities } from './activities';
 import type { Activity } from './activities';
 export interface TankVisual { root: T.Group; hull: T.Object3D; turret: T.Object3D; muzzle: T.Object3D; bar: T.Mesh; beam: T.Mesh; }
-export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; }
+export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; laserHits?:number; mesh: T.Group; }
 interface Effect { mesh: T.Mesh; life: number; max: number; velocity: T.Vector3; }
 const scratch = new T.Vector3();
 export class World {
@@ -28,6 +30,10 @@ export class World {
   templates = new Map<string, T.Group>();
   private modelPacks = new Map<boolean, Map<string, T.Group>>();
   covers: Cover[] = [];
+  layout=stageLayout(0);navigationRevision=0;
+  firmRoad(p:Box|{x:number;z:number}){return ['snow','glacier','desert','marsh'].includes(this.environment.biome)&&roadDistance(this.layout.points,p)<=4;}
+  terrainKind(p:{x:number;z:number}){return this.firmRoad(p)?undefined:terrainAt(this.environment.biome,p);}
+  groundSpeed(p:{x:number;z:number}){return this.firmRoad(p)?1:terrainSpeed(this.environment.biome,p.x,p.z);}
   effects: Effect[] = [];
   ring: T.Mesh;
   cursor: T.Mesh;
@@ -193,26 +199,27 @@ export class World {
       const mesh=new T.Mesh(geometry,bucket.material);mesh.castShadow=bucket.shadow;mesh.receiveShadow=true;mesh.userData.owned=true;this.arena.add(mesh);
     }
   }
-  build(index:number,kind:string) {
-    this.clear();
+  build(index:number,kind:string,level=0) {
+    this.clear();this.navigationRevision++;this.layout=stageLayout(index,level,kind);
     const frontier=GROUND_COLORS[BIOMES[index]]!==undefined;
-    const ground=this.box(frontier?184:164,.7,frontier?164:144,GROUND_COLORS[BIOMES[index]]??(index===3?0x74776c:0xa69c78),0,-.4,0);ground.castShadow=false;if(GROUND_COLORS[BIOMES[index]]!==undefined)(ground.material as T.MeshStandardMaterial).map=groundTexture(BIOMES[index]);
-    this.box(8,.035,130,BIOMES[index]==='city'?0x465358:BIOMES[index]==='glacier'?0x8eabb7:BIOMES[index]==='desert'?0xd8bd82:0x817e65,0,-.02,0);
-    for(let z=-60;z<62;z+=5)this.box(.15,.025,2,0xc3b993,0,.01,z);
+    const ground=this.box(frontier?184:164,.7,frontier?164:144,GROUND_COLORS[BIOMES[index]]??(BIOMES[index]==='snow'?0xc6d5d5:index===3?0x74776c:0xa69c78),0,-.4,0);ground.castShadow=false;if(GROUND_COLORS[BIOMES[index]]!==undefined)(ground.material as T.MeshStandardMaterial).map=groundTexture(BIOMES[index]);
     // Winter snow replaces dirt detail; nearly coplanar patches underneath can shimmer.
     for(let i=0;i<(BIOMES[index]==='snow'||frontier?0:86);i++){
       const x=Math.sin(i*19.73)*72,z=Math.cos(i*8.2)*60;
       const patch=this.box(1.2+(i%4),.035,1.3+(i%3),GROUND_COLORS[BIOMES[index]]??(i%2?0x98936f:0xb1a680),x,.005,z);patch.rotation.y=i;patch.castShadow=false;
     }
-    // Keep the central convoy road clear. Every obstacle uses the same footprint for rendering and collision.
+    // Reserve the stage route before adding scenery. Every obstacle uses the same footprint for rendering and collision.
     const layout:[number,number,'barricade'|'crate'|'barrel'][]=[[-14,13,'barricade'],[12,8,'barricade'],[-15,-6,'barricade'],[15,-15,'barricade'],[-27,-15,'barricade'],[28,0,'barricade'],[-9,12,'crate'],[16,8,'crate'],[-20,-6,'crate'],[10,-16,'crate'],[-24,7,'barrel'],[20,-11,'barrel'],[-13,-18,'barrel'],[25,14,'crate']];
     for(const side of [-1,1])for(const z of [-43,-22,0,23,44]){layout.push([side*51,z,'barricade'],[side*56,z+4,'crate'],[side*47,z-5,'barrel']);}
     for(const [x,z,kind] of layout){
+      if(kind==='barrel'&&this.layout.supplies.some(p=>Math.hypot(x-p.x,z-p.z)<9))continue;
+      if(overlapsReservation(this.layout,{x,z,w:kind==='barricade'?6.4:1.3,d:kind==='barricade'?1.8:1.3}))continue;
       const mesh=this.clone(kind);mesh.position.set(x,0,z);
       if(kind==='barricade')mesh.scale.set(2,1.3,1.5);
       this.arena.add(mesh);this.covers.push({x,z,w:kind==='barricade'?6.4:kind==='crate'?1.3:1,d:kind==='barricade'?1.8:kind==='crate'?1.3:1,kind,hp:kind==='barricade'?Infinity:kind==='crate'?55:25,mesh});
     }
-    for(const [x,z] of [[-20,9],[24,-8],[-41,-32],[39,22]]){const mesh=this.clone('fuelcrate');mesh.position.set(x,0,z);this.arena.add(mesh);this.covers.push({x,z,w:2.2,d:1.55,kind:'fuelcrate',hp:35,mesh});}
+    for(const [x,z] of [[-20,9],[24,-8],[-41,-32],[39,22]]){if(overlapsReservation(this.layout,{x,z,w:2.2,d:1.55})||this.layout.supplies.some(p=>Math.hypot(x-p.x,z-p.z)<9))continue;const mesh=this.clone('fuelcrate');mesh.position.set(x,0,z);this.arena.add(mesh);this.covers.push({x,z,w:2.2,d:1.55,kind:'fuelcrate',hp:35,mesh});}
+    for(const barrier of this.layout.barriers)this.concreteBarrier(barrier);
     if(GROUND_COLORS[BIOMES[index]]!==undefined)frontierBoundary(this,BIOMES[index]);
     else {
     for(let i=0;i<60;i++){
@@ -222,15 +229,44 @@ export class World {
     for(let i=0;i<29;i++){const x=-75+i*5.4;this.box(3,2.8+(i%3),2.5,0x737762,x,1,-65);}
     }
     this.ring.visible=['capture','defense','escort'].includes(kind);
-    this.ring.position.set(0,.06,kind==='escort'?-50:-13);
+    const exit=this.layout.points.at(-1)!;this.ring.position.set(kind==='escort'?exit.x:0,.12,kind==='escort'?exit.z:-13);
     this.ring.scale.setScalar(kind==='escort'?.7:1);
     if(kind==='capture'||kind==='defense'){
       const relay=this.clone('relay');relay.position.set(0,0,-13);this.arena.add(relay);
     }
     // Extraction pylons frame the road.
-    for(const x of [-4,4]){this.box(.45,3.2,.45,0x3e5751,x,1.6,-51);this.box(.65,.2,.65,0x98f3bf,x,3.3,-51);}
-    this.environment.build(this,index);this.batchScenery();this.activities=buildActivities(this.arena);
+    for(const x of [-4,4]){this.box(.45,3.2,.45,0x3e5751,x+exit.x,1.6,exit.z);this.box(.65,.2,.65,0x98f3bf,x+exit.x,3.3,exit.z);}
+    this.environment.build(this,index);this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);
     this.target.set(0,0,0);
+  }
+  private concreteBarrier(box:Box){
+    const root=new T.Group();root.position.set(box.x,0,box.z);root.name='RouteConcrete';
+    const template=this.templates.get('barricade')!;template.updateMatrixWorld(true);
+    const count=Math.ceil(box.w/6.4),width=box.w/count;
+    template.traverse(o=>{if(!(o instanceof T.Mesh))return;
+      const instances=new T.InstancedMesh(o.geometry,o.material,count);instances.userData={...o.userData};instances.castShadow=true;instances.receiveShadow=true;
+      for(let i=0;i<count;i++){const matrix=new T.Matrix4().makeScale(width/3.2,1.3,1.5);matrix.setPosition(-box.w/2+width*(i+.5),0,0);matrix.multiply(o.matrixWorld);instances.setMatrixAt(i,matrix);}
+      instances.computeBoundingSphere();root.add(instances);
+    });this.arena.add(root);this.covers.push({...box,kind:'barricade',hp:Infinity,mesh:root});
+  }
+  private buildRoad(kind:string){
+    const rectangles=this.layout.points.slice(1).map((p,i)=>{const a=this.layout.points[i];return {left:Math.min(a.x,p.x)-4,right:Math.max(a.x,p.x)+4,top:Math.min(a.z,p.z)-4,bottom:Math.max(a.z,p.z)+4};});
+    // A union of flat cells avoids overlapping snow/road faces at every turn.
+    const xs=[...new Set(rectangles.flatMap(r=>[r.left,r.right]))].sort((a,b)=>a-b),zs=[...new Set(rectangles.flatMap(r=>[r.top,r.bottom]))].sort((a,b)=>a-b),vertices:number[]=[];
+    for(let i=1;i<xs.length;i++)for(let j=1;j<zs.length;j++){
+      const l=xs[i-1],r=xs[i],t=zs[j-1],b=zs[j],x=(l+r)/2,z=(t+b)/2;
+      if(rectangles.some(a=>x>a.left&&x<a.right&&z>a.top&&z<a.bottom))vertices.push(l,.105,t,l,.105,b,r,.105,t,r,.105,t,l,.105,b,r,.105,b);
+    }
+    const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();
+    const color=this.environment.biome==='city'?0x465358:['snow','glacier'].includes(this.environment.biome)?0x90a6aa:this.environment.biome==='desert'?0xbea176:0x777762;
+    const road=new T.Mesh(geometry,new T.MeshStandardMaterial({color,roughness:.97}));road.userData.owned=true;road.receiveShadow=true;road.name='StageRoad';this.arena.add(road);
+    for(let i=1;i<this.layout.points.length;i++){
+      const a=this.layout.points[i-1],b=this.layout.points[i],length=Math.hypot(b.x-a.x,b.z-a.z),angle=Math.atan2(b.x-a.x,b.z-a.z);
+      for(let d=6;d<length-2;d+=12){const x=a.x+(b.x-a.x)*d/length,z=a.z+(b.z-a.z)*d/length;
+        for(const side of [-1,1]){const mark=this.box(.12,.012,.95,0xd6c395,x+Math.cos(angle)*side*.28,.12,z-Math.sin(angle)*side*.28);mark.rotation.y=angle-side*.65;mark.castShadow=false;}
+      }
+    }
+    if(kind==='defense')road.material.color.multiplyScalar(.9);
   }
   settings(low:boolean){this.scene.environment=low?null:this.studioEnvironment;this.low=low;this.fx.low=low;this.renderer.shadowMap.enabled=!low;document.body.dataset.graphics=low?'low':'detailed';this.resize();}
   resize(){const w=window.innerWidth,h=window.innerHeight;this.renderer.setPixelRatio(this.low?Math.min(devicePixelRatio,.8,960/Math.max(w,h)):Math.min(devicePixelRatio,1.6));this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}
@@ -252,8 +288,9 @@ export class World {
     this.wrecks.push({root,scorch,age:0,emit:0});if(this.wrecks.length>14){const old=this.wrecks.shift()!;old.root.removeFromParent();old.scorch.removeFromParent();}
     const p=root.position.clone();p.y=1;this.fx.impact(p,true);
   }
+  cameraLead(){return (this.camera.aspect<1?8:-8)+(this.layout.southbound?16:0);}
   update(dt:number,focus:T.Vector3,menu=false){
-    const desired=menu?scratch.copy(focus):scratch.set(T.MathUtils.clamp(focus.x,-BOUNDS.x,BOUNDS.x),0,focus.z+(this.camera.aspect<1?8:-8));
+    const desired=menu?scratch.copy(focus):scratch.set(T.MathUtils.clamp(focus.x,-BOUNDS.x,BOUNDS.x),0,focus.z+this.cameraLead());
     this.target.lerp(desired,1-Math.exp(-dt*3));
     const portrait=this.camera.aspect<1;
     this.camera.position.set(this.target.x+(menu?16:0),menu?18:portrait?62:54,this.target.z+(menu?24:portrait?51:43));

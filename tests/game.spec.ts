@@ -42,7 +42,7 @@ test('campaign workshop purchase, reload checkpoint and contested capture',async
 });
 test('campaign escort completion and defense failure, retry and success',async({page})=>{
   await deployCheckpoint(page,2);
-  await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)e.dead=true;g.player.visual.root.position.set(0,0,-48);g.convoy.position.z=-49.99;g.step(.1);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
+  await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)e.dead=true;const end=g.world.layout.points.at(-1);g.convoyDistance=g.world.layout.length-.01;g.convoy.position.set(end.x,0,end.z-.01*Math.sign(end.z));g.player.visual.root.position.set(end.x+4,0,end.z);g.step(.1);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
   await page.evaluate(()=>{const g=(window as any).__steel;g.start(3);g.elapsed=44.99;g.relayHealth=0;g.step(.02);});await expect(page.getByRole('heading',{name:'We go again.'})).toBeVisible();
   await page.getByRole('button',{name:/RETRY LONG NIGHT/}).click();expect(await page.evaluate(()=>(window as any).__steel.relayHealth)).toBe(300);
   await page.evaluate(()=>{const g=(window as any).__steel;g.elapsed=44.99;g.step(.02);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
@@ -71,7 +71,7 @@ test('phone layout and simultaneous captured touch sticks',async({browser})=>{
 
 test('real cannon destroys an exposed enemy; shield, repair and escort rules',async({page})=>{
  await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();
- const combat=await page.evaluate(()=>{const g=(window as any).__steel;g.start(0);g.player.visual.root.position.set(0,0,10);const e=g.enemies[0];e.visual.root.position.set(0,0,-5);e.heading=0;g.player.aim=Math.PI;g.syncVisual(g.player);for(let shot=0;shot<4;shot++){g.shoot(g.player,true);for(let i=0;i<30;i++)g.updateShots(1/60);}const killed=e.dead;const health=g.player.hp;g.action('shield');g.damageUnit(g.player,30,{x:0,z:0});const protectedHull=g.player.hp===health;g.shieldTime=0;g.damageUnit(g.player,80,{x:0,z:0});const damaged=g.player.hp;g.action('repair');return {killed,protectedHull,unchanged:g.player.hp===damaged,located:g.radio.textContent.includes('REPAIR CENTER')};});
+ const combat=await page.evaluate(()=>{const g=(window as any).__steel;g.start(0);g.world.covers=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,10);const e=g.enemies[0];e.visual.root.position.set(0,0,-5);e.heading=0;g.player.aim=Math.PI;g.syncVisual(g.player);for(let shot=0;shot<4;shot++){g.shoot(g.player,true);for(let i=0;i<30;i++)g.updateShots(1/60);}const killed=e.dead;const health=g.player.hp;g.action('shield');g.damageUnit(g.player,30,{x:0,z:0});const protectedHull=g.player.hp===health;g.shieldTime=0;g.damageUnit(g.player,80,{x:0,z:0});const damaged=g.player.hp;g.action('repair');return {killed,protectedHull,unchanged:g.player.hp===damaged,located:g.radio.textContent.includes('REPAIR CENTER')};});
  expect(combat).toEqual({killed:true,protectedHull:true,unchanged:true,located:true});
  const escort=await page.evaluate(()=>{const g=(window as any).__steel;g.start(2);g.player.visual.root.position.set(30,0,22);const z=g.convoy.position.z;g.step(.1);const stopped=g.convoy.position.z===z;g.player.visual.root.position.set(5,0,48);g.step(.1);return {stopped,moved:g.convoy.position.z<z};});expect(escort).toEqual({stopped:true,moved:true});
 });

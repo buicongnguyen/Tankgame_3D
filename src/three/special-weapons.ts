@@ -1,5 +1,7 @@
 import * as T from 'three';
-import type {Game} from './game';
+import type {Game,Unit} from './game';
+import type {Cover} from './world';
+export const isConcrete=(cover:Pick<Cover,'kind'>)=>cover.kind==='barricade'||cover.kind==='stonewall';
 import {clamp,segmentBox,segmentCircle} from './rules';
 import {BOUNDS} from './activities';
 export class SpecialWeapons{
@@ -11,10 +13,17 @@ export class SpecialWeapons{
   const start=g.player.visual.root.position.clone();start.y=1.5;
   const damage=(w===3?150:170)*g.playerDamageMultiplier();
   if(w===3){
-   const end=start.clone().add(new T.Vector3(Math.sin(g.player.aim)*60,0,Math.cos(g.player.aim)*60));let hitHeight=1.5,first=1,hit:(()=>void)|null=null;
-   for(const c of g.world.covers){if(c.hp<=0)continue;const t=segmentBox(start,end,c,.05);if(t!==null&&t<first){first=t;hit=()=>g.hitCover(c,damage);}}
-   for(const u of g.enemies){if(u.dead)continue;const t=segmentCircle(start,end,u.visual.root.position,g.unitRadius(u));if(t!==null&&t<first){first=t;hitHeight=u.visual.root.position.y+1.5;hit=()=>g.damageUnit(u,damage,start,true);}}
-   end.lerpVectors(start,end,first);end.y=hitHeight;if(hit)hit();const delta=end.clone().sub(start);
+   const end=start.clone().add(new T.Vector3(Math.sin(g.player.aim)*60,0,Math.cos(g.player.aim)*60));
+   const intersections:{t:number;cover?:Cover;unit?:Unit}[]=[];
+   for(const cover of g.world.covers){if(cover.hp<=0)continue;const t=segmentBox(start,end,cover,.05);if(t!==null)intersections.push({t,cover});}
+   for(const unit of g.enemies){if(unit.dead)continue;const t=segmentCircle(start,end,unit.visual.root.position,g.unitRadius(unit));if(t!==null)intersections.push({t,unit});}
+   intersections.sort((a,b)=>a.t-b.t||Number(!!b.cover)-Number(!!a.cover));
+   let concrete=0,limit=1;
+   const hits:typeof intersections=[];
+   // Freeze this shot's obstruction order before explosions can remove more cover.
+   for(const hit of intersections){hits.push(hit);if(hit.cover&&(!isConcrete(hit.cover)||++concrete===2)){limit=hit.t;break;}}
+   for(const hit of hits){if(hit.cover)g.hitCover(hit.cover,damage,true);else if(hit.unit)g.damageUnit(hit.unit,damage,start,true);}
+   end.lerpVectors(start,end,limit);const delta=end.clone().sub(start);
    const beam=new T.Mesh(new T.CylinderGeometry(.14,.14,Math.max(.01,delta.length()),8),new T.MeshBasicMaterial({color:0x8bffff,transparent:true,opacity:.95,blending:T.AdditiveBlending,depthWrite:false}));beam.position.copy(start).add(end).multiplyScalar(.5);beam.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),delta.normalize());g.world.entities.add(beam);this.beams.push({mesh:beam,life:.18});g.world.fx.impact(end);g.tone(920,.12,.04);
   }else{
    const offset=g.aimPoint.clone().sub(start);offset.y=0;if(offset.length()>45)offset.setLength(45);

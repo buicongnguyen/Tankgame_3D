@@ -60,7 +60,7 @@ The browser tests use controlled integration fixtures for mission edge cases, al
 | Find repair center | E | Find Repair button |
 | Pause | Escape | Pause button |
 
-Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within 12 meters of the convoy to move it. Capture progress requires occupying the amber ring without enemies inside it. The default shield lasts three seconds (4.5 seconds with Azure Guardian) and recharges in fourteen seconds. Healing during a mission is available only at repair centers. Settings and campaign checkpoints save in this browser; clearing site data resets them.
+Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within 12 meters of the convoy to move it. Capture progress requires occupying the amber ring without enemies inside it. The default shield lasts three seconds (4.5 seconds with Azure Guardian) and recharges in fourteen seconds. White medical cases restore up to 60 HP. Repair centers provide sustained healing; blue shield cases activate a 6-second field and ready Q. Settings and campaign checkpoints save in this browser; clearing site data resets them.
 
 ## Mobile graphics
 
@@ -81,7 +81,7 @@ Use your own Blender executable location on another machine. The 29 detailed exp
 
 ## Architecture and planning
 
-See [the detailed evaluation and production plan](docs/3D_PRODUCTION_PLAN.md), including scope, story, UX, Blender workflow, combat rules, acceptance checks, and future expansion. See also the [frontier campaign plan](docs/FRONTIER_CAMPAIGN_PLAN.md), [48-level expansion plan](docs/CAMPAIGN_LEVELS_AND_EXTREME_MODES_PLAN.md) and [expansion code, logic and visual review](docs/CAMPAIGN_LEVELS_AND_EXTREME_MODES_REVIEW.md). Runtime modules live in `src/three/`; original Phaser code is retained in `src/game/` and `src/legacy-main.ts`.
+See [the detailed evaluation and production plan](docs/3D_PRODUCTION_PLAN.md), including scope, story, UX, Blender workflow, combat rules, acceptance checks, and future expansion. See also the [piercing laser and stage routes plan](docs/LASER_AND_STAGE_ROUTES_PLAN.md), [route and laser review](docs/LASER_AND_STAGE_ROUTES_REVIEW.md), [frontier campaign plan](docs/FRONTIER_CAMPAIGN_PLAN.md), [48-level expansion plan](docs/CAMPAIGN_LEVELS_AND_EXTREME_MODES_PLAN.md) and [expansion code, logic and visual review](docs/CAMPAIGN_LEVELS_AND_EXTREME_MODES_REVIEW.md). Runtime modules live in `src/three/`; original Phaser code is retained in `src/game/` and `src/legacy-main.ts`.
 
 ## Deployment
 
@@ -187,3 +187,9 @@ Driving Kestrel into hostile infantry at **3 m/s or more** now defeats them. Sta
 The frontier art now includes packed Blender albedo/normal maps (maximum 128 × 128), irregular ice and basalt, lava channels that follow the volcano slopes, palm leaflets, branched tree crowns, building sills/balconies/roof services, city sidewalks and textured terrain. Boundary scenery uses shared geometry instances. Low detail uses 11,084 triangles across the 29-model kit versus 41,130 in Detailed (73% fewer), with about 1.59 MB of GLBs.
 
 See the [implementation plan](docs/RENDERING_AND_FRONTIER_POLISH_PLAN.md) and [code, logic and visual review](docs/RENDERING_AND_FRONTIER_POLISH_REVIEW.md). This remains a stylized browser game; the art pass improves material and construction detail without claiming full AAA photorealism.
+
+## Routes and field supplies
+
+All 48 levels use stage-specific marked routes: alternating concrete checkpoints, southbound operations, winding convoy tracks, and supply circuits around defense relays. Each level has four weapon/ammo caches, two medical cases, two shield cases, two repair centers and six off-road mines. Locations vary with the stage and level; retries repeat their seed. Supplies remain reachable without a special weapon. Convoys follow every bend, wait for ground traffic, and reach extraction only after the complete route.
+
+The player pulse laser pierces multiple enemies and one concrete barrier. A second concrete barrier takes damage and stops that shot. Two laser hits break a barricade or stone wall, regardless of upgrades. Steel and other cover still block the beam. Medical cases heal only a damaged tank and cap at maximum hull; shield cases do not stack duration. Existing tank salvage drops remain weapons only.
