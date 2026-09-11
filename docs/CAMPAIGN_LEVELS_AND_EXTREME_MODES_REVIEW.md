@@ -14,6 +14,7 @@ The Blender kit adds Sky Wraith (helicopter), Rift Stalker (eight-legged spider)
 
 | Area | Finding and correction | Evidence |
 | --- | --- | --- |
+| Briefing and radio | Counterattack cues used original durations, and early levels mentioned absent bosses. Runtime radio now uses the selected level; boss-only instructions appear in Command battle. | Timed capture/defense text, early/finale boss descriptions and deployed radio regression. |
 | Checkpoints and rewards | Explicit stage/level checkpoint prevents skipping levels or farming replay rewards. Completed historical stages remain available; old purchases, credits and settings survive migration. | All 48 sequential checkpoint/reward configurations; historical 6/9/14-stage saves; reload and shop checks. |
 | Difficulty validation | Object prototype property names could masquerade as aliases. Aliases now require an own property; invalid values reset safely. | Invalid `__proto__`, `constructor` and unknown modes rejected. |
 | Multiple bosses | State, warnings, weak points and cleanup belong to each unit. No finale completes while any boss survives. | Exact Crazy counts on eight stage configurations; four-boss finish gate and 0.8-second delay. |
@@ -35,7 +36,7 @@ The Blender kit adds Sky Wraith (helicopter), Rift Stalker (eight-legged spider)
 - Full local sweep before the final review: 123 of 127 checks passed. The remaining four used obsolete stage-completion/reward fixtures; they were updated to clear all three levels or explicitly select Command battle, preserving their purchase and ending assertions.
 - After review fixes: all 36 focused browser checks passed, including those four adapted fixtures, new bosses, campaign expansion, terrain and navigation regressions.
 - The corrected touch-emulation Crazy city check also passed separately.
-- Current complete collection: **132 checks in 25 files**. The existing GitHub Pages workflow runs all checks across five runners and only builds/deploys when every runner passes. Deployment status is authoritative in [GitHub Actions](https://github.com/buicongnguyen/Tankgame_3D/actions/workflows/deploy-pages.yml).
+- Current complete collection: **133 checks in 25 files**. The existing GitHub Pages workflow runs all checks across five runners and only builds/deploys when every runner passes. Deployment status is authoritative in [GitHub Actions](https://github.com/buicongnguyen/Tankgame_3D/actions/workflows/deploy-pages.yml).
 - Existing desktop/mobile input, WebKit, weapons, shops, skins, destruction and winter regression coverage remains in the release gate.
 
 Visual inspection covered the three new boss rigs, frontier phone layouts, mode/level menus and the Crazy city touch HUD. The new assets use distinct silhouettes, material groups, structural details and animated attachments. This is detailed stylized browser artwork; it is not presented as AAA photorealism.

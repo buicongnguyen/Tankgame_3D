@@ -49,3 +49,10 @@ for(const width of [390,844])test(`four modes and three levels fit mobile ${widt
  for(const difficulty of DIFFICULTIES){await page.locator(`[data-action="difficulty"][data-value="${difficulty}"]`).tap();await expect(page.locator(`[data-action="difficulty"][data-value="${difficulty}"]`)).toHaveAttribute('aria-pressed','true');}
  await expect(page.locator('[data-action="level"]')).toHaveCount(3);await expect(page.locator('[data-action="level"][data-value="1"]')).toBeDisabled();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/expansion-menu-${width}.png`,fullPage:true});await context.close();
 });
+
+
+test('briefing and deployed radio match the selected level and boss phase',async({page})=>{
+ expect(levelMission(12,1).radio).toContain('60s');expect(levelMission(9,1).briefing).toContain('26 seconds');
+ for(const [mission,name] of [[6,'Tempest'],[8,'Sovereign']] as const){expect(levelMission(mission,0).briefing).not.toContain(name);expect(levelMission(mission,0).radio).not.toContain(name);expect(levelMission(mission,2).briefing).toContain(name);expect(levelMission(mission,2).radio).toContain(name);}
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const cues=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.start(12,1);const jungle=g.radio.textContent;g.start(13,0);return {jungle,city:g.radio.textContent};});expect(cues.jungle).toContain('60s');expect(cues.city).not.toContain('rail line');expect(cues.city).toContain('Bosses enter on level 3');
+});

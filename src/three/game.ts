@@ -170,7 +170,7 @@ export class Game {
     this.world.shield.visible=false;this.world.cursor.visible=false;
     this.syncVisual(this.player);this.enemies.forEach(e=>this.syncVisual(e));this.updateHud();
   }
-  start(index:number,level=unlockedLevel(this.save,index)){this.prepare(index,level);this.setPhase('playing');this.world.target.copy(this.player.visual.root.position);this.world.target.z+=this.world.camera.aspect<1?8:-8;this.world.update(0,this.player.visual.root.position);this.updateHud();this.overlay.innerHTML='';this.radioMessage(index===0?'IVO / Tap SWITCH GUN or press C. Map caches refill special weapons.':MISSIONS[index].radio,9);this.last=performance.now();this.accumulator=0;this.tone(360,.12,.05);}
+  start(index:number,level=unlockedLevel(this.save,index)){this.prepare(index,level);this.setPhase('playing');this.world.target.copy(this.player.visual.root.position);this.world.target.z+=this.world.camera.aspect<1?8:-8;this.world.update(0,this.player.visual.root.position);this.updateHud();this.overlay.innerHTML='';this.radioMessage(index===0?'IVO / Tap SWITCH GUN or press C. Map caches refill special weapons.':this.missionData().radio,9);this.last=performance.now();this.accumulator=0;this.tone(360,.12,.05);}
   action(action:string){
     if(this.phase!=='playing')return;
     if(action==='fire'&&this.reload<=0){this.input.pendingFire=false;this.syncVisual(this.player);this.shoot(this.player,true);}
