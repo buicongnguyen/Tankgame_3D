@@ -43,7 +43,7 @@ The browser tests use controlled integration fixtures for mission edge cases, al
 | --- | --- | --- |
 | Drive | WASD or arrow keys | Left stick |
 | Aim/fire | Mouse or I/J/K/L aim; hold click, Space or F to fire | Right stick |
-| Switch weapon | 1 / 2 / 3 / 4 / 5 | Tap weapon panel, then choose a gun |
+| Switch weapon | C opens selector; 1 / 2 / 3 / 4 / 5 selects directly | Tap Switch Gun, then choose a gun |
 | Protective shield | Q | Shield button |
 | Find repair center | E | Find Repair button |
 | Pause | Escape | Pause button |
@@ -145,3 +145,7 @@ Rebuild the artwork with your Blender executable:
 ```
 
 The generator writes five editable `assets/blender/skin-*.blend` files, transparent `public/skins/*.png` previews and `src/three/skin-palettes.ts`. Gameplay reuses the existing tank mesh with cached materials; skins add no combat geometry or lights. Tests cover purchases, save migration, damage, shield duration, movement, material reuse and the mobile shop.
+
+## Purchased weapon selection
+
+The combat weapon panel always shows **Switch Gun**. Click or tap it to select a weapon, press **C** to open the same selector on PC, or use **1–5** directly. Buying a weapon sets it as the next mission's starting gun. Selecting an owned gun in combat remembers that choice for reloads, retries and later missions; temporary map pickups do not become permanent purchases. Owned lasers receive 12 shots and arc rockets 6 rounds each mission. An empty special weapon is labeled **Empty · find ammo**, and its last shot returns to the cannon. Collect a cache or start the next mission to replenish it.

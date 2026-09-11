@@ -16,8 +16,8 @@ export const MISSIONS: Mission[] = [
 ];
 export const SAVE_KEY = 'steel-front-3d-v1';
 export type Difficulty = 'story' | 'standard' | 'veteran';
-export interface Save { version: 1; mission: number; cleared: boolean[]; credits: number; weapons: number[]; skins: string[]; skin: string; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; }
-export const freshSave = (): Save => ({ version: 1, mission: 0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], skins: ['classic','sunburst'], skin:'classic', upgrades: { armor: 0, power: 0, reload: 0 }, difficulty: 'standard', sound: false, low: false });
+export interface Save { version: 1; mission: number; cleared: boolean[]; credits: number; weapons: number[]; equippedWeapon: number; skins: string[]; skin: string; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; }
+export const freshSave = (): Save => ({ version: 1, mission: 0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], equippedWeapon: 0, skins: ['classic','sunburst'], skin:'classic', upgrades: { armor: 0, power: 0, reload: 0 }, difficulty: 'standard', sound: false, low: false });
 export function parseSave(raw: string | null): Save {
   try {
     const s = JSON.parse(raw || 'null');
@@ -25,6 +25,7 @@ export function parseSave(raw: string | null): Save {
     if (!s.upgrades || ['armor','power','reload'].some(k => !Number.isInteger(s.upgrades[k]) || s.upgrades[k] < 0 || s.upgrades[k] > 3)) return freshSave();
     s.weapons ??= [];
     if(!Array.isArray(s.weapons)||s.weapons.some((w:unknown)=>!Number.isInteger(w)||Number(w)<1||Number(w)>4)||new Set(s.weapons).size!==s.weapons.length)return freshSave();
+    if(!Number.isInteger(s.equippedWeapon)||s.equippedWeapon<0||s.equippedWeapon>4||!ownsWeapon(s,s.equippedWeapon))s.equippedWeapon=0;
     s.skins=[...new Set(['classic','sunburst',...(Array.isArray(s.skins)?s.skins.filter((id:unknown)=>SKINS.some(skin=>skin.id===id)):[])])];
     if(!s.skins.includes(s.skin))s.skin='classic';
     // Extend old six-operation saves without changing earned progress or purchases.
@@ -48,4 +49,4 @@ export function weaponCount(save: Save): number { return Math.max(save.cleared[2
 
 export const weaponPrices:Record<number,number>={1:120,2:180,3:360,4:420};
 export function ownsWeapon(save:Save,id:number){return id<3?id<weaponCount(save):save.weapons.includes(id);}
-export function buyWeapon(save:Save,id:number){const cost=weaponPrices[id];if(!cost||ownsWeapon(save,id)||save.credits<cost)return false;save.credits-=cost;save.weapons.push(id);return true;}
+export function buyWeapon(save:Save,id:number){const cost=weaponPrices[id];if(!cost||ownsWeapon(save,id)||save.credits<cost)return false;save.credits-=cost;save.weapons.push(id);save.equippedWeapon=id;return true;}
