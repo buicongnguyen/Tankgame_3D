@@ -1,5 +1,13 @@
 import MODEL_NAMES from '../src/three/model-catalog.json' with {type:'json'};
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+import {freshSave, SAVE_KEY} from '../src/three/campaign';
+
+async function deployCheckpoint(page:Page,mission:number){
+  const save=freshSave();save.mission=mission;save.cleared=save.cleared.map((_,i)=>i<mission);save.upgrades.armor=1;
+  await page.addInitScript(({key,save})=>{if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(save));},{key:SAVE_KEY,save});
+  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
+}
+
 test('real assets, desktop controls, pause, cover and UI',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   const models=new Set<string>();page.on('response',r=>{if(r.url().endsWith('.glb')&&r.status()===200)models.add(r.url());});
@@ -21,11 +29,8 @@ test('real assets, desktop controls, pause, cover and UI',async({page})=>{
   const blocked=await page.evaluate(()=>{const g=(window as any).__steel;g.start(0);g.input.active=false;const c=g.world.covers[0],enemy=g.enemies[0];g.player.visual.root.position.set(c.x,0,c.z+6);enemy.visual.root.position.set(c.x,0,c.z-6);g.player.aim=Math.PI;g.syncVisual(g.player);g.shoot(g.player,true);const hp=enemy.hp;for(let i=0;i<30;i++)g.updateShots(1/60);return enemy.hp===hp;});expect(blocked).toBe(true);
   expect(errors).toEqual([]);
 });
-test('campaign mission conditions, workshop, checkpoint, failure and ending',async({page})=>{
-  // Six full stage rebuilds plus screenshots need more time on CI's software GPU.
-  test.setTimeout(120000);
-  // Software rendering can stall browser paints; finish timing is checked separately.
-  const expect = test.expect.configure({timeout:15000});
+// Keep each checkpoint within the normal timeout on CI's software GPU.
+test('campaign workshop purchase, reload checkpoint and contested capture',async({page})=>{
   await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();await page.getByRole('button',{name:'DEPLOY'}).click();
   await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(1/60);});
   await expect(page.getByRole('heading',{name:'Mission accomplished'})).toBeVisible();await page.locator('[data-action=shop]').click();await page.locator('[data-action=buy][data-value=armor]').click();
@@ -33,11 +38,20 @@ test('campaign mission conditions, workshop, checkpoint, failure and ending',asy
   await page.screenshot({path:'test-results/depot-desktop.png'});await page.reload();await expect(page.locator('.briefing h2')).toHaveText('Open Frequency');
   await page.getByRole('button',{name:'DEPLOY'}).click();
   const capture=await page.evaluate(()=>{const g=(window as any).__steel;g.player.visual.root.position.set(0,0,-13);g.enemies[0].visual.root.position.set(3,0,-13);g.step(.1);const contested=g.capture===0;for(const e of g.enemies)e.dead=true;g.capture=17.99;g.step(.02);g.step(.8);return {contested,phase:g.phase};});expect(capture).toEqual({contested:true,phase:'depot'});
-  await page.evaluate(()=>{const g=(window as any).__steel;g.start(2);for(const e of g.enemies)e.dead=true;g.player.visual.root.position.set(0,0,-48);g.convoy.position.z=-49.99;g.step(.1);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
+});
+test('campaign escort completion and defense failure, retry and success',async({page})=>{
+  await deployCheckpoint(page,2);
+  await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)e.dead=true;g.player.visual.root.position.set(0,0,-48);g.convoy.position.z=-49.99;g.step(.1);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
   await page.evaluate(()=>{const g=(window as any).__steel;g.start(3);g.elapsed=44.99;g.relayHealth=0;g.step(.02);});await expect(page.getByRole('heading',{name:'We go again.'})).toBeVisible();
   await page.getByRole('button',{name:/RETRY LONG NIGHT/}).click();expect(await page.evaluate(()=>(window as any).__steel.relayHealth)).toBe(300);
   await page.evaluate(()=>{const g=(window as any).__steel;g.elapsed=44.99;g.step(.02);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
-  await page.evaluate(()=>{const g=(window as any).__steel;g.start(4);for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(.02);g.start(5);for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(.02);});await expect(page.getByRole('heading',{name:'Everyone comes home.'})).toBeVisible();await page.screenshot({path:'test-results/ending-desktop.png'});
+});
+test('campaign siege completion and first chapter ending retain cleared stages',async({page})=>{
+  await deployCheckpoint(page,4);
+  await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(.02);});
+  await expect(page.getByRole('heading',{name:'Mission accomplished'})).toBeVisible();
+  await page.evaluate(()=>{const g=(window as any).__steel;g.start(5);for(const e of g.enemies)g.damageUnit(e,9999,g.player.visual.root.position);g.step(.02);});
+  await expect(page.getByRole('heading',{name:'Everyone comes home.'})).toBeVisible();await page.screenshot({path:'test-results/ending-desktop.png'});
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('steel-front-3d-v1')!).cleared.slice(0,6).every(Boolean))).toBe(true);
 });
 test('phone layout and simultaneous captured touch sticks',async({browser})=>{

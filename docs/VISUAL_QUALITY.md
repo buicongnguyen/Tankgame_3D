@@ -41,7 +41,7 @@ This is a detailed, lightweight stylized 3D kit. Full AAA realism would addition
 
 Slower rendering exposed a queued-animation-frame timestamp that can predate the mission start/resume clock. Frame time now stays monotonic, preventing negative simulation debt, invalid camera interpolation and stalled driving/firing. A regression test supplies stale timestamps across both start and resume, then verifies movement on the next valid frame.
 
-Quick mouse clicks are retained until the next simulation frame, then consumed once; pause, blur and input reset cancel queued shots. CI distributes the full suite across three independent runners, and the production build depends on all three passing.
+Quick mouse clicks are retained until the next simulation frame, then consumed once; pause, blur and input reset cancel queued shots. CI distributes the full suite across five independent runners, and the production build depends on all five passing.
 
 ## Mobile detail tier
 
