@@ -30,6 +30,8 @@ Lead Kestrel through sixteen stages, each with three levels (48 levels in total)
 | Hard | Standard | 2× | 2 |
 | Crazy | Standard | 4× | 4 |
 
+Bosses use faster light volleys and wider warned heavy attacks; see [boss attack balance](docs/BOSS_ATTACK_BALANCE.md) for timings and counterplay.
+
 Enemy armor and infantry both use the multiplier. Bosses are additional units on the third level; every boss must fall before completion, alongside the stage objective. The first two levels of former boss stages are patrol battles. Higher modes do not increase enemy damage or reduce player hull. A large Crazy finale starts with 24 regular tanks, 40 soldiers and four bosses.
 
 The separate fifteen-stage 2D campaign and its enterable infantry shelters remain available through the legacy route. Historical six-, nine- and fourteen-stage saves retain completed stages, purchases, credits and graphics settings; completed old stages expose all three levels for replay. Story/Standard/Veteran settings migrate to Easy/Normal/Hard. New progress saves after every level; replaying a completed level never awards duplicate credits.
