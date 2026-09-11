@@ -1,0 +1,116 @@
+[
+  {
+    "asset": "barrel",
+    "detailedTriangles": 312,
+    "lowTriangles": 92,
+    "bytes": 10088
+  },
+  {
+    "asset": "barricade",
+    "detailedTriangles": 308,
+    "lowTriangles": 91,
+    "bytes": 12988
+  },
+  {
+    "asset": "boss-missile",
+    "detailedTriangles": 2596,
+    "lowTriangles": 767,
+    "bytes": 94624
+  },
+  {
+    "asset": "boss-rail",
+    "detailedTriangles": 2332,
+    "lowTriangles": 689,
+    "bytes": 86036
+  },
+  {
+    "asset": "boss-walker",
+    "detailedTriangles": 1672,
+    "lowTriangles": 494,
+    "bytes": 63276
+  },
+  {
+    "asset": "bridge",
+    "detailedTriangles": 1188,
+    "lowTriangles": 351,
+    "bytes": 43608
+  },
+  {
+    "asset": "crate",
+    "detailedTriangles": 516,
+    "lowTriangles": 237,
+    "bytes": 31392
+  },
+  {
+    "asset": "fuelcrate",
+    "detailedTriangles": 572,
+    "lowTriangles": 169,
+    "bytes": 22568
+  },
+  {
+    "asset": "hill",
+    "detailedTriangles": 92,
+    "lowTriangles": 27,
+    "bytes": 6324
+  },
+  {
+    "asset": "house",
+    "detailedTriangles": 2212,
+    "lowTriangles": 662,
+    "bytes": 87684
+  },
+  {
+    "asset": "pine",
+    "detailedTriangles": 328,
+    "lowTriangles": 308,
+    "bytes": 43776
+  },
+  {
+    "asset": "relay",
+    "detailedTriangles": 500,
+    "lowTriangles": 148,
+    "bytes": 20508
+  },
+  {
+    "asset": "rifleman",
+    "detailedTriangles": 748,
+    "lowTriangles": 221,
+    "bytes": 30964
+  },
+  {
+    "asset": "rocket",
+    "detailedTriangles": 418,
+    "lowTriangles": 125,
+    "bytes": 15820
+  },
+  {
+    "asset": "rocketeer",
+    "detailedTriangles": 732,
+    "lowTriangles": 216,
+    "bytes": 30704
+  },
+  {
+    "asset": "steelwall",
+    "detailedTriangles": 684,
+    "lowTriangles": 198,
+    "bytes": 29396
+  },
+  {
+    "asset": "stonewall",
+    "detailedTriangles": 880,
+    "lowTriangles": 260,
+    "bytes": 32452
+  },
+  {
+    "asset": "tank",
+    "detailedTriangles": 5712,
+    "lowTriangles": 1692,
+    "bytes": 214648
+  },
+  {
+    "asset": "transport",
+    "detailedTriangles": 1988,
+    "lowTriangles": 589,
+    "bytes": 74264
+  }
+]

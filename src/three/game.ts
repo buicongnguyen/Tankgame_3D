@@ -26,6 +26,7 @@ export class Game {
   bosses=new BossCombat();
   special=new SpecialWeapons();specialAmmo=[0,0];infantryKills=0;
   weaponPickerOpen=false;
+  qualityChanging=false;qualityError=false;
   weapon=0; reload=0; shieldTime=0; shieldCooldown=0; relayHealth=300; convoyHealth=260; convoy:T.Group|null=null;convoyBlocked=false;
   overlay:HTMLElement; hud:HTMLElement; radio:HTMLElement; mini:HTMLCanvasElement;
   radioTimer=0; hudTimer=0; last=0; accumulator=0; hurtTimer=0;
@@ -73,7 +74,7 @@ export class Game {
   }
   el(id:string){return document.getElementById(id)!;}
   async init(){
-    await this.world.load();this.world.settings(this.save.low);this.prepare(this.save.mission);this.showMenu();this.el('loading').remove();
+    await this.world.load(this.save.low);this.world.settings(this.save.low);this.prepare(this.save.mission);this.showMenu();this.el('loading').remove();
     this.last=performance.now();requestAnimationFrame(t=>this.frame(t));
     if(import.meta.env.DEV && new URLSearchParams(location.search).has('e2e'))(window as unknown as {__steel:Game}).__steel=this;
   }
@@ -81,7 +82,7 @@ export class Game {
   setPhase(phase:Phase){this.phase=phase;document.body.dataset.phase=phase;this.hud.hidden=!['playing','paused','finishing'].includes(phase);this.input.active=phase==='playing';this.input.reset();this.weaponPickerOpen=false;this.el('weapon-picker').hidden=true;this.overlay.hidden=phase==='playing'||phase==='finishing';if(phase!=='playing')this.world.cursor.visible=false;}
   focusPrimary(){requestAnimationFrame(()=>this.overlay.querySelector<HTMLButtonElement>('.primary')?.focus({preventScroll:true}));}
   route(){const frontier=this.save.cleared.indexOf(false);return MISSIONS.map((m,i)=>`<button class="route-item ${i===this.mission?'selected':''}" data-action="mission" data-value="${i}" ${frontier>=0&&i>frontier?'disabled':''}><span class="route-index">${this.save.cleared[i]?'✓':String(i+1).padStart(2,'0')}</span><span><small>${m.kind.toUpperCase()}</small><strong>${m.name}</strong></span><span class="route-state">${frontier>=0&&i>frontier?'LOCKED':i===this.mission?'◂':'↗'}</span></button>`).join('');}
-  settings(){return `<div class="settings"><button data-action="sound">SOUND <b>${this.save.sound?'ON':'OFF'}</b></button><button data-action="quality">GRAPHICS <b>${this.save.low?'LOW':'HIGH'}</b></button><a href="./legacy.html">Original 2D ↗</a></div>`;}
+  settings(){return `<div class="settings"><button data-action="sound">SOUND <b>${this.save.sound?'ON':'OFF'}</b></button><button data-action="quality" aria-pressed="${this.save.low}" aria-describedby="graphics-help" ${this.qualityChanging?'disabled':''}>GRAPHICS <b>${this.qualityChanging?'LOADING…':this.save.low?'LOW DETAIL':'DETAILED'}</b></button><a href="./legacy.html">Original 2D ↗</a><small id="graphics-help" role="status">${this.qualityError?'Could not load graphics. Tap to retry.':'Low detail: simpler models · lower resolution'}</small></div>`;}
   controls(){return '<div class="control-guide"><span><kbd>W A S D</kbd> Drive</span><span><kbd>I J K L / MOUSE</kbd> Aim</span><span><kbd>SPACE / F / CLICK</kbd> Fire</span><span><kbd>C / 1–5</kbd> Switch gun</span><span><kbd>Q</kbd> Shield</span><span><kbd>E</kbd> Find repair center</span><span><kbd>R</kbd> Artillery</span><span><kbd>ESC</kbd> Pause</span><p class="touch-guide">On touch: left stick drives; right stick aims and fires. Tap Switch Gun to choose a gun. Strike, shield and the repair-center finder have separate buttons.</p></div>';}
   showMenu(){
     this.setPhase('menu');this.world.target.copy(this.player.visual.root.position);const m=MISSIONS[this.mission];
@@ -90,10 +91,21 @@ export class Game {
   }
   pause(){if(this.phase!=='playing')return;this.setPhase('paused');this.renderPause();}
   renderPause(){this.overlay.innerHTML=`<section class="panel pause-panel"><span class="eyebrow">UPLINK ON HOLD</span><h1>Take a breath.</h1><p>Ready when you are.</p><button class="primary" data-action="resume">RESUME OPERATION →</button><button data-action="retry">Restart this operation</button><button data-action="menu">Return to command</button><details><summary>Controls</summary>${this.controls()}</details>${this.settings()}</section>`;this.focusPrimary();}
-  resume(){if(this.phase!=='paused')return;this.setPhase('playing');this.overlay.innerHTML='';this.last=performance.now();this.accumulator=0;}
+  resume(){if(this.phase!=='paused'||this.qualityChanging)return;this.setPhase('playing');this.overlay.innerHTML='';this.last=performance.now();this.accumulator=0;}
   shopTab:'equipment'|'skins'='equipment';
   shopReturn:Phase='depot';
+  async changeQuality(){
+    if(this.qualityChanging||!['menu','paused'].includes(this.phase))return;
+    this.qualityChanging=true;this.qualityError=false;
+    const low=!this.save.low;
+    const render=()=>{if(this.phase==='paused')this.renderPause();else this.showMenu();};
+    render();this.overlay.querySelectorAll('button').forEach(button=>button.disabled=true);
+    try{await this.world.load(low);this.world.settings(low);this.world.update(0,this.player.visual.root.position,this.phase==='menu');this.save.low=low;this.persist();}
+    catch{this.qualityError=true;}
+    finally{this.qualityChanging=false;render();this.overlay.querySelector<HTMLButtonElement>('[data-action="quality"]')?.focus({preventScroll:true});}
+  }
   menuAction(action:string,value?:string){
+    if(this.qualityChanging)return;
     if(action==='hangar'&&this.phase==='menu'){this.shopReturn='menu';this.shopTab='skins';this.showShop();}
     if(action==='shop-tab'&&this.phase==='depot'&&(value==='skins'||value==='equipment')){this.shopTab=value;this.showShop();}
     if(action==='skin-buy'&&this.phase==='depot'&&buySkin(this.save,value??'')){this.persist();this.world.applySkin(this.player.visual.root,this.save.skin);this.showShop();}
@@ -110,7 +122,7 @@ export class Game {
     if(action==='next'){this.prepare(this.save.mission);this.showMenu();}
     if(action==='difficulty'){this.save.difficulty=value as Difficulty;this.persist();this.showMenu();}
     if(action==='sound'){this.save.sound=!this.save.sound;this.persist();if(this.save.sound)this.tone(440,.08,.05);if(this.phase==='paused')this.renderPause();else this.showMenu();}
-    if(action==='quality'){this.save.low=!this.save.low;this.world.settings(this.save.low);this.persist();if(this.phase==='paused')this.renderPause();else this.showMenu();}
+    if(action==='quality')void this.changeQuality();
     if(action==='buy'&&this.phase==='depot')this.buy(value as Upgrade);
     if(action==='reset-prompt'){this.overlay.innerHTML='<section class="panel pause-panel"><span class="eyebrow">NEW CAMPAIGN</span><h1>Start a new road?</h1><p>This clears unlocked operations, credits and upgrades saved in this browser.</p><button class="primary" data-action="menu">KEEP MY CAMPAIGN</button><button data-action="reset">Reset and start over</button></section>';this.focusPrimary();}
     if(action==='reset'){const {sound,low}=this.save;this.save={...freshSave(),sound,low};this.persist();this.prepare(0);this.showMenu();}

@@ -23,6 +23,7 @@ export class World {
   arena = new T.Group();
   entities = new T.Group();
   templates = new Map<string, T.Group>();
+  private modelPacks = new Map<boolean, Map<string, T.Group>>();
   covers: Cover[] = [];
   effects: Effect[] = [];
   ring: T.Mesh;
@@ -64,40 +65,64 @@ export class World {
     this.scene.add(this.shield); this.shield.visible=false;
     window.addEventListener('resize',()=>this.resize()); this.resize();
   }
-  async load() {
-    const loader=new GLTFLoader();
-    await Promise.all(['tank','transport','barricade','crate','barrel','relay','pine','house','stonewall','steelwall','bridge','hill','rifleman','rocketeer','boss-rail','boss-missile','boss-walker','rocket','fuelcrate'].map(async name=>{
-      const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/${name}.glb`);
-      const root=gltf.scene;
-      root.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true; o.receiveShadow=true;}});
-      this.templates.set(name,root);
-    }));
-    // Batch by material within each animated pivot, preserving all moving limbs.
-    const parts:T.Object3D[]=[];
-    for(const root of this.templates.values()){
-      root.updateMatrixWorld(true);
-      const hull=root.getObjectByName('Hull'),turret=root.getObjectByName('Turret');
-      if(hull&&turret){parts.push(hull,turret);root.traverse(o=>{if(/^(Leg[0-9]|LeftLeg|RightLeg)/.test(o.name))parts.push(o);});}
-      else parts.push(root);
-    }
-    for (const part of parts) {
-      part.updateMatrixWorld(true);
-      const inverse=part.matrixWorld.clone().invert();
-      const buckets=new Map<string,{material:T.Material;geometries:T.BufferGeometry[];sources:T.Mesh[]}>();
-      part.traverse(o=>{if(o instanceof T.Mesh&&!Array.isArray(o.material)){
-        if(o.name==='Core')return; // Boss weak-point visibility remains independent.
-        let parent=o.parent;while(parent&&parent!==part){if(parts.includes(parent))return;parent=parent.parent;}
-        const g=o.geometry.clone().applyMatrix4(inverse.clone().multiply(o.matrixWorld));
-        const key=o.material.uuid+':'+Object.keys(g.attributes).sort().join(',')+':'+!!g.index;
-        let bucket=buckets.get(key);if(!bucket){bucket={material:o.material,geometries:[],sources:[]};buckets.set(key,bucket);}
-        bucket.geometries.push(g);bucket.sources.push(o);
-      }});
-      for(const {material,geometries,sources} of buckets.values()){
-        const merged=mergeGeometries(geometries);geometries.forEach(g=>g.dispose());
-        // Only replace originals after a successful merge. UV-less fins must never disappear.
-        if(merged){for(const mesh of sources)mesh.removeFromParent();const mesh=new T.Mesh(merged,material);mesh.castShadow=true;mesh.receiveShadow=true;part.add(mesh);}
+  async load(low=false) {
+    let templates=this.modelPacks.get(low);
+    if(!templates){
+      templates=new Map<string,T.Group>();
+      const loader=new GLTFLoader();
+      await Promise.all(['tank','transport','barricade','crate','barrel','relay','pine','house','stonewall','steelwall','bridge','hill','rifleman','rocketeer','boss-rail','boss-missile','boss-walker','rocket','fuelcrate'].map(async name=>{
+        const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/${low?'low/':''}${name}.glb`);
+        const root=gltf.scene;
+        root.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true; o.receiveShadow=true;}});
+        templates!.set(name,root);
+      }));
+      // Batch by material within each animated pivot, preserving all moving limbs.
+      const parts:T.Object3D[]=[];
+      for(const root of templates.values()){
+        root.updateMatrixWorld(true);
+        const hull=root.getObjectByName('Hull'),turret=root.getObjectByName('Turret');
+        if(hull&&turret){parts.push(hull,turret);root.traverse(o=>{if(/^(Leg[0-9]|LeftLeg|RightLeg)/.test(o.name))parts.push(o);});}
+        else parts.push(root);
       }
+      for (const part of parts) {
+        part.updateMatrixWorld(true);
+        const inverse=part.matrixWorld.clone().invert();
+        const buckets=new Map<string,{material:T.Material;geometries:T.BufferGeometry[];sources:T.Mesh[]}>();
+        part.traverse(o=>{if(o instanceof T.Mesh&&!Array.isArray(o.material)){
+          if(o.name==='Core')return; // Boss weak-point visibility remains independent.
+          let parent=o.parent;while(parent&&parent!==part){if(parts.includes(parent))return;parent=parent.parent;}
+          const g=o.geometry.clone().applyMatrix4(inverse.clone().multiply(o.matrixWorld));
+          const key=o.material.uuid+':'+Object.keys(g.attributes).sort().join(',')+':'+!!g.index;
+          let bucket=buckets.get(key);if(!bucket){bucket={material:o.material,geometries:[],sources:[]};buckets.set(key,bucket);}
+          bucket.geometries.push(g);bucket.sources.push(o);
+        }});
+        for(const {material,geometries,sources} of buckets.values()){
+          const merged=mergeGeometries(geometries);geometries.forEach(g=>g.dispose());
+          // Only replace originals after a successful merge. UV-less fins must never disappear.
+          if(merged){for(const mesh of sources)mesh.removeFromParent();const mesh=new T.Mesh(merged,material);mesh.castShadow=true;mesh.receiveShadow=true;mesh.userData.surfaceKey=`${part.name}:${material.name}:${Object.keys(merged.attributes).sort().join(',')}:${!!merged.index}`;part.add(mesh);}
+        }
+      }
+      for(const [name,root] of templates)root.traverse(o=>{if(o instanceof T.Mesh){
+        o.userData.modelAsset=name;
+        o.userData.surfaceKey??=`node:${o.name}`;
+      }});
+      // Both Blender tiers retain matching surfaces and animation pivots.
+      // Validate before touching the live scene so a bad pack cannot hide objects.
+      if(this.templates.size)for(const [name,root] of templates){
+        const keys=(group:T.Group)=>{const result:string[]=[];group.traverse(o=>{if(o instanceof T.Mesh)result.push(o.userData.surfaceKey);});return result.sort().join('|');};
+        if(keys(root)!==keys(this.templates.get(name)!))throw new Error(`Incompatible detail model: ${name}`);
+      }
+      this.modelPacks.set(low,templates);
     }
+    const surfaces=new Map<string,T.BufferGeometry>();
+    for(const [name,root] of templates)root.traverse(o=>{if(o instanceof T.Mesh)surfaces.set(`${name}/${o.userData.surfaceKey}`,o.geometry);});
+    // Swap geometry only: keep positions, damage, skins, weak-point visibility,
+    // live projectile attachments and the exact rig objects held by the game.
+    this.scene.traverse(o=>{if(o instanceof T.Mesh&&o.userData.modelAsset){
+      const geometry=surfaces.get(`${o.userData.modelAsset}/${o.userData.surfaceKey}`);
+      if(geometry)o.geometry=geometry;
+    }});
+    this.templates=templates;
   }
   clone(name:string):T.Group { return this.templates.get(name)!.clone(true); }
   tank(enemy=false,boss=false,model='tank'):TankVisual {
@@ -200,8 +225,8 @@ export class World {
     this.environment.build(this,index);this.batchScenery();this.activities=buildActivities(this.arena);
     this.target.set(0,0,0);
   }
-  settings(low:boolean){this.scene.environment=low?null:this.studioEnvironment;this.low=low;this.fx.low=low;this.renderer.setPixelRatio(Math.min(devicePixelRatio,low?1:1.6));this.renderer.shadowMap.enabled=!low;this.resize();}
-  resize(){const w=window.innerWidth,h=window.innerHeight;this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}
+  settings(low:boolean){this.scene.environment=low?null:this.studioEnvironment;this.low=low;this.fx.low=low;this.renderer.shadowMap.enabled=!low;document.body.dataset.graphics=low?'low':'detailed';this.resize();}
+  resize(){const w=window.innerWidth,h=window.innerHeight;this.renderer.setPixelRatio(this.low?Math.min(devicePixelRatio,.8,960/Math.max(w,h)):Math.min(devicePixelRatio,1.6));this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}
   burst(position:T.Vector3,color=0,amount=12){
     for(let i=0;i<(this.low?Math.ceil(amount/2):amount)&&this.effects.length<100;i++){
       const material=this.effectMaterials[color].clone();

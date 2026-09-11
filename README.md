@@ -18,7 +18,7 @@ Lead Kestrel through nine operations to reopen the Meridian evacuation route: cl
 - Shield and fixed green repair centers.
 - Three difficulty modes; mission checkpoints, retries and replay.
 - Responsive command screen, minimap, objective HUD and simultaneous touch sticks.
-- Optional synthesized combat audio; low graphics mode; locally bundled fonts.
+- Optional synthesized combat audio; selectable Detailed / Low detail graphics; locally bundled fonts.
 
 This release is a nine-mission adaptation. The original fifteen-stage campaign, enterable infantry shelters, complete arsenal and chassis shop remain in the separate 2D reference; they are not all ported into this release.
 
@@ -50,9 +50,15 @@ The browser tests use controlled integration fixtures for mission edge cases, al
 
 Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within 12 meters of the convoy to move it. Capture progress requires occupying the amber ring without enemies inside it. The default shield lasts three seconds (4.5 seconds with Azure Guardian) and recharges in fourteen seconds. Healing during a mission is available only at repair centers. Settings and campaign checkpoints save in this browser; clearing site data resets them.
 
+## Mobile graphics
+
+Tap **Graphics** on the command screen or in **Pause** to choose **Detailed** or **Low detail**. Low detail uses simpler Blender models, a smaller rendering buffer, fewer effects, and no dynamic shadows or reflection lighting. Text and touch controls retain their normal resolution. The setting saves locally and applies to the current stage without resetting your tank or mission.
+
+Only the selected model tier downloads on startup. Low detail contains 19 models totaling about 1 MB; the tank uses 1,692 triangles instead of 5,712. Switch back to Detailed whenever desired. Actual frame rate depends on the phone.
+
 ## Rebuild the Blender assets
 
-Editable source: `assets/blender/steel-front.blend`. Generator: `tools/blender/build_assets.py`. Runtime exports: `public/models/*.glb`.
+Editable source: `assets/blender/steel-front.blend`. Generator: `tools/blender/build_assets.py`. Runtime exports: `public/models/*.glb`. After regenerating the detailed kit, run `tools/blender/build_low_detail.py` with Blender to rebuild `public/models/low/*.glb`.
 
 ```powershell
 & 'C:\Users\n\source\repos\3d_astra\.tools\blender-4.5.3-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_assets.py

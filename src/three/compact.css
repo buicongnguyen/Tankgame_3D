@@ -105,3 +105,9 @@ button.primary{padding:13px 16px;font-size:12px}.briefing details{margin-top:12p
 .weapon-block small.switch-gun-label{display:block;color:var(--mint);font-size:10px;font-weight:700;letter-spacing:.04em;margin-top:5px}.weapon-block{border-color:#b5f0cb99;min-height:58px}.weapon-block[aria-expanded=true]{background:#365349}.shop-weapon-help{font-size:12px;margin-bottom:12px}
 @media(pointer:coarse){.switch-gun-label span{display:none}.weapon-picker{bottom:calc(255px + env(safe-area-inset-bottom))}}
 @media(pointer:coarse) and (orientation:landscape){.weapon-picker{bottom:calc(110px + env(safe-area-inset-bottom))}}
+
+/* Graphics controls stay in menus; the battlefield HUD remains compact. */
+.settings{flex-wrap:wrap}.settings [data-action="quality"]{min-height:44px}
+#graphics-help{flex-basis:100%;font-size:10px;letter-spacing:0;color:var(--muted)}
+body[data-graphics="low"] #overlay{backdrop-filter:none}
+body[data-graphics="low"] .vignette{box-shadow:none}
