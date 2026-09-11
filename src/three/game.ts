@@ -19,7 +19,7 @@ interface Shot { mesh:T.Mesh; p:Point; from:Point; dx:number; dz:number; speed:n
 export class Game {
   root:HTMLElement; world:World; input:Input; save:Save=freshSave(); phase:Phase='menu'; mission=0;
   player!:Unit; enemies:Unit[]=[]; shots:Shot[]=[];
-  finishDelay=0;stageResult:StageResult|null=null;
+  finishDelay=0;finishDeadline=0;stageResult:StageResult|null=null;
   elapsed=0; capture=0; spawnTimer=0; kills=0; shotsFired=0; lastReward=0;
   bosses=new BossCombat();
   special=new SpecialWeapons();specialAmmo=[0,0];infantryKills=0;
@@ -119,7 +119,7 @@ export class Game {
   }
   defenseSpawn(i:number,role:Unit['role']){const corners=[[-66,-52],[66,52],[66,-52],[-66,52]];const [x,z]=corners[i%4];return this.makeUnit(x,z,role);}
   prepare(index:number){
-    this.finishDelay=0;this.stageResult=null;
+    this.finishDelay=0;this.finishDeadline=0;this.stageResult=null;
     this.bosses.clear();this.special.clear();this.specialAmmo=[this.save.weapons.includes(3)?12:0,this.save.weapons.includes(4)?6:0];this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.strikes=[];this.mission=index;this.world.build(index,MISSIONS[index].kind);this.shots=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;
     this.elapsed=0;this.capture=0;this.spawnTimer=0;this.kills=0;this.shotsFired=0;this.reload=0;this.weapon=0;this.shieldTime=0;this.shieldCooldown=0;this.relayHealth=300;this.convoyHealth=260;
     this.player=this.makeUnit(-4,MISSIONS[index].kind==='defense'?-3:22,'player');this.player.visual.hull.rotation.y=Math.PI;this.player.visual.turret.rotation.y=Math.PI;
@@ -370,7 +370,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   complete(){
     if(this.phase!=='playing')return;
     this.stageResult={...awardStage(this.save,this.mission,this.elapsed,this.player.hp,this.player.max),tanks:this.kills,infantry:this.infantryKills};
-    this.lastReward=this.stageResult.total;this.persist();this.finishDelay=.8;this.setPhase('finishing');
+    this.lastReward=this.stageResult.total;this.persist();this.finishDelay=.8;this.finishDeadline=performance.now()+800;this.setPhase('finishing');
     for(const enemy of this.enemies)enemy.visual.beam.visible=false;
     this.tone(660,.22,.06);
   }
@@ -394,7 +394,8 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   }
   frame(now:number){
     const dt=Math.min((now-this.last)/1000,.1);this.last=now;
-    if(this.phase==='playing'||this.phase==='finishing'){this.accumulator+=dt;let steps=0;while(this.accumulator>=1/60&&steps++<6){this.step(1/60);this.accumulator-=1/60;}}
+    if(this.phase==='finishing'){this.accumulator=0;if(now>=this.finishDeadline)this.step(this.finishDelay);}
+    else if(this.phase==='playing'){this.accumulator+=dt;let steps=0;while(this.phase==='playing'&&this.accumulator>=1/60&&steps++<6){this.step(1/60);this.accumulator-=1/60;}}
     else {this.accumulator=0;if(this.phase==='menu')this.player.visual.turret.rotation.y=Math.PI+Math.sin(now*.0003)*.45;}
     this.hurtTimer=Math.max(0,this.hurtTimer-dt);document.body.classList.toggle('hurt',this.hurtTimer>0&&!matchMedia('(prefers-reduced-motion: reduce)').matches);
     this.world.update(this.phase!=='paused'?dt:0,this.player.visual.root.position,this.phase==='menu');

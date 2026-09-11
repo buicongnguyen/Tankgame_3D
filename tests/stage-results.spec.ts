@@ -11,3 +11,7 @@ test('last tank destruction gets 0.8 seconds before results and combat stops',as
 test('phone result summary and shop navigation fit',async({browser})=>{
  const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});const page=await context.newPage();await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).tap();await page.evaluate(()=>{const g=(window as any).__steel;g.elapsed=45;g.player.hp=g.player.max*.5;g.complete();});await expect(page.getByRole('heading',{name:'Mission accomplished'})).toBeVisible();expect(await page.evaluate(()=>{const e=document.querySelector('#overlay')!;return e.scrollWidth<=e.clientWidth;})).toBe(true);await page.screenshot({path:'test-results/stage-results-mobile.png'});await page.locator('[data-action=shop]').tap();await expect(page.getByRole('heading',{name:'Field shop'})).toBeVisible();await context.close();
 });
+
+test('finish uses real time even when rendering frames are far apart',async({page})=>{
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(()=>{const g=(window as any).__steel,frame=g.frame.bind(g);g.frame=()=>{};g.complete();frame(g.finishDeadline-1);const before=g.phase;frame(g.finishDeadline);return {before,after:g.phase};});expect(r).toEqual({before:'finishing',after:'depot'});
+});
