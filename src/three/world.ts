@@ -1,3 +1,4 @@
+import { skinPalette } from './skins';
 import * as T from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -112,6 +113,13 @@ export class World {
     const backward=new T.Vector3(0,0,-1).applyQuaternion(mesh.quaternion);
     this.fx.emit(tail,'flash',0xffc76b,.55,.07,backward.clone().multiplyScalar(3));
     this.fx.emit(tail,'smoke',0x69737b,.95,1.5,backward.multiplyScalar(1.4).add(new T.Vector3(0,.7,0)));
+  }
+  skinMaterials=new Map<string,T.MeshStandardMaterial>();
+  applySkin(root:T.Object3D,id:string){const palette:Record<string,string>=skinPalette(id);
+    root.traverse(o=>{if(!(o instanceof T.Mesh)||!(o.material instanceof T.MeshStandardMaterial)||!palette[o.material.name])return;
+      const key=id+':'+o.material.name;let material=this.skinMaterials.get(key);
+      if(!material){material=o.material.clone();material.color.set('#'+palette[material.name]);this.skinMaterials.set(key,material);}o.material=material;
+    });root.userData.skin=id;
   }
   enemyMaterials=new Map<string,T.MeshStandardMaterial>();
   clear() { this.environment.clear();this.fx.clear();this.wrecks=[];this.activities=[];

@@ -48,7 +48,7 @@ The browser tests use controlled integration fixtures for mission edge cases, al
 | Find repair center | E | Find Repair button |
 | Pause | Escape | Pause button |
 
-Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within 12 meters of the convoy to move it. Capture progress requires occupying the amber ring without enemies inside it. The shield lasts three seconds and recharges in fourteen seconds. Healing during a mission is available only at repair centers. Settings and campaign checkpoints save in this browser; clearing site data resets them.
+Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within 12 meters of the convoy to move it. Capture progress requires occupying the amber ring without enemies inside it. The default shield lasts three seconds (4.5 seconds with Azure Guardian) and recharges in fourteen seconds. Healing during a mission is available only at repair centers. Settings and campaign checkpoints save in this browser; clearing site data resets them.
 
 ## Rebuild the Blender assets
 
@@ -123,3 +123,25 @@ Effects reuse the existing shard geometry and a single small procedural texture.
 A completed objective starts a 0.8-second finish sequence: combat stops while destruction effects keep playing. The results screen then shows elapsed time, remaining hull, defeated tanks and soldiers, base reward, time bonus, hull bonus and total credits. Boss endings include the same breakdown and Shop access.
 
 On the first clear, the hull bonus is 25% of the base reward multiplied by remaining hull percentage. The time bonus is 25% of the base reward multiplied by the fraction of the target time saved, clamped to zero for a late finish. Both round to whole credits. Target times for operations 1-9 are 90, 90, 150, fixed timer, 120, 150, 120, 150, fixed timer seconds. Fixed-duration defense stages have no time bonus. Replays show performance but do not grant duplicate rewards. Credits and progression save when the objective completes, before the short visual delay.
+
+## Blender tank skins
+
+Choose **Skin** before deploying, or open **Shop > Tank skins** between missions. Hull, trim, barrel, tracks and signal details use coordinated Blender palettes with rendered previews.
+
+| Skin | Price | Equipped bonus |
+| --- | --- | --- |
+| Kestrel | Free | Standard performance |
+| Sunburst | Free | Gold and purple colors |
+| Volt Runner | 300 CR | +18% movement speed |
+| Azure Guardian | 350 CR | Shield lasts 4.5 seconds instead of 3 |
+| Crimson Fury | 450 CR | +15% weapon damage |
+
+Buy once with earned supply credits. Ownership and selection persist; older saves keep their progress and receive both free skins. Equip one skin at a time, with its bonus applied next mission. Crimson Fury multiplies damage for all five tank weapons, including laser and arc rockets, alongside workshop upgrades and supply boosts. Artillery is unchanged. Volt Runner still respects terrain speed penalties; Guardian retains the fourteen-second shield cooldown.
+
+Rebuild the artwork with your Blender executable:
+
+```powershell
+& 'C:\Users\n\source\repos\3d_astra\.tools\blender-4.5.3-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_skins.py
+```
+
+The generator writes five editable `assets/blender/skin-*.blend` files, transparent `public/skins/*.png` previews and `src/three/skin-palettes.ts`. Gameplay reuses the existing tank mesh with cached materials; skins add no combat geometry or lights. Tests cover purchases, save migration, damage, shield duration, movement, material reuse and the mobile shop.

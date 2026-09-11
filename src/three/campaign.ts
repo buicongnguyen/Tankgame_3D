@@ -1,3 +1,4 @@
+import { SKINS } from './skins';
 import type { Upgrade } from './rules';
 export type MissionKind = 'assault' | 'capture' | 'escort' | 'defense' | 'boss';
 export interface Mission { name: string; sector: string; kind: MissionKind; briefing: string; radio: string; debrief: string; objective: string; count: number; duration: number; reward: number; }
@@ -15,8 +16,8 @@ export const MISSIONS: Mission[] = [
 ];
 export const SAVE_KEY = 'steel-front-3d-v1';
 export type Difficulty = 'story' | 'standard' | 'veteran';
-export interface Save { version: 1; mission: number; cleared: boolean[]; credits: number; weapons: number[]; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; }
-export const freshSave = (): Save => ({ version: 1, mission: 0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], upgrades: { armor: 0, power: 0, reload: 0 }, difficulty: 'standard', sound: false, low: false });
+export interface Save { version: 1; mission: number; cleared: boolean[]; credits: number; weapons: number[]; skins: string[]; skin: string; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; }
+export const freshSave = (): Save => ({ version: 1, mission: 0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], skins: ['classic','sunburst'], skin:'classic', upgrades: { armor: 0, power: 0, reload: 0 }, difficulty: 'standard', sound: false, low: false });
 export function parseSave(raw: string | null): Save {
   try {
     const s = JSON.parse(raw || 'null');
@@ -24,6 +25,8 @@ export function parseSave(raw: string | null): Save {
     if (!s.upgrades || ['armor','power','reload'].some(k => !Number.isInteger(s.upgrades[k]) || s.upgrades[k] < 0 || s.upgrades[k] > 3)) return freshSave();
     s.weapons ??= [];
     if(!Array.isArray(s.weapons)||s.weapons.some((w:unknown)=>!Number.isInteger(w)||Number(w)<1||Number(w)>4)||new Set(s.weapons).size!==s.weapons.length)return freshSave();
+    s.skins=[...new Set(['classic','sunburst',...(Array.isArray(s.skins)?s.skins.filter((id:unknown)=>SKINS.some(skin=>skin.id===id)):[])])];
+    if(!s.skins.includes(s.skin))s.skin='classic';
     // Extend old six-operation saves without changing earned progress or purchases.
     if(s.cleared.length===6){const finished=s.cleared.every(Boolean);s.cleared.push(...Array(MISSIONS.length-6).fill(false));if(finished)s.mission=6;}
     // A checkpoint cannot unlock past a gap in the campaign.

@@ -9,7 +9,7 @@ export class SpecialWeapons{
  clear(){for(const b of this.beams)this.remove(b.mesh);for(const a of this.arcs){this.remove(a.mesh);this.remove(a.marker);}this.beams=[];this.arcs=[];}
  fire(g:Game,w:number){
   const start=g.player.visual.root.position.clone();start.y=1.5;
-  const damage=(w===3?150:170)*(1+g.save.upgrades.power*.2+(g.powerBoost>0?.35:0));
+  const damage=(w===3?150:170)*g.playerDamageMultiplier();
   if(w===3){
    const end=start.clone().add(new T.Vector3(Math.sin(g.player.aim)*60,0,Math.cos(g.player.aim)*60));let first=1,hit:(()=>void)|null=null;
    for(const c of g.world.covers){if(c.hp<=0)continue;const t=segmentBox(start,end,c,.05);if(t!==null&&t<first){first=t;hit=()=>g.hitCover(c,damage);}}
