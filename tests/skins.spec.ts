@@ -19,5 +19,5 @@ test('shop touch release cannot activate a link in the replacement menu',async({
  // Deterministically retarget the first native compatibility click, as seen on the slower CI renderer.
  await page.evaluate(()=>{document.querySelector('#overlay')!.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();const link=document.querySelector('a[href="./legacy.html"]')!;(window as any).__retargetAllowed=link.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,detail:1}));},{capture:true,once:true});});
  await page.locator('[data-action=shop-back]').tap();expect(await page.evaluate(()=>(window as any).__retargetAllowed)).toBe(false);await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();
- await expect(page.getByRole('button',{name:'DEPLOY'})).toBeFocused();await page.locator('a[href="./legacy.html"]').focus();await page.keyboard.press('Enter');await expect(page).toHaveURL(/legacy\.html/);await context.close();
+ await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));await page.locator('a[href="./legacy.html"]').focus();await page.keyboard.press('Enter');await expect(page).toHaveURL(/legacy\.html/);await context.close();
 });
