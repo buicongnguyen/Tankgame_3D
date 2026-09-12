@@ -15,9 +15,9 @@ Lead Kestrel through sixteen stages, each with three levels (48 levels in total)
 - Earthquakes warn before stopping ground tanks for 1.6 seconds, with rising dust; guns, infantry and airborne helicopters remain active.
 - Marsh water holes slow and visually sink tanks; periodic traction recovery lets them escape. Bridge and road routes preserve speed.
 - Destructible cover, supply crates, explosive fuel drums and gasoline crates.
-- S and mirrored S sweeps, L routes and U loops on 23 levels; indestructible Blender hills and basalt outcrops shape the lanes. See [map shapes and hard terrain](docs/MAP_SHAPES_AND_HARD_TERRAIN.md).
+- S, mirrored S, diagonal S, U and open O loops on 26 levels. Traveling stages progress from shorter to longer routes. O loops allow either direction during play; indestructible Blender hills and basalt outcrops shape the lanes. See [O loops and boss reinforcements](docs/O_LOOPS_AND_BOSS_REINFORCEMENTS.md).
 - Cannon, unlockable autocannon and siege rockets, plus collectible pulse laser and arc rockets.
-- Six boss types: Rail Titan, Tempest Carrier, Iron Sovereign, helicopter, climbing spider and laser tank. Each has attack warnings and exposed-core windows. Helicopters land behind cover; spiders climb it and rest; laser bursts stop at solid cover.
+- Nine boss types: Rail Titan, Tempest Carrier, Iron Sovereign, helicopter, climbing spider, laser tank, Iron Vanguard four-gun robot, Siege Marshal rocket/gun robot and Atlas Launcher missile truck. Each has attack warnings and exposed-core windows. Helicopters land behind cover; spiders climb it and rest; laser bursts stop at solid cover.
 - Blender riflemen and rocketeers support enemy armor across the campaign.
 - Shield and fixed green repair centers.
 - Four difficulty modes; stage/level checkpoints, retries and replay.
@@ -69,18 +69,18 @@ Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within
 
 Tap **Graphics** on the command screen or in **Pause** to choose **Detailed** or **Low detail**. Low detail uses simpler Blender models, a smaller rendering buffer, fewer effects, and no dynamic shadows or reflection lighting. Text and touch controls retain their normal resolution. The setting saves locally and applies to the current stage without resetting your tank or mission.
 
-Only the selected model tier downloads on startup. Low detail contains 29 models totaling 1.59 MB; the tank uses 1,692 triangles instead of 5,712. Switch back to Detailed whenever desired. Actual frame rate depends on the phone.
+Only the selected model tier downloads on startup. Low detail contains 32 models totaling 1.70 MB; the tank uses 1,692 triangles instead of 5,712. Switch back to Detailed whenever desired. Actual frame rate depends on the phone.
 
 ## Rebuild the Blender assets
 
-Editable sources include `assets/blender/steel-front.blend` and `assets/blender/frontier-environments.blend`. Generators include `tools/blender/build_assets.py`, `tools/blender/build_frontier.py` and `tools/blender/build_extreme_bosses.py`. The last generator writes four separate editable scenes for the helicopter, spider, laser tank and white pine. Runtime exports: `public/models/*.glb`. After regenerating the detailed kit, run `tools/blender/build_low_detail.py` with Blender to rebuild `public/models/low/*.glb`.
+Editable sources include `assets/blender/steel-front.blend` and `assets/blender/frontier-environments.blend`. Generators include `tools/blender/build_assets.py`, `tools/blender/build_frontier.py` and `tools/blender/build_extreme_bosses.py`. The last generator writes four separate editable scenes for the helicopter, spider, laser tank and white pine. Runtime exports: `public/models/*.glb`. After the base and extreme boss generators, run `tools/blender/build_reinforcement_bosses.py` to create the two humanoids and missile truck and add light guns to all six older boss scenes. It saves editable meshes before merging runtime surfaces. Then run `tools/blender/build_low_detail.py` with Blender to rebuild `public/models/low/*.glb`.
 
 ```powershell
 & 'C:\Users\n\source\repos\3d_astra\.tools\blender-4.5.3-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_assets.py
 npm run test:assets
 ```
 
-Use your own Blender executable location on another machine. The 29 detailed exports total 3,336,348 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
+Use your own Blender executable location on another machine. The 32 detailed exports total 3,862,328 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
 
 ## Architecture and planning
 
@@ -179,7 +179,7 @@ Arc rockets now adapt their landing distance to live enemies in an 18-degree con
 
 The tank now has sloped armor, layered track shoes, wheel hubs, a gun mantlet and sleeve, optics, smoke launchers and engine louvres. Vehicles gain glazing, mirrors, grilles and cargo ribs; houses gain window frames, sills, roof seams, gutters and chimney details. Supplies, bosses, infantry and foliage have additional structural geometry. Metal, rubber, glass and paint use distinct PBR responses, with reflected studio lighting in normal mode and simplified lighting in low mode.
 
-The expanded 29-model kit uses 3,336,348 bytes, below its 4 MB detailed-tier budget. Runtime meshes are grouped by material within animated pivots; turrets, legs, muzzle/exhaust attachments and boss weak points remain independent. Five shop previews are rendered in Blender Eevee at 512 x 384. See [visual quality scope and rebuilding](docs/VISUAL_QUALITY.md). This is a more detailed browser art pass, not a claim of full AAA photorealism.
+The expanded 32-model kit uses 3,862,328 bytes, below its 4 MB detailed-tier budget. Runtime meshes are grouped by material within animated pivots; turrets, legs, muzzle/exhaust attachments and boss weak points remain independent. Five shop previews are rendered in Blender Eevee at 512 x 384. See [visual quality scope and rebuilding](docs/VISUAL_QUALITY.md). This is a more detailed browser art pass, not a claim of full AAA photorealism.
 
 ## Winter wreck stability and infantry contact
 
@@ -187,7 +187,7 @@ Burnt wrecks use soft scorch marks placed above snow and ice, with explicit dept
 
 Driving Kestrel into hostile infantry at **3 m/s or more** now defeats them. Stationary contact and slow nudges do not. Sand penalties and ice momentum affect actual contact speed; walls and other vehicles still stop the tank. These defeats count as infantry kills, never tank-objective progress or tank weapon-box drops. Enemy armor does not run down its own infantry.
 
-The frontier art now includes packed Blender albedo/normal maps (maximum 128 × 128), irregular ice and basalt, lava channels that follow the volcano slopes, palm leaflets, branched tree crowns, building sills/balconies/roof services, city sidewalks and textured terrain. Boundary scenery uses shared geometry instances. Low detail uses 11,084 triangles across the 29-model kit versus 41,130 in Detailed (73% fewer), with about 1.59 MB of GLBs.
+The frontier art now includes packed Blender albedo/normal maps (maximum 128 × 128), irregular ice and basalt, lava channels that follow the volcano slopes, palm leaflets, branched tree crowns, building sills/balconies/roof services, city sidewalks and textured terrain. Boundary scenery uses shared geometry instances. Low detail uses 13,651 triangles across the 32-model kit versus 50,178 in Detailed (73% fewer), with about 1.70 MB of GLBs.
 
 See the [implementation plan](docs/RENDERING_AND_FRONTIER_POLISH_PLAN.md) and [code, logic and visual review](docs/RENDERING_AND_FRONTIER_POLISH_REVIEW.md). This remains a stylized browser game; the art pass improves material and construction detail without claiming full AAA photorealism.
 
@@ -199,4 +199,8 @@ Patrols and ambushers wait in zones along the route and respond when approached,
 
 The player pulse laser pierces multiple enemies and one concrete barrier. A second concrete barrier stops that shot. The laser does not damage either barrier, even with upgrades or repeated hits. Steel and other cover still block the beam. Medical cases heal only a damaged tank and cap at maximum hull; shield cases do not stack duration. Tank salvage remains weapons only. Concrete has independent 176 HP sections: four standard cannon hits open just the struck section, while stronger conventional attacks and local explosions use their usual damage. Adjacent sections keep their collision until individually destroyed. See the [route, supply and encounter plan](docs/ROUTE_ENCOUNTERS_AND_SUPPLIES_PLAN.md).
 
-Seven levels now feature a true 45° S route: Homeward 2, Last Signal 3, River Run 2, Frozen Pass 2, Dune Lifeline 3, Fault Line 2 and Mire Crossing 3. Roads, convoy turns and terrain reservations follow the diagonal lanes. See [the route and cache plan](docs/DIAGONAL_ROUTES_AND_WEAPON_CACHES.md).
+Eight levels feature a true 45° S route: Homeward 3, Glass Road 2, Last Signal 3, Frozen Pass 2, Dune Lifeline 3, Citadel Dawn 2, Fault Line 2 and Mire Crossing 3. Roads, convoy turns and terrain reservations follow the diagonal lanes. See [the route and cache plan](docs/DIAGONAL_ROUTES_AND_WEAPON_CACHES.md).
+
+O loops replace L routes. Circle either way or turn back during play; ambushes wake locally in both directions. Clear the patrol and return to the starting gate. The Homeward level 2 convoy waits for your first left/right branch choice, then follows that full circuit while you remain free to flank. Every traveling background increases route length across its three levels; relay capture and timed defense keep their established objective geography.
+
+Meet Iron Vanguard in **Glass Road 3**, Siege Marshal in **Cinderfall 3**, and Atlas Launcher in **Citadel Dawn 3**. Old bosses have an additional Blender light gun. Auxiliary fire pauses during heavy attack warnings and core recovery; the Marshal alternates both hand guns. New launchers fire paired, overlapping warned missile zones with visible arcing rockets and exhaust smoke. Later Hard/Crazy finales can mix the new bosses while retaining the existing boss-count limits.

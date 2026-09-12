@@ -30,7 +30,8 @@ Run the existing Blender generators from the repository root, in this order, wit
 6. `tools/blender/build_skins.py`
 7. `tools/blender/build_frontier.py`
 8. `tools/blender/build_extreme_bosses.py`
-9. `tools/blender/build_low_detail.py`
+9. `tools/blender/build_reinforcement_bosses.py`
+10. `tools/blender/build_low_detail.py`
 
 The first five generators call `tools/blender/asset_detail.py` before export. The skin generator imports the completed tank and renders the five matching material variants. Every generator starts a clean Blender scene. Editable `.blend` sources, GLBs and previews are committed; Blender is not required for the web build. Run `npm run test:assets`, `npm run build` and `npm test` afterward.
 
@@ -77,3 +78,11 @@ The current catalog contains 29 Blender models. Detailed GLBs total **3,336,348 
 White Horizon has 15 ice regions and white pines; Canopy Hold has denser destructible foliage with varied height/rotation; Citadel Dawn has additional blocks and houses; Dune Lifeline has 12 sand traps. Fault Line adds fractured basalt and earthquake dust. Mire Crossing adds seven mud holes with ripples, lowland foliage and a firm central road. Raised region layers remain below the existing wreck scorch height to avoid coplanar flicker.
 
 Crazy mode preserves the same enemies in both rendering tiers. Actual phone frame rate and thermal behavior have not been measured. Detailed rendering is intentionally more costly, so Low detail remains available before deployment and while paused. See the [expansion review](CAMPAIGN_LEVELS_AND_EXTREME_MODES_REVIEW.md) for measured render counters and validation.
+
+## O-loop boss reinforcement kit
+
+The current catalog is 32 models: 3,862,328 bytes / 50,178 triangles in Detailed and 1,695,268 bytes / 13,651 triangles in Low. Existing 4 MB / 2 MB download caps and 4,500-triangle boss limits remain unchanged. Previous section totals document earlier releases.
+
+`build_reinforcement_bosses.py` opens the six existing boss .blend scenes and adds an idempotent light-gun assembly. It then authors two articulated humanoid robots and an eight-wheel missile truck. The humanoids have segmented leg armor, knee/hip joints, feet, hydraulic pistons, a chest core, armored visor, shoulder plates and arm guns. The Marshal and truck have separate missile cradles, casings, bands, noses and fins. The truck includes windows, grille, mirrors, steps, wheel hubs, wheel arches and stabilizers.
+
+Save the editable scene first, then batch static meshes within each parent/material for GLB export. LightGun, ArmL/R, LauncherL/R, leg, Core and muzzle nodes remain independent. The Low generator accepts an optional list after `--` for incremental boss exports and retains other manifest entries. Both tiers preserve all relevant attachment transforms and surfaces.

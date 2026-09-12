@@ -7,7 +7,7 @@ test('45-degree S spans the arena with a continuous narrow road and room between
  const layout=stageLayout(7,1,'escort'),vertices=roadVertices(layout.points,layout.rotation);
  expect(layout.shape).toBe('S-45');expect(layout.length).toBeCloseTo(302.64);
  const selected=[];for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++)if(routePattern(stage,level)?.shape==='S-45')selected.push([stage,level]);
- expect(selected).toEqual([[2,1],[5,2],[6,1],[7,1],[11,2],[14,1],[15,2]]);
+ expect(selected).toEqual([[2,2],[4,1],[5,2],[7,1],[11,2],[13,1],[14,1],[15,2]]);
  for(let i=1;i<layout.points.length;i++){const a=layout.points[i-1],b=layout.points[i];expect(Math.abs(a.x-b.x)).toBeCloseTo(Math.abs(a.z-b.z));}
  const cross=(ax:number,az:number,bx:number,bz:number)=>ax*bz-az*bx;
  const onRoad=(x:number,z:number)=>{for(let i=0;i<vertices.length;i+=9){const ax=vertices[i],az=vertices[i+2],bx=vertices[i+3],bz=vertices[i+5],cx=vertices[i+6],cz=vertices[i+8];const signs=[cross(bx-ax,bz-az,x-ax,z-az),cross(cx-bx,cz-bz,x-bx,z-bz),cross(ax-cx,az-cz,x-cx,z-cz)];if(signs.every(n=>n>=-1e-6)||signs.every(n=>n<=1e-6))return true;}return false;};

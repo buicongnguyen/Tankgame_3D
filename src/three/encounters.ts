@@ -14,8 +14,8 @@ export class RouteEncounters {
   if(projection.distance<13)this.progress=Math.max(this.progress,projection.progress);
   const progress=Math.max(this.progress,g.convoyDistance);
   for(const u of g.enemies){const order=u.encounter;if(u.dead||!order||order.active)continue;
-   const near=distance(player,order.anchor)<28||!!g.convoy&&distance(g.convoy.position,order.anchor)<28;
-   if(order.wakeAt!==undefined?g.elapsed>=order.wakeAt:near&&progress>=order.meters-24||progress>order.meters+18)this.alert(g,u);
+   const wakeDistance=layout.closed?22:28,near=distance(player,order.anchor)<wakeDistance||!!g.convoy&&distance(g.convoy.position,order.anchor)<wakeDistance;
+   if(order.wakeAt!==undefined?g.elapsed>=order.wakeAt:layout.closed?near:near&&progress>=order.meters-24||progress>order.meters+18)this.alert(g,u);
   }
  }
 }

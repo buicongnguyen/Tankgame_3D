@@ -1,5 +1,7 @@
 # Diagonal S routes and contested weapon caches
 
+Current update: [O loops and boss reinforcements](O_LOOPS_AND_BOSS_REINFORCEMENTS.md) replaces L routes, reorders route lengths and adds three Blender bosses. The plan below records the previous release.
+
 ## Plan and behavior
 
 1. Place laser, arc rocket and weapon-supply caches on the road, within 1.1 meters of its center and about 2–10 meters beyond a scheduled ambush anchor. Distribute them among encounter groups and keep stage/level randomness reproducible. Enemies guard these areas through combat; boxes remain collectible under fire, allowing a risky rush. Defense retains its staggered corner reinforcements.

@@ -67,6 +67,8 @@ export function buildFrontier(world:World,biome:Biome){
   for(const [x,z] of [[-39,47],[38,-46],[-40,-4],[40,32]])add('house',x,z,6,5,220);
   // Fill free blocks around the new east-west streets without covering route access.
   for(let x=-62;x<=64;x+=14)for(let z=-50;z<=46;z+=12)if(world.covers.filter(c=>c.kind==='cityblock'||c.kind==='house').length<26&&add('cityblock',x,z,8.4,7.5,400))plane(new T.PlaneGeometry(10,9),0x929b95,x,z,.045);
+  // Smaller houses fit remaining urban lots while respecting roads and service access.
+  housing:for(let x=-64;x<=64;x+=8)for(let z=-50;z<=50;z+=8){if(world.covers.filter(c=>c.kind==='cityblock'||c.kind==='house').length>=26)break housing;add('house',x,z,6,5,220);}
  }
  if(biome==='quake'){
   for(let i=0;i<34;i++)add('volcanic-rock',(i%2?1:-1)*(18+i*11%46),-51+i*19%102,2.6,2.2,Infinity);

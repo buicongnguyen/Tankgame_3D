@@ -13,39 +13,57 @@
   },
   {
     "asset": "boss-helicopter",
-    "detailedTriangles": 1448,
-    "lowTriangles": 512,
-    "bytes": 69224
+    "detailedTriangles": 1680,
+    "lowTriangles": 499,
+    "bytes": 48532
   },
   {
     "asset": "boss-laser",
-    "detailedTriangles": 1668,
-    "lowTriangles": 555,
-    "bytes": 71508
+    "detailedTriangles": 1900,
+    "lowTriangles": 566,
+    "bytes": 49988
   },
   {
     "asset": "boss-missile",
-    "detailedTriangles": 2596,
-    "lowTriangles": 767,
-    "bytes": 94624
+    "detailedTriangles": 2828,
+    "lowTriangles": 844,
+    "bytes": 65300
+  },
+  {
+    "asset": "boss-missile-truck",
+    "detailedTriangles": 2780,
+    "lowTriangles": 826,
+    "bytes": 71952
+  },
+  {
+    "asset": "boss-quad-mech",
+    "detailedTriangles": 2164,
+    "lowTriangles": 638,
+    "bytes": 63260
   },
   {
     "asset": "boss-rail",
-    "detailedTriangles": 2332,
-    "lowTriangles": 689,
-    "bytes": 86036
+    "detailedTriangles": 2564,
+    "lowTriangles": 766,
+    "bytes": 62936
+  },
+  {
+    "asset": "boss-siege-mech",
+    "detailedTriangles": 2712,
+    "lowTriangles": 803,
+    "bytes": 84068
   },
   {
     "asset": "boss-spider",
-    "detailedTriangles": 2568,
-    "lowTriangles": 750,
-    "bytes": 98152
+    "detailedTriangles": 2800,
+    "lowTriangles": 828,
+    "bytes": 86652
   },
   {
     "asset": "boss-walker",
-    "detailedTriangles": 1672,
-    "lowTriangles": 494,
-    "bytes": 63276
+    "detailedTriangles": 1904,
+    "lowTriangles": 564,
+    "bytes": 56940
   },
   {
     "asset": "bridge",

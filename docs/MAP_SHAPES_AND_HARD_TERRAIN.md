@@ -1,5 +1,7 @@
 # Map sweeps and indestructible terrain
 
+Current update: [O loops and boss reinforcements](O_LOOPS_AND_BOSS_REINFORCEMENTS.md) replaces L routes, reorders route lengths and adds three Blender bosses. The plan below records the previous release.
+
 Update: [Diagonal routes and weapon caches](DIAGONAL_ROUTES_AND_WEAPON_CACHES.md) revises the distribution below: seven levels use 45° S routes, and weapons now sit on the road near ambushes. Recovery pickups retain side detours. The original plan and review below describe the earlier release.
 
 ## Plan

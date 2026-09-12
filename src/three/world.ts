@@ -31,7 +31,7 @@ export class World {
   templates = new Map<string, T.Group>();
   private modelPacks = new Map<boolean, Map<string, T.Group>>();
   covers: Cover[] = [];
-  layout=stageLayout(0);navigationRevision=0;
+  layout=stageLayout(0);navigationRevision=0;loopReverse=false;
   firmRoad(p:Box|{x:number;z:number}){return ['snow','glacier','desert','marsh'].includes(this.environment.biome)&&roadDistance(this.layout.points,p)<=4;}
   terrainKind(p:{x:number;z:number}){return this.firmRoad(p)?undefined:terrainAt(this.environment.biome,p);}
   groundSpeed(p:{x:number;z:number}){return this.firmRoad(p)?1:terrainSpeed(this.environment.biome,p.x,p.z);}
@@ -91,7 +91,7 @@ export class World {
       for(const root of templates.values()){
         root.updateMatrixWorld(true);
         const hull=root.getObjectByName('Hull'),turret=root.getObjectByName('Turret');
-        if(hull&&turret){parts.push(hull,turret);root.traverse(o=>{if(/^(Leg[0-9]|LeftLeg|RightLeg|Rotor|TailRotor)/.test(o.name))parts.push(o);});}
+        if(hull&&turret){parts.push(hull,turret);root.traverse(o=>{if(/^(Leg[0-9]|LeftLeg|RightLeg|Arm[LR]$|Launcher[LR]$|LightGun$|Rotor|TailRotor)/.test(o.name))parts.push(o);});}
         else parts.push(root);
       }
       for (const part of parts) {
@@ -147,7 +147,7 @@ export class World {
     }});
     if(boss&&model==='tank')root.scale.setScalar(1.55);
     const bar=new T.Mesh(new T.PlaneGeometry(2.8,.16),new T.MeshBasicMaterial({color:enemy?0xff795c:0x8efad6,depthTest:false}));
-    bar.userData.owned=true;bar.rotation.x=-Math.PI/3;bar.position.y=boss?4.6:3;bar.renderOrder=5;root.add(bar);bar.visible=enemy;
+    bar.userData.owned=true;bar.rotation.x=-Math.PI/3;bar.position.y=model.includes('mech')?7.4:boss?4.6:3;bar.renderOrder=5;root.add(bar);bar.visible=enemy;
     const beam=new T.Mesh(new T.BoxGeometry(.08,.02,1),new T.MeshBasicMaterial({color:0xff5849,transparent:true,opacity:.55}));
     beam.userData.owned=true;beam.visible=false;this.entities.add(beam);
     this.entities.add(root);
@@ -288,7 +288,7 @@ export class World {
     for(let i=1;i<this.layout.points.length;i++){
       const a=this.layout.points[i-1],b=this.layout.points[i],length=Math.hypot(b.x-a.x,b.z-a.z),angle=Math.atan2(b.x-a.x,b.z-a.z);
       for(let d=6;d<length-2;d+=12){const x=a.x+(b.x-a.x)*d/length,z=a.z+(b.z-a.z)*d/length;
-        for(const side of [-1,1]){const mark=this.box(.12,.012,.95,0xd6c395,x+Math.cos(angle)*side*.28,.12,z-Math.sin(angle)*side*.28);mark.rotation.y=angle-side*.65;mark.castShadow=false;}
+        if(this.layout.closed){const mark=this.box(.14,.012,1.15,0xd6c395,x,.12,z);mark.rotation.y=angle;mark.castShadow=false;}else for(const side of [-1,1]){const mark=this.box(.12,.012,.95,0xd6c395,x+Math.cos(angle)*side*.28,.12,z-Math.sin(angle)*side*.28);mark.rotation.y=angle-side*.65;mark.castShadow=false;}
       }
     }
     if(kind==='defense')road.material.color.multiplyScalar(.9);
@@ -314,7 +314,8 @@ export class World {
     const p=root.position.clone();p.y=1;this.fx.impact(p,true);
   }
   cameraOffset(focus=this.layout.spawn){
-    const meters=projectRoute(this.layout.points,focus).progress,a=routeSample(this.layout.points,meters),b=routeSample(this.layout.points,Math.min(this.layout.length,meters+12)),d=Math.hypot(b.x-a.x,b.z-a.z);
+    const points=this.layout.closed&&this.loopReverse?[...this.layout.points].reverse():this.layout.points;
+    const meters=projectRoute(points,focus).progress,a=routeSample(points,meters),next=this.layout.closed?(meters+12)%this.layout.length:Math.min(this.layout.length,meters+12),b=routeSample(points,next),d=Math.hypot(b.x-a.x,b.z-a.z);
     // Preview the approaching bend; the camera target still eases smoothly each frame.
     return {x:(d>1e-6?(b.x-a.x)/d:b.dx)*8,z:(this.camera.aspect<1?16:0)+(d>1e-6?(b.z-a.z)/d:b.dz)*8};
   }

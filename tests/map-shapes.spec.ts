@@ -5,21 +5,21 @@ import {levelMission} from '../src/three/campaign';
 import {DIFFICULTIES} from '../src/three/difficulty';
 import {segmentBox,circleBox} from '../src/three/rules';
 
-test('S, mirrored S, L and U have distinct whole-map geometry and fair travel time',()=>{
- const s=routePattern(4,0)!,mirror=routePattern(4,1)!,l=routePattern(5,0)!,u=routePattern(4,2)!;
- expect(s.length).toBe(388);expect(l.length).toBe(188);expect(u.length).toBe(276);
+test('S, mirrored S, O and U have distinct whole-map geometry and fair travel time',()=>{
+ const s=routePattern(4,2)!,mirror=routePattern(6,2)!,l=routePattern(5,0)!,u=routePattern(5,1)!;
+ expect(s.length).toBe(388);expect(l.length).toBeCloseTo(225.6);expect(u.length).toBe(276);
  expect(mirror.points).toEqual(s.points.map(p=>({x:-p.x,z:p.z})));
  const points=s.points;expect(Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x))).toBe(100);expect(Math.max(...points.map(p=>p.z))-Math.min(...points.map(p=>p.z))).toBe(88);
  expect(new Set(points.filter(p=>p.x&&p.z).map(p=>`${Math.sign(p.x)},${Math.sign(p.z)}`)).size).toBe(4);
- expect(l.points[0].x).toBe(l.points[2].x);expect(l.points[2].z).toBe(l.points.at(-1)!.z);
+ expect(l.points[0]).toEqual(l.points.at(-1));expect(new Set(l.points.map(p=>p.x)).size).toBe(3);
  expect(u.points[0].z).toBe(u.points.at(-1)!.z);expect(u.points[2].z).not.toBe(u.points[0].z);
- let changed=0;for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++){const p=routePattern(stage,level);if(!p)continue;changed++;const m=levelMission(stage,level);expect(m.parTime).toBeGreaterThan(p.length/(m.kind==='escort'?3.4:9)+30);}expect(changed).toBe(23);
+ let changed=0;for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++){const p=routePattern(stage,level);if(!p)continue;changed++;const m=levelMission(stage,level);expect(m.parTime).toBeGreaterThan(p.length/(m.kind==='escort'?3.4:9)+30);}expect(changed).toBe(26);
 });
 
 test('natural landforms preserve every route, shoulder and volcano across all difficulties',()=>{
  for(const difficulty of DIFFICULTIES)for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++){
   const layout=stageLayout(stage,level,levelMission(stage,level).kind,difficulty);
-  if(layout.shape!=='winding')expect(layout.landforms.length,`${stage}/${level}/${difficulty}`).toBeGreaterThan(0);
+  if(stage===13)expect(layout.landforms).toHaveLength(0);else if(layout.shape!=='winding')expect(layout.landforms.length,`${stage}/${level}/${difficulty}`).toBeGreaterThan(0);
   for(const p of layout.landforms){
    for(let i=1;i<layout.points.length;i++)expect(segmentBox(layout.points[i-1],layout.points[i],p,2.3),`${stage}/${level}`).toBeNull();
    for(const supply of layout.supplies)expect(circleBox(supply,supply.kind==='mine'?2:2.85,p)).toBe(false);

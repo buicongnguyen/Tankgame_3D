@@ -8,7 +8,7 @@ export type SupplyKind='repair'|'supply'|'mine'|'laser'|'arc'|'health'|'shield';
 export interface SupplyPosition extends Point {kind:SupplyKind;guardGroup?:number;}
 export interface Landform extends Box {kind:'hill'|'volcanic-rock';}
 export interface RoadCorridor {a:Point;b:Point;width:number;}
-export interface StageLayout {shape:RouteShape;rotation:number;corridors:RoadCorridor[];landforms:Landform[];points:Point[];length:number;spawn:Point;heading:number;barriers:Box[];supplies:SupplyPosition[];reserved:Box[];encounters:Point[];southbound:boolean;direction:string;}
+export interface StageLayout {shape:RouteShape;closed:boolean;rotation:number;corridors:RoadCorridor[];landforms:Landform[];points:Point[];length:number;spawn:Point;heading:number;barriers:Box[];supplies:SupplyPosition[];reserved:Box[];encounters:Point[];southbound:boolean;direction:string;}
 // Legacy routes retain their established bends; named patterns can rotate the whole route.
 const ROUTES:number[][][]=[
  [[0,48],[0,34],[-16,34],[-16,10],[16,10],[16,-18],[-12,-18],[-12,-42],[0,-42],[0,-50]],
@@ -81,8 +81,9 @@ export function stageLayout(stage:number,level=0,kind='assault',difficulty='norm
  if(kind==='defense')reserved.push({x:0,z:0,w:16,d:128});
  const reservation={reserved,corridors};
  const landforms:Landform[]=[];
- for(const p of landformCandidates(shape)){
-  const box={...p,w:14,d:10};
+ // City routes use buildings as their enclosing terrain, preserving dense urban blocks.
+ for(const p of stage===13?[]:landformCandidates(shape)){
+  const box={x:p.x+(shape==='O'&&stage===10?20:0),z:p.z,w:shape==='O'?12:14,d:shape==='O'?9:10};
   if(overlapsReservation(reservation,box)||stage===10&&distance(box,{x:-28,z:-38})<28)continue;
   landforms.push({...box,kind:[4,5,10,14].includes(stage)?'volcanic-rock':'hill'});
  }
@@ -113,6 +114,6 @@ export function stageLayout(stage:number,level=0,kind='assault',difficulty='norm
   if(roadDistance(points,p)>10&&distance(p,spawn)>15&&supplies.every(s=>distance(s,p)>10)&&!overlapsReservation(reservation,{...p,w:4,d:4})&&!barriers.some(b=>segmentBox(p,p,b,4)!==null)&&!(stage===10&&distance(p,{x:-28,z:-38})<22)){supplies.push({kind:'mine',...p});reserved.push({x:p.x,z:p.z,w:5,d:5});break;}
  }
  const start=points[0],end=points.at(-1)!,dx=end.x-start.x,dz=end.z-start.z;
- const direction=Math.abs(dx)>Math.abs(dz)*2?(dx>0?'east':'west'):Math.abs(dz)>Math.abs(dx)*2?(dz>0?'south':'north'):(dz>0?'south':'north')+(dx>0?'east':'west');
- return {shape,rotation:pattern?.rotation??0,corridors,landforms,points,length,spawn,heading,barriers,supplies,reserved,encounters,southbound:start.z<end.z,direction};
+ const direction=shape==='O'?'around the loop':Math.abs(dx)>Math.abs(dz)*2?(dx>0?'east':'west'):Math.abs(dz)>Math.abs(dx)*2?(dz>0?'south':'north'):(dz>0?'south':'north')+(dx>0?'east':'west');
+ return {shape,closed:shape==='O',rotation:pattern?.rotation??0,corridors,landforms,points,length,spawn,heading,barriers,supplies,reserved,encounters,southbound:start.z<end.z,direction};
 }
