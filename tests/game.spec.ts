@@ -85,9 +85,9 @@ test('expanded terrain, field activities, artillery and wreck cleanup',async({pa
   const pad=g.world.activities.find((a:any)=>a.kind==='repair');g.player.hp-=70;g.player.visual.root.position.set(pad.x,0,pad.z);const hp=g.player.hp;g.updateActivities(.5);const healed=g.player.hp>hp;
   const supply=g.world.activities.find((a:any)=>a.kind==='supply');g.player.visual.root.position.set(supply.x,0,supply.z);g.updateActivities(.1);const supplied=supply.spent&&g.weapon===2&&g.powerBoost>0;
   const mine=g.world.activities.find((a:any)=>a.kind==='mine');g.player.visual.root.position.set(mine.x,0,mine.z);const before=g.player.hp;g.updateActivities(.1);const mined=mine.spent&&g.player.hp<before;
-  g.player.visual.root.position.set(0,0,15);g.aimPoint.set(0,0,0);g.action('artillery');g.action('1');const telegraphed=g.strikes.length===5&&g.artilleryCooldown>0;
+  g.player.visual.root.position.set(0,0,15);g.aimPoint.set(0,0,0);g.action('artillery');g.action('1');const telegraphed=g.strikes.length===12&&g.artilleryCooldown>0;
   for(let i=0;i<160;i++)g.updateActivities(1/60);const detonated=g.strikes.length===0;
-  const enemy=g.enemies[0];enemy.visual.root.position.set(3,0,8);g.damageUnit(enemy,9999,g.player.visual.root.position);const wreck=g.world.wrecks.length===1;
+  const enemy=g.makeUnit(3,8,'raider');g.enemies.push(enemy);const previousWrecks=g.world.wrecks.length;g.damageUnit(enemy,9999,g.player.visual.root.position);const wreck=enemy.dead&&g.world.wrecks.length===Math.min(14,previousWrecks+1)&&g.world.wrecks.at(-1).root.position.distanceTo(enemy.visual.root.position)<.01;
   return {expanded,healed,supplied,mined,telegraphed,detonated,wreck};
  });expect(result).toEqual({expanded:true,healed:true,supplied:true,mined:true,telegraphed:true,detonated:true,wreck:true});
  await page.waitForTimeout(350);await page.screenshot({path:'test-results/expanded-effects.png'});

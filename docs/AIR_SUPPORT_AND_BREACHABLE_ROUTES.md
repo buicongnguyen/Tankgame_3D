@@ -1,7 +1,7 @@
 # Air support, threat ranges and route progression
 
 ## Design
-- R / AIR SUPPORT opens two choices: 1 Barrage, 2 Supply drop. Escape closes the chooser. The existing barrage retains its five warned blasts and friendly fire.
+- R / AIR SUPPORT opens two choices: 1 Barrage, 2 Supply drop. Escape closes the chooser. The barrage drops twelve bombs around the call position: 18 m ring radius, 8 m blast radius and a 10 m central gap. The ring stays fixed when the player moves. Opposite bomb pairs arrive from 1.2 to 2.3 seconds after the call. Off-map bomb centers are omitted to preserve the central gap. Warning circles and falling Blender munitions share the actual target positions. Blasts retain friendly fire and normal fuel chain reactions; supply drops stay separate.
 - Hard capture/defense missions receive one supply call; Crazy receives two. Both options share a 28-second radio cooldown. Supply calls are separate from the limited 1-in-3 wreck drops; no unlimited healing or ammo loop.
 - Supply payload: hull below 80% receives 40 HP (Hard) or 35 HP (Crazy); otherwise refill a depleted purchased special weapon with 2 arc rockets or 4 laser shots; otherwise deliver a 4-second shield. Existing health and ammo caps apply. A clear nearby landing site is required before spending the allowance.
 - The crate descends for 3.2 seconds under a lightweight canopy, with a mint landing ring. It can only be collected on the ground. Pause freezes descent; retries remove the drop and reset its allowance.
@@ -21,3 +21,10 @@
 3. Check mine range boundaries, enemy activation/occlusion, local concrete destruction and laser wall identity.
 4. Inspect desktop and phone UI, including Low detail; run the complete regression suite and production build.
 5. Commit, push to GitHub main using the existing SSH remote, wait for the Pages verification/deployment workflow, and check the live production build.
+
+
+## Ring-barrage verification
+- Check all compass directions, both sides of the blast boundary and safe center; aim and later movement must not change the called coordinates.
+- Check all four map corners and edges: no bomb is clamped into the safe center or outside the battlefield.
+- Exercise damage to nearby soldiers, tanks and scenery, single detonation, cooldown, pause, death/phase gating and retry cleanup.
+- Review desktop, portrait and landscape controls plus Detailed/Low warning circles and falling bombs. Keep shared model geometry and capped effects.
