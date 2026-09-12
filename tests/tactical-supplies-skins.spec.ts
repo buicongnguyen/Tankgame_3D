@@ -44,8 +44,8 @@ test('desktop weapon buttons, top-row keys and number pad select the same slots'
  // Clicking a numbered weapon is an explicit gun selection, even with the radio menu open.
  await page.locator('[data-quick-weapon="1"]').click();expect(await page.evaluate(()=>{const g=(window as any).__steel;return g.weapon===0&&g.strikes.length===0&&g.airSupport.used===0;})).toBe(true);
  await page.locator('[data-quick-weapon="7"]').click();
- // The contextual radio chooser still owns 1/2 while open.
- await page.keyboard.press('r');await page.keyboard.press('Numpad2');expect(await page.evaluate(()=>(window as any).__steel.weapon)).toBe(6);expect(await page.evaluate(()=>(window as any).__steel.airSupport.used)).toBe(1);
+ // Number keys always select weapons; R and T act directly and share their cooldown.
+ await page.keyboard.press('r');expect(await page.evaluate(()=>(window as any).__steel.strikes.length)).toBeGreaterThan(0);await page.keyboard.press('Numpad2');expect(await page.evaluate(()=>(window as any).__steel.weapon)).toBe(1);await page.keyboard.press('t');expect(await page.evaluate(()=>(window as any).__steel.airSupport.used)).toBe(0);await page.evaluate(()=>{const g=(window as any).__steel;g.artilleryCooldown=0;g.updateHud();});await page.keyboard.press('t');expect(await page.evaluate(()=>(window as any).__steel.airSupport.used)).toBe(1);expect(await page.evaluate(()=>(window as any).__steel.weapon)).toBe(1);
  const bar=(await page.locator('#weapon-shortcuts').boundingBox())!,hud=(await page.locator('.bottom-hud').boundingBox())!,hint=(await page.locator('.desktop-hint').boundingBox())!;expect(bar.y+bar.height).toBeLessThan(hud.y);expect(hint.y+hint.height).toBeLessThanOrEqual(bar.y);
  await page.screenshot({path:'test-results/weapon-shortcuts-desktop.png'});
 });

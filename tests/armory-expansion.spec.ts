@@ -52,7 +52,8 @@ test('upgraded engine and shield change live behavior and preserve terrain slowd
 
 for(const viewport of [{width:1440,height:900},{width:320,height:568},{width:390,height:844},{width:844,height:390}])test(`level-20 shop and eight-weapon controls fit and persist ${viewport.width}`,async({browser})=>{
  const mobile=viewport.width!==1440,c=await browser.newContext({viewport,hasTouch:mobile,isMobile:mobile}),p=await c.newPage(),errors:string[]=[];p.on('pageerror',e=>errors.push(e.message));const press=async(s:string)=>mobile?p.locator(s).tap():p.locator(s).click();
- await p.goto('/?e2e');await expect(p.locator('[data-action=shop]')).toBeVisible();await p.evaluate(()=>{(window as any).__steel.save.credits=20000;});await press('[data-action=shop]');
+ await p.goto('/?e2e');await expect(p.locator('[data-action=shop]')).toBeVisible();// Keep the static shop screenshot independent of the continuously rendered menu background.
+ await p.evaluate(()=>{const g=(window as any).__steel;g.save.credits=20000;g.frame=()=>{};g.world.renderer.render(g.world.scene,g.world.camera);});await press('[data-action=shop]');
  for(const id of [5,6,7])await press(`[data-action=buy-weapon][data-value="${id}"]`);await press('[data-action=upgrade-weapon][data-value="5"]');await press('[data-action=buy][data-value=engine]');
  await p.locator('[data-weapon-card="7"]').scrollIntoViewIfNeeded();expect(await p.evaluate(()=>{const e=document.querySelector('#overlay')!;return e.scrollWidth<=e.clientWidth;})).toBe(true);await p.screenshot({path:`test-results/expanded-shop-${viewport.width}.png`});
  await p.reload();await press('[data-action=deploy]');await p.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};});await expect(p.locator('#weapon-label')).toContainText('Triple arc launcher · 3 volleys');await press('#weapon');await expect(p.locator('#weapon-picker button')).toHaveCount(9);
