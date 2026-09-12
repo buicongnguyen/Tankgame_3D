@@ -150,6 +150,12 @@
     "bytes": 30704
   },
   {
+    "asset": "scout-jeep",
+    "detailedTriangles": 2384,
+    "lowTriangles": 1057,
+    "bytes": 67992
+  },
+  {
     "asset": "steelwall",
     "detailedTriangles": 684,
     "lowTriangles": 198,

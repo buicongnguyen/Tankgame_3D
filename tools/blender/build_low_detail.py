@@ -34,7 +34,7 @@ for source in sorted((ROOT / 'public/models').glob('*.glb')):
         obj.data.calc_loop_triangles()
         if len(obj.data.loop_triangles) > 12:
             decimate = obj.modifiers.new('Mobile silhouette', 'DECIMATE')
-            decimate.ratio = .18 if frontier else .30
+            decimate.ratio = .18 if frontier else .45 if source.stem == 'scout-jeep' else .30
             decimate.use_collapse_triangulate = True
             bpy.ops.object.modifier_apply(modifier=decimate.name)
         obj.data.calc_loop_triangles()

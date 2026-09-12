@@ -16,7 +16,7 @@ for(const name of names){
   let triangles=0;
   for(const mesh of json.meshes)for(const p of mesh.primitives)triangles+=(p.indices!==undefined?json.accessors[p.indices].count:json.accessors[p.attributes.POSITION].count)/3;
   assert.ok(triangles<(name==='tank'?12000:name.startsWith('boss-')?4500:3000));
-  if(['tank','rifleman','rocketeer'].includes(name)||name.startsWith('boss-'))for(const node of ['Hull','Turret','Muzzle'])assert.ok(json.nodes.some(n=>n.name===node),`Missing ${node}`);
+  if(['tank','rifleman','rocketeer','scout-jeep'].includes(name)||name.startsWith('boss-'))for(const node of ['Hull','Turret','Muzzle'])assert.ok(json.nodes.some(n=>n.name===node),`Missing ${node}`);
   if(name.startsWith('boss-')&&name!=='boss-quad-mech')for(const node of ['LightGun','LightMuzzle'])assert.ok(json.nodes.some(n=>n.name===node),`${name} missing ${node}`);
   if(name==='boss-quad-mech')for(let i=0;i<4;i++)assert.ok(json.nodes.some(n=>n.name===`GunMuzzle${i}`));
   if(['boss-siege-mech','boss-missile-truck'].includes(name))for(let i=0;i<2;i++)assert.ok(json.nodes.some(n=>n.name===`LaunchMuzzle${i}`));
@@ -26,7 +26,7 @@ for(const name of names){
   assert.ok(lowJson.asset.generator.includes('Blender'));assert.ok(!lowJson.images?.some(i=>i.uri));
   let simpler=0;for(const mesh of lowJson.meshes)for(const p of mesh.primitives)simpler+=(p.indices!==undefined?lowJson.accessors[p.indices].count:lowJson.accessors[p.attributes.POSITION].count)/3;
   assert.ok(simpler>0&&simpler<triangles,`${name} must actually simplify geometry`);
-  for(const node of json.nodes.filter(n=>/^(Hull|Turret|Muzzle|Exhaust|Core|Rotor|TailRotor|LeftLeg|RightLeg|Leg[0-9][LR]|Arm[LR]|Launcher[LR]|LightGun|LightMuzzle|GunMuzzle[0-3]|LaunchMuzzle[01])$/.test(n.name))){
+  for(const node of json.nodes.filter(n=>/^(Hull|Turret|Muzzle|Exhaust|Core|Rotor|TailRotor|LeftLeg|RightLeg|Leg[0-9][LR]|Arm[LR]|Launcher[LR]|LightGun|LightMuzzle|GunMuzzle[0-3]|LaunchMuzzle[01]|Wheel[FR][LR])$/.test(n.name))){
     const other=lowJson.nodes.find(n=>n.name===node.name);assert.ok(other,`${name} low tier is missing ${node.name}`);
     for(const [field,fallback] of [['translation',[0,0,0]],['scale',[1,1,1]]]){
       const a=node[field]??fallback,c=other[field]??fallback;

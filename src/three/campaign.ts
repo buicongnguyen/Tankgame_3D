@@ -78,4 +78,8 @@ export const weaponPrices:Record<number,number>={1:120,2:180,3:360,4:420};
 export function ownsWeapon(save:Save,id:number){return id<3?id<weaponCount(save):save.weapons.includes(id);}
 export function buyWeapon(save:Save,id:number){const cost=weaponPrices[id];if(!cost||ownsWeapon(save,id)||save.credits<cost)return false;save.credits-=cost;save.weapons.push(id);save.equippedWeapon=id;return true;}
 
-export function encounterSize(index:number,level:number,difficulty:string){const settings=mode(difficulty);return {armor:MISSIONS[index].count*settings.enemies,infantry:(index<2?6:10)*settings.enemies,bosses:level===2?settings.bosses:0};}
+export function encounterSize(index:number,level:number,difficulty:string){
+ const settings=mode(difficulty),scale=settings.enemies;
+ const rifles=(index<2?9:index<9?12:14)+level*2,rockets=(index<2?4:6)+(level===2?1:0),jeeps=(index<9?1:2)+(level===2?1:0);
+ return {armor:(Math.max(5,MISSIONS[index].count)+level)*scale,riflemen:rifles*scale,rocketeers:rockets*scale,infantry:(rifles+rockets)*scale,jeeps:jeeps*scale,bosses:level===2?settings.bosses:0};
+}

@@ -1,3 +1,4 @@
+import {addTestPickups} from './activity-fixtures';
 import {test,expect} from '@playwright/test';
 import {stageLayout,roadDistance,isWeaponSupply} from '../src/three/stage-layout';
 import {MISSIONS,levelMission} from '../src/three/campaign';
@@ -6,8 +7,7 @@ test('every level has reproducible, separated supplies and varied routes',()=>{
  const fingerprints=new Set<string>();let south=0;
  for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++){
   const layout=stageLayout(stage,level,levelMission(stage,level).kind);expect(layout).toEqual(stageLayout(stage,level,levelMission(stage,level).kind));
-  expect(layout.supplies).toHaveLength(14);for(const kind of ['health','shield'])expect(layout.supplies.filter(s=>s.kind===kind)).toHaveLength(2);expect(layout.supplies.filter(s=>s.kind==='repair')).toHaveLength(1);
-  expect(layout.supplies.filter(s=>['laser','arc','supply'].includes(s.kind))).toHaveLength(3);expect(layout.supplies[0].kind).toBe('laser');
+  expect(layout.supplies).toHaveLength(7);expect(layout.supplies.filter(s=>s.kind!=='mine').map(s=>s.kind)).toEqual(['repair']);
   for(const [i,s] of layout.supplies.entries()){expect(Math.abs(s.x)).toBeLessThan(69);expect(Math.abs(s.z)).toBeLessThan(57);for(const t of layout.supplies.slice(i+1))expect(Math.hypot(s.x-t.x,s.z-t.z)).toBeGreaterThan(6.5);if(isWeaponSupply(s.kind)){expect(roadDistance(layout.points,s)).toBeLessThanOrEqual(1.1);}else if(s.kind!=='mine'){expect(roadDistance(layout.points,s)).toBeGreaterThan(7.2);expect(roadDistance(layout.points,s)).toBeLessThan(9.31);}}
   fingerprints.add(JSON.stringify(layout.supplies));if(layout.southbound)south++;
  }
@@ -63,9 +63,9 @@ for(const stage of [2,7,11,15])test(`escort ${MISSIONS[stage].name} follows all 
 });
 
 test('health and shield cases are finite and never waste full-health recovery',async({page})=>{
- await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const result=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};for(const e of g.enemies)e.dead=true;
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();await addTestPickups(page,['health','shield']);const result=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};for(const e of g.enemies)e.dead=true;
  const health=g.world.activities.find((a:any)=>a.kind==='health'),shield=g.world.activities.find((a:any)=>a.kind==='shield');g.player.visual.root.position.set(health.x,0,health.z);g.updateActivities(.01);const full=!health.spent;g.player.hp=g.player.max-20;g.updateActivities(.01);const capped=health.spent&&g.player.hp===g.player.max;g.player.hp-=100;g.updateActivities(.01);const once=g.player.hp===g.player.max-100;
- g.player.visual.root.position.set(shield.x,0,shield.z);g.shieldCooldown=10;g.updateActivities(.01);const protectedNow=g.shieldTime===6&&g.shieldCooldown===0&&shield.spent;const hp=g.player.hp;g.damageUnit(g.player,1000,shield);g.updateActivities(.01);const protectedOnce=g.player.hp===hp&&g.shieldTime===6;g.action('shield');const manualCannotShorten=g.shieldTime===6;
+ g.player.visual.root.position.set(shield.x,0,shield.z);g.shieldCooldown=10;g.updateActivities(.01);const protectedNow=g.shieldTime===6&&g.shieldCooldown===10&&shield.spent;const hp=g.player.hp;g.damageUnit(g.player,1000,shield);g.updateActivities(.01);const protectedOnce=g.player.hp===hp&&g.shieldTime===6;g.action('shield');const manualCannotShorten=g.shieldTime===6;
  return {full,capped,once,protectedNow,protectedOnce,manualCannotShorten};});expect(Object.values(result).every(Boolean),JSON.stringify(result)).toBe(true);
 });
 

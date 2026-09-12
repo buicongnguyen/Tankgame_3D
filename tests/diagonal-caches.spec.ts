@@ -22,21 +22,21 @@ test('45-degree S spans the arena with a continuous narrow road and room between
  expect(overlapsReservation(corridor,{x:p.x+p.dz*8,z:p.z-p.dx*8,w:14,d:10})).toBe(true);
 });
 
-test('road caches have nearby guards in every normal journey and awaken them on approach',async({page})=>{
+test('optional Easy road caches have nearby guards and awaken them on approach',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
- const result=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};const {levelMission}=await import('/src/three/campaign.ts');const {isWeaponSupply}=await import('/src/three/stage-layout.ts');const {distance}=await import('/src/three/rules.ts');const issues:any[]=[];
+ const result=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};g.save.difficulty='easy';const {levelMission}=await import('/src/three/campaign.ts');const {isWeaponSupply}=await import('/src/three/stage-layout.ts');const {distance}=await import('/src/three/rules.ts');const issues:any[]=[];let checked=0;
   for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++){if(levelMission(stage,level).kind==='defense')continue;g.start(stage,level);
-   for(const cache of g.world.layout.supplies.filter((s:any)=>isWeaponSupply(s.kind))){const guards=g.enemies.filter((u:any)=>u.encounter?.group===cache.guardGroup);if(!guards.some((u:any)=>distance(u.visual.root.position,cache)<20))issues.push({stage,level,cache:cache.kind,reason:'no nearby guard'});
+   for(const cache of g.world.layout.supplies.filter((s:any)=>isWeaponSupply(s.kind))){checked++;const guards=g.enemies.filter((u:any)=>u.encounter?.group===cache.guardGroup);if(!guards.some((u:any)=>distance(u.visual.root.position,cache)<20))issues.push({stage,level,cache:cache.kind,reason:'no nearby guard'});
     g.player.visual.root.position.set(cache.x,0,cache.z);g.encounters.update(g);if(!guards.length||guards.some((u:any)=>!u.encounter.active))issues.push({stage,level,cache:cache.kind,reason:'guard asleep'});
    }
   }
-  g.start(7,1);const cache=g.world.activities.find((a:any)=>a.kind==='laser'),before=g.specialAmmo[0];g.player.visual.root.position.set(cache.x,0,cache.z);g.updateEnemies(.01);const guardsActive=g.enemies.some((u:any)=>!u.dead&&u.encounter.active&&distance(u.visual.root.position,cache)<20);g.updateActivities(.01);g.updateActivities(.01);
-  return {issues,guardsActive,collectedOnce:cache.spent&&g.specialAmmo[0]===before+12&&g.weapon===3};
- });expect(result.issues).toEqual([]);expect(result.guardsActive&&result.collectedOnce).toBe(true);
+  g.start(0,0);const cache=g.world.activities.find((a:any)=>a.kind==='laser'),before=g.specialAmmo[0];g.player.visual.root.position.set(cache.x,0,cache.z);g.updateEnemies(.01);const guardsActive=g.enemies.some((u:any)=>!u.dead&&u.encounter.active&&distance(u.visual.root.position,cache)<20);g.updateActivities(.01);g.updateActivities(.01);
+  return {issues,checked,guardsActive,collectedOnce:cache.spent&&g.specialAmmo[0]===before+12&&g.weapon===3};
+ });expect(result.issues).toEqual([]);expect(result.checked).toBeGreaterThan(10);expect(result.guardsActive&&result.collectedOnce).toBe(true);
 });
 
 test('camera previews the next S bend in desktop and portrait views',async({page})=>{
- await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const issues=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};g.start(7,1);const {routeSample}=await import('/src/three/stage-layout.ts');const issues:any[]=[];
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const issues=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};g.start(7,1);const {routeSample}=await import('/src/three/stage-layout.ts');const issues:any[]=[];let checked=0;
   for(const portrait of [false,true]){g.world.camera.aspect=portrait?.5:1.6;for(let meters=0;meters<=g.world.layout.length;meters+=2){const a=routeSample(g.world.layout.points,meters),b=routeSample(g.world.layout.points,meters+12),d=Math.hypot(b.x-a.x,b.z-a.z);if(d<.01)continue;const offset=g.world.cameraOffset(a),dz=offset.z-(portrait?16:0),dot=(offset.x*(b.x-a.x)+dz*(b.z-a.z))/(8*d);if(dot<.999||!Number.isFinite(offset.x+offset.z))issues.push({portrait,meters,dot});}
    const end=g.world.cameraOffset(g.world.layout.points.at(-1));if(!Number.isFinite(end.x+end.z))issues.push({portrait,end});
   }return issues;

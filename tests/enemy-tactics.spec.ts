@@ -8,7 +8,7 @@ test('solid cover hides the player, removing it reveals them and starts enemy fi
   const e=g.makeUnit(0,0,'rifleman');e.encounter={group:0,anchor:{x:0,z:0},meters:900,active:false};e.cooldown=0;g.enemies=[e];
   const wall={x:0,z:11,w:8,d:2,hp:100,kind};g.world.covers=[wall];g.world.navigationRevision++;
   g.updateEnemies(.2);const hidden=!e.encounter.active&&g.shots.length===0&&!e.visual.beam.visible;
-  wall.hp=0;g.world.navigationRevision++;g.updateEnemies(.2);const spotted=e.encounter.active,shot=g.shots.some((s:any)=>!s.friendly&&s.damage===6),hp=g.player.hp;
+  wall.hp=0;g.world.navigationRevision++;g.updateEnemies(.2);const spotted=e.encounter.active,shot=g.shots.some((s:any)=>!s.friendly&&s.damage===3),hp=g.player.hp;
   for(let n=0;n<90;n++)g.updateShots(1/60);
   return {kind,hidden,spotted,shot,hit:g.player.hp<hp};
  });});expect(rows.every(r=>r.hidden&&r.spotted&&r.shot&&r.hit),JSON.stringify(rows)).toBe(true);

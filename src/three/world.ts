@@ -1,3 +1,5 @@
+import {mode} from './difficulty';
+import {crewMaterial,packCrewSurfaces} from './crew-material';
 import {buildGuardLandmarks} from './enemy-posts';
 import {roadVertices} from './road-geometry';
 import {stageLayout,overlapsReservation,roadDistance,projectRoute,routeSample} from './stage-layout';
@@ -44,6 +46,7 @@ export class World {
   effectGeometry = new T.IcosahedronGeometry(1, 0);
   effectMaterials = [0xffba66,0xf67845,0x696657,0x75f5cf].map(color => new T.MeshBasicMaterial({ color, transparent: true }));
   low = false;
+  crewMaterial=crewMaterial();
   studioEnvironment:T.Texture;
   target = new T.Vector3();
   constructor(container: HTMLElement) {
@@ -84,6 +87,7 @@ export class World {
       await Promise.all(MODEL_NAMES.map(async name=>{
         const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/${low?'low/':''}${name}.glb`);
         const root=gltf.scene;
+        if(['rifleman','rocketeer','scout-jeep'].includes(name))packCrewSurfaces(root,this.crewMaterial);
         root.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true; o.receiveShadow=true;}});
         templates!.set(name,root);
       }));
@@ -92,7 +96,7 @@ export class World {
       for(const root of templates.values()){
         root.updateMatrixWorld(true);
         const hull=root.getObjectByName('Hull'),turret=root.getObjectByName('Turret');
-        if(hull&&turret){parts.push(hull,turret);root.traverse(o=>{if(/^(Leg[0-9]|LeftLeg|RightLeg|Arm[LR]$|Launcher[LR]$|LightGun$|Rotor|TailRotor)/.test(o.name))parts.push(o);});}
+        if(hull&&turret){parts.push(hull,turret);root.traverse(o=>{if(/^(Leg[0-9]|LeftLeg|RightLeg|Wheel[FR][LR]|Arm[LR]$|Launcher[LR]$|LightGun$|Rotor|TailRotor)/.test(o.name))parts.push(o);});}
         else parts.push(root);
       }
       for (const part of parts) {
@@ -139,7 +143,7 @@ export class World {
   tank(enemy=false,boss=false,model='tank'):TankVisual {
     const root=this.clone(model);root.userData.model=model;
     if(enemy) root.traverse(o=>{if(o instanceof T.Mesh && o.material instanceof T.MeshStandardMaterial){
-      const name=o.material.name;
+      const name=o.material.name;if(name==='CrewSurface')return;
       // Reuse one enemy material per original material across all tanks.
       const key=`enemy:${name}`;
       let mat=this.enemyMaterials.get(key);
@@ -148,7 +152,7 @@ export class World {
     }});
     if(boss&&model==='tank')root.scale.setScalar(1.55);
     const bar=new T.Mesh(new T.PlaneGeometry(2.8,.16),new T.MeshBasicMaterial({color:enemy?0xff795c:0x8efad6,depthTest:false}));
-    bar.userData.owned=true;bar.rotation.x=-Math.PI/3;bar.position.y=model.includes('mech')?7.4:boss?4.6:3;bar.renderOrder=5;root.add(bar);bar.visible=enemy;
+    bar.userData.owned=true;bar.rotation.x=-Math.PI/3;bar.position.y=model==='scout-jeep'?3.4:model.includes('mech')?7.4:boss?4.6:3;bar.renderOrder=5;root.add(bar);bar.visible=enemy;
     const beam=new T.Mesh(new T.BoxGeometry(.08,.02,1),new T.MeshBasicMaterial({color:0xff5849,transparent:true,opacity:.55}));
     beam.userData.owned=true;beam.visible=false;this.entities.add(beam);
     this.entities.add(root);
@@ -240,7 +244,7 @@ export class World {
     // Extraction pylons frame the road.
     const previous=this.layout.points.at(-2)!,angle=Math.atan2(exit.x-previous.x,exit.z-previous.z);
     for(const side of [-4,4]){const x=exit.x+Math.cos(angle)*side,z=exit.z-Math.sin(angle)*side;this.box(.45,3.2,.45,0x3e5751,x,1.6,z);this.box(.65,.2,.65,0x98f3bf,x,3.3,z);}
-    this.environment.build(this,index);buildGuardLandmarks(this,kind);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);
+    this.environment.build(this,index);buildGuardLandmarks(this,kind);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
     this.target.set(0,0,0);
   }
   private naturalBarriers(){

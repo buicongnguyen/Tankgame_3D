@@ -33,7 +33,7 @@ Lead Kestrel through sixteen stages, each with three levels (48 levels in total)
 
 Bosses use faster light volleys and wider warned heavy attacks; see [boss attack balance](docs/BOSS_ATTACK_BALANCE.md) for timings and counterplay.
 
-Enemy armor and infantry both use the multiplier. Bosses are additional units on the third level; every boss must fall before completion, alongside the stage objective. The first two levels of former boss stages are patrol battles. Higher modes do not increase enemy damage or reduce player hull. A large Crazy finale starts with 24 regular tanks, 40 soldiers and four bosses.
+Enemy armor and infantry both use the multiplier. Bosses are additional units on the third level; every boss must fall before completion, alongside the stage objective. The first two levels of former boss stages are patrol battles. Higher modes do not increase enemy damage or reduce player hull. A large Crazy finale starts with 32 tanks, 72 riflemen, 28 rocketeers, 12 scout jeeps and four bosses. Normal First Light starts with 5 tanks, 9 riflemen, 4 rocketeers and one jeep. Rifle and jeep bullets deal 3 damage; jeeps fire short three-round bursts.
 
 The separate fifteen-stage 2D campaign and its enterable infantry shelters remain available through the legacy route. Historical six-, nine- and fourteen-stage saves retain completed stages, purchases, credits and graphics settings; completed old stages expose all three levels for replay. Story/Standard/Veteran settings migrate to Easy/Normal/Hard. New progress saves after every level; replaying a completed level never awards duplicate credits.
 
@@ -69,18 +69,18 @@ Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within
 
 Tap **Graphics** on the command screen or in **Pause** to choose **Detailed** or **Low detail**. Low detail uses simpler Blender models, a smaller rendering buffer, fewer effects, and no dynamic shadows or reflection lighting. Text and touch controls retain their normal resolution. The setting saves locally and applies to the current stage without resetting your tank or mission.
 
-Only the selected model tier downloads on startup. Low detail contains 32 models totaling 1.70 MB; the tank uses 1,692 triangles instead of 5,712. Switch back to Detailed whenever desired. Actual frame rate depends on the phone.
+Only the selected model tier downloads on startup. Low detail contains 33 models totaling 1.76 MB; the tank uses 1,692 triangles instead of 5,712. Switch back to Detailed whenever desired. Actual frame rate depends on the phone.
 
 ## Rebuild the Blender assets
 
-Editable sources include `assets/blender/steel-front.blend` and `assets/blender/frontier-environments.blend`. Generators include `tools/blender/build_assets.py`, `tools/blender/build_frontier.py` and `tools/blender/build_extreme_bosses.py`. The last generator writes four separate editable scenes for the helicopter, spider, laser tank and white pine. Runtime exports: `public/models/*.glb`. After the base and extreme boss generators, run `tools/blender/build_reinforcement_bosses.py` to create the two humanoids and missile truck and add light guns to all six older boss scenes. It saves editable meshes before merging runtime surfaces. Then run `tools/blender/build_low_detail.py` with Blender to rebuild `public/models/low/*.glb`.
+Editable sources include `assets/blender/steel-front.blend` and `assets/blender/frontier-environments.blend`. Generators include `tools/blender/build_assets.py`, `tools/blender/build_frontier.py` and `tools/blender/build_extreme_bosses.py`. The last generator writes four separate editable scenes for the helicopter, spider, laser tank and white pine. Runtime exports: `public/models/*.glb`. After the base and extreme boss generators, run `tools/blender/build_reinforcement_bosses.py` to create the two humanoids and missile truck and add light guns to all six older boss scenes. It saves editable meshes before merging runtime surfaces. Run `tools/blender/build_scout_jeep.py` for the crewed light jeep, then run `tools/blender/build_low_detail.py` with Blender to rebuild `public/models/low/*.glb`.
 
 ```powershell
 & 'C:\Users\n\source\repos\3d_astra\.tools\blender-4.5.3-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_assets.py
 npm run test:assets
 ```
 
-Use your own Blender executable location on another machine. The 32 detailed exports total 3,862,328 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
+Use your own Blender executable location on another machine. The 33 detailed exports total 3,991,144 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
 
 ## Architecture and planning
 
@@ -99,7 +99,7 @@ The APK is a debug build. The default web route is the 3D campaign; `legacy.html
 
 ## Known limits
 
-Player movement uses a flat gameplay plane with ice momentum and visual mud sinking; helicopter flight and spider climbing use scripted elevation. There is no rigid-body simulation. Enemy navigation uses local steering, not a global pathfinding solver. All sixteen stages use the 144 × 120 m battlefield bounds, with biome-specific scenery, terrain rules, hazards and objectives. Audio is procedural effects rather than voiced dialogue or an authored soundtrack. Physical-phone framerate and thermal testing remain follow-up work.
+Player movement uses a flat gameplay plane with ice momentum and visual mud sinking; helicopter flight and spider climbing use scripted elevation. There is no rigid-body simulation. Ground enemies combine local steering with shared navigation fields to get around cover. All sixteen stages use the 144 × 120 m battlefield bounds, with biome-specific scenery, terrain rules, hazards and objectives. Audio is procedural effects rather than voiced dialogue or an authored soundtrack. Physical-phone framerate and thermal testing remain follow-up work.
 
 ## Asset attribution
 
@@ -107,7 +107,7 @@ Game models and narrative are authored for this project. Barlow and Barlow Conde
 
 ## Battlefield update
 
-Explore a 144 × 120 m combat zone with flank cover, green repair pads, blue supply caches and proximity mines. **R / STRIKE** calls five artillery shells at your aim point; stay clear of the marked circles. Supplies provide sortie-only rockets, 25 seconds of boosted damage and a fresh strike.
+Explore a 144 × 120 m combat zone with flank cover, a green repair stop, combat loot and proximity mines. **R / STRIKE** calls five artillery shells at your aim point; stay clear of the marked circles. Destroyed tanks can leave medical, shield, laser or arc-rocket crates beside their wrecks.
 
 Shell tracers, rocket exhaust, muzzle flashes, debris, shock rings, smoke, dust and persistent scorched wrecks replace the original simple hit/death effects. Escorts follow their stage-specific route through every bend. Effects are capped and reduced in low graphics mode.
 
@@ -123,7 +123,7 @@ Mines hurt both sides. Gasoline crates damage nearby tanks, soldiers and destruc
 
 ## Between-level shop
 
-Every level completion, including the chapter and campaign endings, offers **Shop · Upgrades & Weapons**. The command screen also opens the shop. Spend supply credits on permanent armor, damage and reload upgrades or weapon ownership. Autocannon costs 120 CR and siege rockets 180 CR; their existing free campaign unlocks still apply. Pulse laser costs 360 CR and starts each mission with 12 shots; arc rockets cost 420 CR and start with 6 rounds. Map caches supply extra ammo. Purchases persist across reloads and retries, and owned weapons cannot be purchased twice. Older saves migrate with their earned credits and upgrades intact.
+Every level completion, including the chapter and campaign endings, offers **Shop · Upgrades & Weapons**. The command screen also opens the shop. Spend supply credits on permanent armor, damage and reload upgrades or weapon ownership. Autocannon costs 120 CR and siege rockets 180 CR; their existing free campaign unlocks still apply. Pulse laser costs 360 CR and starts each mission with 12 shots; arc rockets cost 420 CR and start with 6 rounds. Wreck crates replenish ammunition up to the 12-laser / 6-rocket carry limits. Full ammunition leaves the crate available for later. Purchases persist across reloads and retries, and owned weapons cannot be purchased twice. Older saves migrate with their earned credits and upgrades intact.
 
 ## Combat usability update
 
@@ -131,7 +131,7 @@ Shop upgrades have shield, damage and reload icons. Tank salvage becomes rarer w
 
 All defense missions start Kestrel near the uplink. Initial opposition starts in staggered perimeter waves, including finale bosses; reinforcements also spawn at map corners and approach the center; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, strike with R, shield with Q and locate a repair center with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
 
-Repair centers are large green circular service pads, marked with a green cross on the minimap. Drive within 3 m to restore up to 32 HP per second; each center provides 160 HP per mission. Tank wrecks, houses, weapon boxes and supply boxes do not heal. E / Find Repair reports the nearest available center and never restores health remotely.
+Repair centers are large green circular service pads, marked with a green cross on the minimap. Drive within 3 m to restore up to 32 HP per second; starting capacity is 160 / 100 / 80 / 60 HP on Easy / Normal / Hard / Crazy, falling by 20 HP per sublevel to a minimum of 40. Medical cases dropped by tanks can also heal; houses and weapon boxes do not. E / Find Repair reports the nearest available center and never restores health remotely.
 
 ## Lightweight destruction feedback
 
@@ -179,7 +179,7 @@ Arc rockets now adapt their landing distance to live enemies in an 18-degree con
 
 The tank now has sloped armor, layered track shoes, wheel hubs, a gun mantlet and sleeve, optics, smoke launchers and engine louvres. Vehicles gain glazing, mirrors, grilles and cargo ribs; houses gain window frames, sills, roof seams, gutters and chimney details. Supplies, bosses, infantry and foliage have additional structural geometry. Metal, rubber, glass and paint use distinct PBR responses, with reflected studio lighting in normal mode and simplified lighting in low mode.
 
-The expanded 32-model kit uses 3,862,328 bytes, below its 4 MB detailed-tier budget. Runtime meshes are grouped by material within animated pivots; turrets, legs, muzzle/exhaust attachments and boss weak points remain independent. Five shop previews are rendered in Blender Eevee at 512 x 384. See [visual quality scope and rebuilding](docs/VISUAL_QUALITY.md). This is a more detailed browser art pass, not a claim of full AAA photorealism.
+The expanded 33-model kit uses 3,991,144 bytes, below its 4 MB detailed-tier budget. Runtime meshes are grouped by material within animated pivots; turrets, legs, muzzle/exhaust attachments and boss weak points remain independent. Five shop previews are rendered in Blender Eevee at 512 x 384. See [visual quality scope and rebuilding](docs/VISUAL_QUALITY.md). This is a more detailed browser art pass, not a claim of full AAA photorealism.
 
 ## Winter wreck stability and infantry contact
 
@@ -187,20 +187,22 @@ Burnt wrecks use soft scorch marks placed above snow and ice, with explicit dept
 
 Driving Kestrel into hostile infantry at **3 m/s or more** now defeats them. Stationary contact and slow nudges do not. Sand penalties and ice momentum affect actual contact speed; walls and other vehicles still stop the tank. These defeats count as infantry kills, never tank-objective progress or tank weapon-box drops. Enemy armor does not run down its own infantry.
 
-The frontier art now includes packed Blender albedo/normal maps (maximum 128 × 128), irregular ice and basalt, lava channels that follow the volcano slopes, palm leaflets, branched tree crowns, building sills/balconies/roof services, city sidewalks and textured terrain. Boundary scenery uses shared geometry instances. Low detail uses 13,651 triangles across the 32-model kit versus 50,178 in Detailed (73% fewer), with about 1.70 MB of GLBs.
+The frontier art now includes packed Blender albedo/normal maps (maximum 128 × 128), irregular ice and basalt, lava channels that follow the volcano slopes, palm leaflets, branched tree crowns, building sills/balconies/roof services, city sidewalks and textured terrain. Boundary scenery uses shared geometry instances. Low detail uses 14,708 triangles across the 33-model kit versus 52,562 in Detailed (72% fewer), with about 1.76 MB of GLBs. The new Blender scout jeep includes a visible driver and gunner, rotating machine gun, animated wheels, windshield, roll cage and spare tire.
 
 See the [implementation plan](docs/RENDERING_AND_FRONTIER_POLISH_PLAN.md) and [code, logic and visual review](docs/RENDERING_AND_FRONTIER_POLISH_REVIEW.md). This remains a stylized browser game; the art pass improves material and construction detail without claiming full AAA photorealism.
 
 ## Routes and field supplies
 
-All 48 levels use marked routes, including west-to-east zigzags, south-to-north journeys, southwest-to-northeast approaches, southbound convoy tracks and circuits around defense relays. Useful map supplies total 10 / 8 / 6 / 4 on Easy / Normal / Hard / Crazy, plus six off-road mines. Every mode retains healing, a shield, a repair pad and an anti-air weapon cache. Laser, arc rocket and weapon-supply caches sit on the road near ambush groups; you can fight for them or risk collecting under fire. Health, shield and repair pickups sit 7–10 m from the route centerline with clear access, requiring a short detour. Stage and level seeds make retries reproducible.
+All 48 levels use marked routes, including west-to-east zigzags, south-to-north journeys, southwest-to-northeast approaches, southbound convoy tracks and circuits around defense relays. Each map has one fixed repair center, with one extra field cache on Easy, plus six off-road mines. Fixed recovery sits 7–10 m off the route; optional Easy weapon caches sit near road guards. Tank and boss kills roll a one-in-three chance for a nearby crate: medical 35%, shield 20%, laser 25%, arc rockets 20% of successful rolls. Drops must fit on reachable open ground within 8 m of the wreck. Infantry and jeeps never drop items. Per-level caps are 6 / 4 / 4 / 5 on Easy / Normal / Hard / Crazy, so larger enemy counts cannot multiply recovery indefinitely. Later sublevels and harder modes reduce crate contents. Layouts are reproducible; combat drops are random.
 
-Patrols and ambushers wait in zones along the route and respond when approached, passed or attacked. Bosses guard the final approach; defense stages use timed perimeter waves. Waiting units remain included in objectives. Assault and boss stages require the marked exit after clearing their combat objective. Convoys follow every bend, stop for ground traffic, and reach extraction only after the complete route.
+Enemies occupy route sectors near buildings, fuel or trees. Some guard their posts; others make local patrols with pauses to scan. Tanks farther from the road use wider patrol loops reaching toward it, and scout jeeps move faster. Clear sight or a hit alerts nearby squadmates; solid cover hides you. After investigating a lost sighting, patrolling units return home. Bosses guard the final approach; defense stages retain timed perimeter waves. Waiting and patrolling vehicles remain included in objectives. Assault and boss stages require the marked exit after clearing their combat objective. Convoys follow every bend, stop for ground traffic, and reach extraction only after the complete route.
 
-The player pulse laser pierces multiple enemies and one concrete barrier. A second concrete barrier stops that shot. The laser does not damage either barrier, even with upgrades or repeated hits. Steel and other cover still block the beam. Medical cases heal only a damaged tank and cap at maximum hull; shield cases do not stack duration. Tank salvage remains weapons only. Concrete has independent 176 HP sections: four standard cannon hits open just the struck section, while stronger conventional attacks and local explosions use their usual damage. Adjacent sections keep their collision until individually destroyed. See the [route, supply and encounter plan](docs/ROUTE_ENCOUNTERS_AND_SUPPLIES_PLAN.md).
+The player pulse laser pierces multiple enemies and one concrete barrier. A second concrete barrier stops that shot. The laser does not damage either barrier, even with upgrades or repeated hits. Steel and other cover still block the beam. Medical cases heal only a damaged tank and cap at maximum hull; shield cases do not stack duration. Shield crates do not reset the shield ability cooldown. Concrete has independent 176 HP sections: four standard cannon hits open just the struck section, while stronger conventional attacks and local explosions use their usual damage. Adjacent sections keep their collision until individually destroyed. See the [route, supply and encounter plan](docs/ROUTE_ENCOUNTERS_AND_SUPPLIES_PLAN.md).
 
 Eight levels feature a true 45° S route: Homeward 3, Glass Road 2, Last Signal 3, Frozen Pass 2, Dune Lifeline 3, Citadel Dawn 2, Fault Line 2 and Mire Crossing 3. Roads, convoy turns and terrain reservations follow the diagonal lanes. See [the route and cache plan](docs/DIAGONAL_ROUTES_AND_WEAPON_CACHES.md).
 
 O loops replace L routes. Circle either way or turn back during play; ambushes wake locally in both directions. Clear the patrol and return to the starting gate. The Homeward level 2 convoy waits for your first left/right branch choice, then follows that full circuit while you remain free to flank. Every traveling background increases route length across its three levels; relay capture and timed defense keep their established objective geography.
 
 Meet Iron Vanguard in **Glass Road 3**, Siege Marshal in **Cinderfall 3**, and Atlas Launcher in **Citadel Dawn 3**. Old bosses have an additional Blender light gun. Auxiliary fire pauses during heavy attack warnings and core recovery; the Marshal alternates both hand guns. New launchers fire paired, overlapping warned missile zones with visible arcing rockets and exhaust smoke. Later Hard/Crazy finales can mix the new bosses while retaining the existing boss-count limits.
+
+See the [infantry, jeep, patrol and loot balance plan](docs/INFANTRY_JEEPS_PATROLS_AND_LOOT.md) for the current encounter and recovery rules.

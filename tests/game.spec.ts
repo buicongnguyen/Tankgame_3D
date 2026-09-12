@@ -1,3 +1,4 @@
+import {addTestPickups} from './activity-fixtures';
 import MODEL_NAMES from '../src/three/model-catalog.json' with {type:'json'};
 import { test, expect, type Page } from '@playwright/test';
 import {freshSave, SAVE_KEY} from '../src/three/campaign';
@@ -78,6 +79,7 @@ test('real cannon destroys an exposed enemy; shield, repair and escort rules',as
 
 test('expanded terrain, field activities, artillery and wreck cleanup',async({page})=>{
  await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();await page.getByRole('button',{name:'DEPLOY'}).click();
+ await addTestPickups(page,['supply']);
  const result=await page.evaluate(()=>{
   const g=(window as any).__steel;g.player.visual.root.position.set(61,0,50);g.moveUnit(g.player,4,0);const expanded=g.player.visual.root.position.x>62;
   const pad=g.world.activities.find((a:any)=>a.kind==='repair');g.player.hp-=70;g.player.visual.root.position.set(pad.x,0,pad.z);const hp=g.player.hp;g.updateActivities(.5);const healed=g.player.hp>hp;
