@@ -74,11 +74,11 @@ test('batched shortcut walls stop laser at the second row and open local cannon 
 for(const viewport of [{width:1440,height:900},{width:390,height:844},{width:844,height:390}])test(`air support keyboard/touch UI ${viewport.width}`,async({browser})=>{
  const mobile=viewport.width!==1440,ctx=await browser.newContext({viewport,hasTouch:mobile,isMobile:mobile});const page=await ctx.newPage(),errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
  await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.save.difficulty='hard';g.start(3,0);g.player.hp=100;g.world.update(0,g.player.visual.root.position);});
- if(mobile)await page.locator('#artillery').tap();else await page.keyboard.press('r');await expect(page.locator('#support-picker')).toBeVisible();await expect(page.locator('#supply-allowance')).toHaveText('1 left · nearby landing');
- const box=(await page.locator('#support-picker').boundingBox())!;expect(box.x).toBeGreaterThanOrEqual(0);expect(box.y).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(viewport.width);expect(box.y+box.height).toBeLessThanOrEqual(viewport.height);
+ await expect(page.locator('#drop-label')).toHaveText('DROP 1');
+ for(const id of ['artillery','drop']){const box=(await page.locator('#'+id).boundingBox())!;expect(box.x).toBeGreaterThanOrEqual(0);expect(box.y).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(viewport.width);expect(box.y+box.height).toBeLessThanOrEqual(viewport.height);}
  await page.screenshot({path:`test-results/air-support-menu-${viewport.width}.png`});
- if(mobile)await page.locator('[data-support="support-drop"]').tap();else await page.keyboard.press('2');await expect(page.locator('#support-picker')).toBeHidden();expect(await page.evaluate(()=>(window as any).__steel.airSupport.drops.length)).toBe(1);
+ if(mobile)await page.locator('#drop').tap();else await page.keyboard.press('t');expect(await page.evaluate(()=>(window as any).__steel.airSupport.drops.length)).toBe(1);await expect(page.locator('#artillery')).toBeDisabled();
  await page.evaluate(async()=>{const g=(window as any).__steel;if(window.innerWidth<900){await g.world.load(true);g.world.settings(true);}g.updateActivities(1);g.world.update(0,g.player.visual.root.position);});await page.screenshot({path:`test-results/air-support-flight-${viewport.width}.png`});
- if(!mobile){await page.keyboard.press('r');await page.keyboard.press('Escape');await expect(page.locator('#support-picker')).toBeHidden();await expect(page.locator('body')).toHaveAttribute('data-phase','playing');}
+ if(!mobile){await page.keyboard.press('Escape');await expect(page.locator('body')).toHaveAttribute('data-phase','paused');}
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(viewport.width);expect(errors).toEqual([]);await ctx.close();
 });

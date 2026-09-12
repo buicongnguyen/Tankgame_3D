@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 const names=JSON.parse(fs.readFileSync('src/three/model-catalog.json','utf8'));
-let flameBytes=0,total=0,lowTotal=0,highTriangles=0,lowTriangles=0;
+let quadcopterBytes=0,flameBytes=0,total=0,lowTotal=0,highTriangles=0,lowTriangles=0;
 for(const name of names){
   const b=fs.readFileSync(`public/models/${name}.glb`);total+=b.length;
   assert.equal(b.readUInt32LE(0),0x46546c67);assert.equal(b.readUInt32LE(4),2);assert.equal(b.readUInt32LE(8),b.length);
@@ -13,6 +13,7 @@ for(const name of names){
     for(const img of json.images??[]){const v=json.bufferViews[img.bufferView],start=28+b.readUInt32LE(12)+(v.byteOffset??0),data=b.subarray(start,start+v.byteLength);assert.equal(img.mimeType,'image/png');assert.ok(data.readUInt32BE(16)<=128&&data.readUInt32BE(20)<=128,`${name} texture exceeded its mobile budget`);}
   }
 
+  if(name==='boss-quadcopter'){quadcopterBytes=b.length;assert.ok(b.length<180_000);for(const node of ['Rotor0','Rotor1','Rotor2','Rotor3','LaunchMuzzle0','LaunchMuzzle1','LaunchMuzzle2'])assert.ok(json.nodes.some(n=>n.name===node),`Missing quadcopter ${node}`);}
   if(name==='flame'){flameBytes=b.length;assert.ok(b.length<16_000);assert.ok(json.meshes.every(m=>m.primitives.every(p=>p.attributes.COLOR_0!==undefined)));}
   let triangles=0;
   for(const mesh of json.meshes)for(const p of mesh.primitives)triangles+=(p.indices!==undefined?json.accessors[p.indices].count:json.accessors[p.attributes.POSITION].count)/3;
@@ -28,7 +29,7 @@ for(const name of names){
   let simpler=0;for(const mesh of lowJson.meshes)for(const p of mesh.primitives)simpler+=(p.indices!==undefined?lowJson.accessors[p.indices].count:lowJson.accessors[p.attributes.POSITION].count)/3;
   if(name==='flame'){assert.ok(low.length<5_000);assert.ok(triangles<=200&&simpler<=30);assert.ok(lowJson.meshes.every(m=>m.primitives.every(p=>p.attributes.COLOR_0!==undefined)));}
   assert.ok(simpler>0&&simpler<triangles,`${name} must actually simplify geometry`);
-  for(const node of json.nodes.filter(n=>/^(Hull|Turret|Muzzle|Exhaust|Core|Rotor|TailRotor|LeftLeg|RightLeg|Leg[0-9][LR]|Arm[LR]|Launcher[LR]|LightGun|LightMuzzle|GunMuzzle[0-3]|LaunchMuzzle[01]|Wheel[FR][LR])$/.test(n.name))){
+  for(const node of json.nodes.filter(n=>/^(Hull|Turret|Muzzle|Exhaust|Core|Rotor[0-3]?|TailRotor|LeftLeg|RightLeg|Leg[0-9][LR]|Arm[LR]|Launcher[LR]|LightGun|LightMuzzle|GunMuzzle[0-3]|LaunchMuzzle[012]|Wheel[FR][LR])$/.test(n.name))){
     const other=lowJson.nodes.find(n=>n.name===node.name);assert.ok(other,`${name} low tier is missing ${node.name}`);
     for(const [field,fallback] of [['translation',[0,0,0]],['scale',[1,1,1]]]){
       const a=node[field]??fallback,c=other[field]??fallback;
@@ -40,8 +41,8 @@ for(const name of names){
   highTriangles+=triangles;lowTriangles+=simpler;
   console.log(`${name}: ${triangles} detailed / ${simpler} low triangles, valid Blender GLBs`);
 }
-// Reserve at most 16 KB for the new Blender flame; keep the existing scene budget.
-assert.ok(total-flameBytes<4_000_000);assert.ok(total<4_016_000);console.log(`Total runtime GLBs: ${total} bytes`);
+// Reserve 180 KB for the four-rotor rig; retain the existing scene and flame budgets.
+assert.ok(total-flameBytes-quadcopterBytes<4_000_000);assert.ok(total<4_196_000);console.log(`Total runtime GLBs: ${total} bytes`);
 
 assert.ok(lowTotal<2_000_000);assert.ok(lowTriangles<highTriangles*.4);
 console.log(`Low tier: ${lowTotal} bytes; ${lowTriangles} / ${highTriangles} triangles (${Math.round((1-lowTriangles/highTriangles)*100)}% fewer)`);

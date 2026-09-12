@@ -1,9 +1,9 @@
 import {test,expect} from '@playwright/test';
 
-for(const fps of [30,60])test(`all nine bosses keep bounded machine-gun fire during heavy attacks at ${fps} fps`,async({page})=>{
+for(const fps of [30,60])test(`all ten bosses keep bounded machine-gun fire during heavy attacks at ${fps} fps`,async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const rows=await page.evaluate(fps=>{
   const g=(window as any).__steel;g.frame=()=>{};const rows=[];
-  for(const kind of ['rail','missile','walker','helicopter','spider','laser','quad-mech','siege-mech','missile-truck']){
+  for(const kind of ['rail','missile','walker','helicopter','spider','laser','quad-mech','siege-mech','missile-truck','quadcopter']){
    g.start(0);g.world.covers=[];g.world.activities=[];g.enemies=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,28);g.player.hp=1e6;
    const b=g.makeUnit(0,0,'boss',kind);b.visual.root.position.set(0,0,0);g.enemies=[b];g.bosses.update(g,b,.01);const state=g.bosses.states.get(b),phases=[];
    for(const phase of ['tracking','charging','exposed',...(['laser','quad-mech'].includes(kind)?['firing']:[])]){state.phase=phase;state.time=100;state.auxTime=0;state.targets=[];state.landing={x:0,z:0};g.shots=[];

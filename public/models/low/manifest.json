@@ -42,6 +42,12 @@
     "bytes": 66544
   },
   {
+    "asset": "boss-quadcopter",
+    "detailedTriangles": 2496,
+    "lowTriangles": 742,
+    "bytes": 63840
+  },
+  {
     "asset": "boss-rail",
     "detailedTriangles": 2564,
     "lowTriangles": 766,

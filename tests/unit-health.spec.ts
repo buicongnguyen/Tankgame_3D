@@ -69,15 +69,15 @@ test('all difficulties spawn consistent HP, keep player hull, and restore damage
  for(const r of rows){const c=encounterSize(15,2,r.difficulty as any);expect(r.counts.rifleman).toBe(c.riflemen);expect(r.counts.rocketeer).toBe(c.rocketeers);expect(r.counts.jeep).toBe(c.jeeps);expect(r.counts.boss).toBe(c.bosses);expect(r.counts.raider+r.counts.sentry+r.counts.heavy).toBe(c.armor);expect(r.health).toMatchObject({rifleman:35,rocketeer:55,jeep:75,raider:160,sentry:220,heavy:355});expect(r.hull).toBe(565*(r.difficulty==='easy'?3:1));expect(r.independent&&r.barMatches&&r.retried).toBe(true);}
 });
 
-test('all nine bosses retain individual HP and meaningful exposed cores',async({page})=>{
+test('all ten bosses retain individual HP and meaningful exposed cores',async({page})=>{
  await arena(page);const rows=await page.evaluate(()=>{
   const g=(window as any).__steel,rows=[];g.player.visual.root.position.set(0,0,25);
-  for(const kind of ['rail','missile','walker','helicopter','spider','laser','quad-mech','siege-mech','missile-truck']){
+  for(const kind of ['rail','missile','walker','helicopter','spider','laser','quad-mech','siege-mech','missile-truck','quadcopter']){
    g.enemies=[];const b=g.makeUnit(0,0,'boss',kind);b.visual.root.position.set(0,0,0);b.heading=0;g.enemies=[b];g.bosses.update(g,b,.001);b.heading=0;b.visual.root.position.set(0,0,0);
    const s=g.bosses.states.get(b);s.phase='tracking';g.damageUnit(b,44,{x:0,z:25},true);const protectedDamage=b.max-b.hp;s.phase='exposed';const hp=b.hp;g.damageUnit(b,44,{x:0,z:25},true);rows.push({kind,max:b.max,protectedDamage,exposedDamage:hp-b.hp,alive:!b.dead});g.bosses.cancel(b);b.visual.root.removeFromParent();
   }return rows;
  });
- expect(rows.map(r=>r.max)).toEqual([800,850,1050,680,920,780,1000,1100,1200]);for(const r of rows){expect(r.protectedDamage).toBeCloseTo(18.59);expect(r.exposedDamage).toBeCloseTo(50.05);expect(r.alive).toBe(true);}
+ expect(rows.map(r=>r.max)).toEqual([800,850,1050,680,920,780,1000,1100,1200,900]);for(const r of rows){expect(r.protectedDamage).toBeCloseTo(18.59);expect(r.exposedDamage).toBeCloseTo(50.05);expect(r.alive).toBe(true);}
 });
 
 test('a tougher final tank reaches delayed results and awards the stage once',async({page})=>{

@@ -72,8 +72,8 @@ test('phone layout and simultaneous captured touch sticks',async({browser})=>{
 
 test('real cannon destroys an exposed enemy; shield, repair and escort rules',async({page})=>{
  await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();
- const combat=await page.evaluate(()=>{const g=(window as any).__steel;g.start(0);g.world.covers=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,10);const e=g.enemies[0];e.visual.root.position.set(0,0,-5);e.heading=0;g.player.aim=Math.PI;g.syncVisual(g.player);for(let shot=0;shot<4;shot++){g.shoot(g.player,true);for(let i=0;i<30;i++)g.updateShots(1/60);}const killed=e.dead;const health=g.player.hp;g.action('shield');g.damageUnit(g.player,30,{x:0,z:0});const protectedHull=g.player.hp===health;g.shieldTime=0;g.damageUnit(g.player,80,{x:0,z:0});const damaged=g.player.hp;g.action('repair');return {killed,protectedHull,unchanged:g.player.hp===damaged,located:g.radio.textContent.includes('REPAIR CENTER')};});
- expect(combat).toEqual({killed:true,protectedHull:true,unchanged:true,located:true});
+ const combat=await page.evaluate(()=>{const g=(window as any).__steel;g.start(0);g.world.covers=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,10);const e=g.enemies[0];e.visual.root.position.set(0,0,-5);e.heading=0;g.player.aim=Math.PI;g.syncVisual(g.player);for(let shot=0;shot<4;shot++){g.shoot(g.player,true);for(let i=0;i<30;i++)g.updateShots(1/60);}const killed=e.dead;const health=g.player.hp;g.action('shield');g.damageUnit(g.player,30,{x:0,z:0});const protectedHull=g.player.hp===health;g.shieldTime=0;g.damageUnit(g.player,80,{x:0,z:0});const damaged=g.player.hp;g.action('auto');return {killed,protectedHull,unchanged:g.player.hp===damaged,unarmed:g.auto.ammo===0};});
+ expect(combat).toEqual({killed:true,protectedHull:true,unchanged:true,unarmed:true});
  const escort=await page.evaluate(()=>{const g=(window as any).__steel;g.start(2);g.player.visual.root.position.set(30,0,22);const z=g.convoy.position.z;g.step(.1);const stopped=g.convoy.position.z===z;g.player.visual.root.position.set(5,0,48);g.step(.1);return {stopped,moved:g.convoy.position.z<z};});expect(escort).toEqual({stopped:true,moved:true});
 });
 
@@ -85,7 +85,7 @@ test('expanded terrain, field activities, artillery and wreck cleanup',async({pa
   const pad=g.world.activities.find((a:any)=>a.kind==='repair');g.player.hp-=70;g.player.visual.root.position.set(pad.x,0,pad.z);const hp=g.player.hp;g.updateActivities(.5);const healed=g.player.hp>hp;
   const supply=g.world.activities.find((a:any)=>a.kind==='supply');g.player.visual.root.position.set(supply.x,0,supply.z);g.updateActivities(.1);const supplied=supply.spent&&g.weapon===2&&g.powerBoost>0;
   const mine=g.world.activities.find((a:any)=>a.kind==='mine');g.player.visual.root.position.set(mine.x,0,mine.z);const before=g.player.hp;g.updateActivities(.1);const mined=mine.spent&&g.player.hp<before;
-  g.player.visual.root.position.set(0,0,15);g.aimPoint.set(0,0,0);g.action('artillery');g.action('1');const telegraphed=g.strikes.length>0&&g.strikes.length<=12&&g.artilleryCooldown>0;
+  g.player.visual.root.position.set(0,0,15);g.aimPoint.set(0,0,0);g.action('artillery');const telegraphed=g.strikes.length>0&&g.strikes.length<=12&&g.artilleryCooldown>0;
   for(let i=0;i<240;i++)g.updateActivities(1/60);const detonated=g.strikes.length===0;
   const enemy=g.makeUnit(3,8,'raider');g.enemies.push(enemy);const previousWrecks=g.world.wrecks.length;g.damageUnit(enemy,9999,g.player.visual.root.position);const wreck=enemy.dead&&g.world.wrecks.length===Math.min(14,previousWrecks+1)&&g.world.wrecks.at(-1).root.position.distanceTo(enemy.visual.root.position)<.01;
   return {expanded,healed,supplied,mined,telegraphed,detonated,wreck};

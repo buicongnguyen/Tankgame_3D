@@ -114,11 +114,9 @@ body[data-graphics="low"] .vignette{box-shadow:none}
 
 @media(min-width:1000px){.route-list{grid-template-columns:repeat(7,minmax(0,1fr))}}
 
-/* Compact radio choices reuse the existing touch-safe weapon panel. */
-.weapon-picker.support-picker{grid-template-columns:repeat(2,minmax(0,1fr));width:min(340px,calc(100vw - 20px))}
 
-.weapon-stat{color:var(--mint);font-size:11px;letter-spacing:0}.weapon-picker:not(.support-picker){grid-template-columns:repeat(4,minmax(0,1fr))}
-@media(pointer:coarse) and (orientation:portrait){.weapon-picker:not(.support-picker){grid-template-columns:repeat(3,minmax(0,1fr))}}
+.weapon-stat{color:var(--mint);font-size:11px;letter-spacing:0}.weapon-picker{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(pointer:coarse) and (orientation:portrait){.weapon-picker{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
 /* One compact row makes desktop weapon shortcuts discoverable. Touch retains the large gun picker. */
 #weapon-shortcuts{position:absolute;bottom:calc(100% + 6px);left:0;display:grid;grid-template-columns:repeat(9,1fr);gap:4px;width:388px;max-width:100%;pointer-events:auto}
@@ -130,5 +128,31 @@ body[data-graphics="low"] .vignette{box-shadow:none}
 .skin-stars{color:#ffe588;font-size:13px;letter-spacing:.16em}
 
 /* Nine weapons fit in two rows on wide screens, three rows on portrait touch. */
-.weapon-picker:not(.support-picker){grid-template-columns:repeat(5,minmax(0,1fr))}
-@media(pointer:coarse) and (orientation:portrait){.weapon-picker:not(.support-picker){grid-template-columns:repeat(3,minmax(0,1fr))}}
+.weapon-picker{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(pointer:coarse) and (orientation:portrait){.weapon-picker{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* Direct support: two compact buttons occupy one touch ability row. */
+.support-pair{display:flex;gap:4px}.support-pair button{flex:1;min-width:54px}.abilities{align-items:stretch}
+@media(pointer:coarse) and (orientation:portrait){.abilities{width:124px;gap:4px}.abilities>button{width:100%}.abilities button{padding:5px;min-height:44px;font-size:10px}.support-pair{width:100%}.support-pair button{min-width:0;font-size:9px}}
+/* Dense, readable price rows. Details expand only when needed. */
+.coin-icon{width:18px;height:18px;color:var(--amber);flex:none}
+.depot-panel .upgrade-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:14px}
+.depot-panel .upgrade-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;padding:10px;align-content:start}
+.depot-panel .upgrade-card h3{grid-column:1;grid-row:1;font-size:13px;margin:0;gap:6px}
+.depot-panel .upgrade-card .upgrade-icon{width:23px;height:23px}
+.depot-panel .upgrade-card .eyebrow{grid-column:1;grid-row:2;font-size:8px;letter-spacing:.04em}
+.depot-panel .upgrade-card p,.depot-panel .weapon-stat,.depot-panel .weapon-info{grid-column:1;font-size:10px;line-height:1.4;margin:0;letter-spacing:0;min-height:0}
+.depot-panel .upgrade-card .price-button{grid-column:2;grid-row:1/5;align-self:center;display:flex;align-items:center;justify-content:center;gap:3px;width:auto;min-width:54px;min-height:44px;padding:6px;font-size:12px;letter-spacing:0}
+.weapon-info summary{font-size:10px;min-height:24px}.weapon-info p{padding-top:5px}
+.field-pack{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px;border:1px solid #f1bc7a66;background:#f1bc7a0c;margin-bottom:14px}
+.field-pack .upgrade-icon{width:23px;height:23px;vertical-align:middle;margin-right:5px}.field-pack strong{font-size:13px}.field-pack strong span{color:var(--amber)}.field-pack p{font-size:11px;line-height:1.6}.field-pack small{font-size:9px;letter-spacing:0;color:var(--muted)}.field-pack button,.skin-card button{display:flex;align-items:center;justify-content:center;gap:5px;min-height:44px;padding:8px}
+.depot-panel .skin-grid{gap:7px;margin:10px 0}.depot-panel .skin-card{gap:4px;padding:8px}.depot-panel .skin-card img{height:94px;aspect-ratio:auto}.depot-panel .skin-card h2{font-size:14px}.depot-panel .skin-card p{font-size:11px;line-height:1.35}.depot-panel .skin-stars{font-size:11px}
+@media(max-width:600px){.depot-panel .upgrade-grid{grid-template-columns:1fr}.depot-panel{padding:12px}.depot-panel .debrief-title{margin:4px 0 10px}.depot-panel .shop-tabs{margin-bottom:10px}.depot-panel .skin-card img{height:80px}.depot-panel .skin-card p{min-height:30px}.depot-panel .upgrade-card{padding:8px 10px}}
+
+@media(pointer:coarse) and (orientation:portrait){.bottom-hud{bottom:calc(186px + env(safe-area-inset-bottom))}.abilities>button{width:76px;align-self:center}}
+
+
+.depot-panel .weapon-info{grid-column:1;grid-row:1}.depot-panel .weapon-info summary{display:block;min-height:44px;padding:0;list-style:none}.weapon-info summary::-webkit-details-marker{display:none}.depot-panel .weapon-info .eyebrow{display:block;margin-top:4px}.depot-panel .weapon-info p{padding-top:7px;font-size:11px}.depot-panel .weapon-stat{grid-row:2;grid-column:1/-1}.depot-panel .weapon-shop .price-button{grid-row:1}.detail-cue{margin-left:auto;color:var(--muted)}
+
+/* The reload bar carries readiness on narrow touch HUDs; leave the weapon name one clear line. */
+@media(pointer:coarse){.weapon-block>strong{display:none}.weapon-block>span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}

@@ -7,8 +7,8 @@ for(const [width,height] of sizes)test(`mobile layout ${width}x${height}`,async(
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.getByRole('button',{name:'DEPLOY'}).tap();
  if(height>width){await expect.poll(()=>page.evaluate(()=>{const g=(window as any).__steel;const p=g.player.visual.root.position.clone();p.y=1;p.project(g.world.camera);const y=(1-p.y)*innerHeight/2;return y<document.querySelector('.bottom-hud')!.getBoundingClientRect().top-10;}),{timeout:10000}).toBe(true);}
- const boxes=await page.evaluate(()=>['move-pad','aim-pad','artillery','shield','repair','weapon','pause'].map(id=>{const r=document.getElementById(id)!.getBoundingClientRect();return {id,x:r.x,y:r.y,w:r.width,h:r.height,right:r.right,bottom:r.bottom};}));
- for(const box of boxes){expect(box.x,box.id).toBeGreaterThanOrEqual(0);expect(box.y,box.id).toBeGreaterThanOrEqual(0);expect(box.right,box.id).toBeLessThanOrEqual(width+1);expect(box.bottom,box.id).toBeLessThanOrEqual(height+1);if(['artillery','shield','repair','pause'].includes(box.id))expect(box.h,box.id).toBeGreaterThanOrEqual(44);}
+ const boxes=await page.evaluate(()=>['move-pad','aim-pad','artillery','drop','shield','auto','weapon','pause'].map(id=>{const r=document.getElementById(id)!.getBoundingClientRect();return {id,x:r.x,y:r.y,w:r.width,h:r.height,right:r.right,bottom:r.bottom};}));
+ for(const box of boxes){expect(box.x,box.id).toBeGreaterThanOrEqual(0);expect(box.y,box.id).toBeGreaterThanOrEqual(0);expect(box.right,box.id).toBeLessThanOrEqual(width+1);expect(box.bottom,box.id).toBeLessThanOrEqual(height+1);if(['artillery','drop','shield','auto','pause'].includes(box.id))expect(box.h,box.id).toBeGreaterThanOrEqual(44);}
  for(const a of boxes)for(const b of boxes){if(a.id>=b.id)continue;expect(a.x<b.right-1&&a.right>b.x+1&&a.y<b.bottom-1&&a.bottom>b.y+1,`${a.id} overlaps ${b.id}`).toBe(false);}
  await page.screenshot({path:`test-results/mobile-${width}x${height}.png`});await page.locator('#pause').tap();await expect(page.locator('body')).toHaveAttribute('data-phase','paused');await page.getByRole('button',{name:'RESUME OPERATION'}).tap();expect(errors).toEqual([]);await context.close();
 });
@@ -31,7 +31,7 @@ test('lethal damage cannot be repaired and approaching enemies retain fire warni
 // WebKit validates the rendering engine, not physical iOS hardware.
 test('WebKit mobile startup and touch action controls',async()=>{
  const browser=await webkit.launch({args:[]});const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('http://127.0.0.1:5178/?e2e');await page.getByRole('button',{name:'DEPLOY'}).tap();await page.locator('#artillery').tap();await page.locator('[data-support="support-strike"]').tap();await expect(page.locator('#artillery-label')).toContainText('s');await page.locator('#pause').tap();await expect(page.locator('body')).toHaveAttribute('data-phase','paused');await page.screenshot({path:'test-results/mobile-webkit.png'});expect(errors).toEqual([]);await browser.close();
+ await page.goto('http://127.0.0.1:5178/?e2e');await page.getByRole('button',{name:'DEPLOY'}).tap();await page.locator('#artillery').tap();await expect(page.locator('#artillery-label')).toContainText('s');await page.locator('#pause').tap();await expect(page.locator('body')).toHaveAttribute('data-phase','paused');await page.screenshot({path:'test-results/mobile-webkit.png'});expect(errors).toEqual([]);await browser.close();
 });
 
 test('long mobile objectives leave radio space and the convoy waits for blocking tanks',async({browser})=>{

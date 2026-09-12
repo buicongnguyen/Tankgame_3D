@@ -19,7 +19,7 @@ for(const difficulty of ['easy','normal','hard','crazy'])test(`${difficulty}: ro
 });
 
 test('five Blender tiers retain paint triangles, bounded cost, bonuses and old-save compatibility',()=>{
- const skins=SKINS.filter(s=>'stars' in s);expect(skins).toHaveLength(5);let price=450;
+ const skins=SKINS.filter(s=>['comet','sentinel','talon','nova','prism'].includes(s.id));expect(skins).toHaveLength(5);let price=450;
  for(const skin of skins){const paint=MARKINGS[skin.id as keyof typeof MARKINGS];expect(paint.stars).toBe((skin as any).stars);expect(paint.stripes).toBe(6);expect(paint.positions.length).toBe(paint.colors.length);expect(paint.positions.length%9).toBe(0);expect(paint.positions.length/9).toBeLessThanOrEqual(112);expect(paint.positions.every(Number.isFinite)).toBe(true);expect(skin.price).toBeGreaterThan(price);price=skin.price;
   const save=freshSave();save.credits=skin.price;expect(buySkin(save,skin.id)).toBe(true);expect(save.credits).toBe(0);expect(buySkin(save,skin.id)).toBe(false);expect(parseSave(JSON.stringify(save)).skin).toBe(skin.id);
  }
@@ -42,7 +42,7 @@ test('desktop weapon buttons, top-row keys and number pad select the same slots'
  for(let i=8;i>=1;i--){await page.keyboard.press(`Numpad${i}`);await expect(page.locator(`[data-quick-weapon="${i}"]`)).toHaveAttribute('aria-pressed','true');}
  await page.locator('[data-quick-weapon="7"]').click();await expect(page.locator('#weapon-label')).toContainText('Micro missiles');
  // Clicking a numbered weapon is an explicit gun selection, even with the radio menu open.
- await page.keyboard.press('r');await page.locator('[data-quick-weapon="1"]').click();await expect(page.locator('#support-picker')).toBeHidden();expect(await page.evaluate(()=>{const g=(window as any).__steel;return g.weapon===0&&g.strikes.length===0&&g.airSupport.used===0;})).toBe(true);
+ await page.locator('[data-quick-weapon="1"]').click();expect(await page.evaluate(()=>{const g=(window as any).__steel;return g.weapon===0&&g.strikes.length===0&&g.airSupport.used===0;})).toBe(true);
  await page.locator('[data-quick-weapon="7"]').click();
  // The contextual radio chooser still owns 1/2 while open.
  await page.keyboard.press('r');await page.keyboard.press('Numpad2');expect(await page.evaluate(()=>(window as any).__steel.weapon)).toBe(6);expect(await page.evaluate(()=>(window as any).__steel.airSupport.used)).toBe(1);
@@ -79,7 +79,7 @@ test('new Blender markings survive detail changes and skin swaps with correct li
 });
 
 for(const viewport of [{width:320,height:568},{width:390,height:844},{width:844,height:390}])test(`new skin cards and numbered touch picker fit ${viewport.width}`,async({browser})=>{
- const ctx=await browser.newContext({viewport,isMobile:true,hasTouch:true}),page=await ctx.newPage(),errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/?e2e');await expect(page.locator('[data-action=hangar]')).toBeVisible();await page.evaluate(()=>{(window as any).__steel.save.credits=1900;});await page.locator('[data-action=hangar]').tap();await expect(page.locator('.skin-card')).toHaveCount(10);
+ const ctx=await browser.newContext({viewport,isMobile:true,hasTouch:true}),page=await ctx.newPage(),errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/?e2e');await expect(page.locator('[data-action=hangar]')).toBeVisible();await page.evaluate(()=>{(window as any).__steel.save.credits=1900;});await page.locator('[data-action=hangar]').tap();await expect(page.locator('.skin-card')).toHaveCount(SKINS.length);
  await expect.poll(()=>page.locator('.skin-card img').evaluateAll(imgs=>imgs.every(i=>(i as HTMLImageElement).naturalWidth===512))).toBe(true);await page.locator('[data-value=prism]').tap();await expect(page.locator('[data-value=prism]')).toHaveText('EQUIPPED');await page.locator('[data-value=prism]').scrollIntoViewIfNeeded();await page.screenshot({path:`test-results/new-skin-shop-${viewport.width}.png`});
  expect(await page.locator('#overlay').evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);await page.locator('[data-action=shop-back]').tap();await page.locator('[data-action=deploy]').tap();await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.save.weapons=[6,7];g.specialAmmo=[0,0,1];g.weapon=7;g.save.equippedWeapon=7;g.updateHud();});
  await expect(page.locator('#weapon-shortcuts')).toBeHidden();await page.locator('#weapon').tap();await expect(page.locator('[data-weapon="7"]')).toBeEnabled();await page.locator('[data-weapon="7"]').tap();await expect(page.locator('#weapon-label')).toContainText('Micro missiles');await page.locator('#weapon').tap();await page.locator('[data-weapon="8"]').tap();await page.evaluate(()=>{const g=(window as any).__steel;g.shoot(g.player,true);});await expect(page.locator('#weapon-label')).toContainText('Micro missiles');expect(errors).toEqual([]);expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(viewport.width);await ctx.close();

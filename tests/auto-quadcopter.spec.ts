@@ -1,0 +1,56 @@
+import {test,expect} from '@playwright/test';
+import type {Page} from '@playwright/test';
+import {freshSave,parseSave} from '../src/three/campaign';
+import {buyAutoPack} from '../src/three/auto-missiles';
+import {ammoCapacity,SKINS,buySkin} from '../src/three/skins';
+import MARKINGS from '../src/three/skin-markings.json' with {type:'json'};
+async function battle(page:Page){await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.world.activities=[];g.world.navigationRevision++;g.enemies=[];g.player.visual.root.position.set(0,0,0);g.auto.ammo=6;g.lootRandom=()=>.99;});}
+
+test('cheap pack rejects duplicate and unaffordable purchases and migrates old profiles',()=>{
+ const save=freshSave();save.credits=39;expect(buyAutoPack(save)).toBe(false);save.credits=100;expect(buyAutoPack(save)).toBe(true);expect(save.credits).toBe(60);expect(save.autoPack).toBe(6);expect(buyAutoPack(save)).toBe(false);expect(parseSave(JSON.stringify(save))).toEqual(save);
+ for(const value of [undefined,-1,1000,'6',3]){const old:any={...save,autoPack:value};expect(parseSave(JSON.stringify(old)).autoPack).toBe(0);expect(parseSave(JSON.stringify(old)).credits).toBe(60);}
+});
+
+test('specialist skins have authored colored stars and finite magazine bonuses',()=>{
+ for(const id of ['bastion','sprint','lance','quartermaster']){const skin=SKINS.find(s=>s.id===id)!;const save=freshSave();save.credits=skin.price;expect(buySkin(save,id)).toBe(true);expect(parseSave(JSON.stringify(save)).skin).toBe(id);const paint=MARKINGS[id as keyof typeof MARKINGS];expect(paint.stars).toBe(3);expect(paint.positions.length).toBe(paint.colors.length);expect(new Set(paint.colors.map(n=>n.toFixed(4))).size).toBeGreaterThan(3);}
+ expect([12,6,3,6].map(n=>ammoCapacity('quartermaster',n))).toEqual([15,8,4,8]);expect(ammoCapacity('classic',12)).toBe(12);expect(ammoCapacity('quartermaster',0)).toBe(0);
+});
+
+test('pack survives menus and reload before deployment, then expires on restart or sortie end',async({page})=>{
+ await page.goto('/?e2e');await page.locator('[data-action=shop]').click();await page.evaluate(()=>{const g=(window as any).__steel;g.save.credits=100;g.showShop();});await page.locator('[data-action=buy-auto]').click();await expect(page.locator('[data-action=buy-auto]')).toBeDisabled();await page.locator('[data-action=shop-back]').click();await page.locator('[data-action=difficulty][data-value=easy]').click();await page.reload();await page.getByRole('button',{name:'DEPLOY'}).click();
+ expect(await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};return {ammo:g.auto.ammo,pack:g.save.autoPack,saved:JSON.parse(localStorage.getItem('steel-front-3d-v1')!).autoPack,credits:g.save.credits};})).toEqual({ammo:6,pack:0,saved:0,credits:60});
+ await page.locator('#pause').click();await page.getByRole('button',{name:'RESUME OPERATION'}).click();expect(await page.evaluate(()=>(window as any).__steel.auto.ammo)).toBe(6);
+ const lifecycle=await page.evaluate(()=>{const g=(window as any).__steel;g.start(0);const restart=g.auto.ammo===0;const rows=[];for(const phase of ['failed','finishing','menu']){g.auto.ammo=6;g.setPhase(phase);rows.push(g.auto.ammo===0);}return {restart,rows};});expect(lifecycle).toEqual({restart:true,rows:[true,true,true]});await page.reload();await page.getByRole('button',{name:'DEPLOY'}).waitFor();expect(await page.evaluate(()=>(window as any).__steel.save.autoPack)).toBe(0);
+});
+
+test('Auto targets vehicles only, keeps ammo on empty calls, tracks and retargets over cover',async({page})=>{
+ await battle(page);const r=await page.evaluate(()=>{const g=(window as any).__steel;
+ const infantry=g.makeUnit(5,0,'rifleman');infantry.visual.root.position.set(5,0,0);g.enemies=[infantry];const empty=!g.auto.fire(g)&&g.auto.ammo===6&&g.auto.cooldown===0;
+ const jeep=g.makeUnit(20,0,'jeep');jeep.visual.root.position.set(20,0,0);const heavy=g.makeUnit(30,0,'heavy');heavy.visual.root.position.set(30,0,0);heavy.hp=1000;const far=g.makeUnit(60,0,'heavy');far.visual.root.position.set(60,0,0);g.enemies.push(jeep,heavy,far);g.world.covers=[{x:10,z:0,w:4,d:10,hp:Infinity,kind:'hill'}];const hp=g.player.hp;
+ const fired=g.auto.fire(g),one=g.auto.ammo===5&&g.auto.guided.strikes.length===1&&g.auto.guided.strikes[0].target===jeep;const duplicate=!g.auto.fire(g)&&g.auto.ammo===5;
+ jeep.visual.root.position.set(22,0,3);g.auto.update(g,.3);const follows=g.auto.guided.strikes[0].point.x===22&&g.auto.guided.strikes[0].bomb.position.y>5;
+ g.pause();const age=g.auto.guided.strikes[0].age;g.auto.update(g,3);const paused=g.auto.guided.strikes[0].age===age&&g.auto.ammo===5;g.resume();jeep.dead=true;g.auto.update(g,.01);const retarget=g.auto.guided.strikes[0].target===heavy;g.auto.update(g,1);const hit=heavy.hp<1000&&g.player.hp===hp&&g.auto.guided.strikes.length===0&&g.artilleryCooldown===0;
+ g.world.covers=[];g.enemies=[infantry,far];g.auto.update(g,2);const bounded=!g.auto.fire(g)&&g.auto.ammo===5;return {empty,fired,one,duplicate,follows,paused,retarget,hit,bounded};});expect(Object.values(r).every(Boolean),JSON.stringify(r)).toBe(true);
+});
+
+test('Quartermaster refills to raised caps, preserves nearest-left fallback and keeps Auto through graphics swaps',async({page})=>{
+ await battle(page);const r=await page.evaluate(async()=>{const g=(window as any).__steel;g.save.skin='quartermaster';g.save.weapons=[3,4,7];g.save.autoPack=6;g.start(0);g.frame=()=>{};g.enemies=[];g.world.covers=[];g.world.activities=[];g.player.visual.root.position.set(0,0,0);const initial=[...g.specialAmmo,g.auto.ammo];
+ const {createActivity}=await import('/src/three/activities.ts');g.specialAmmo=[14,7,4];for(const kind of ['laser','arc'])g.world.activities.push(createActivity(g.world.entities,kind,0,0,99));g.updateActivities(.01);const capped=[...g.specialAmmo];g.weapon=4;g.specialAmmo[1]=1;g.shoot(g.player,true);const fallback=g.weapon===3;g.pause();await g.changeQuality();g.resume();return {initial,capped,fallback,retained:g.auto.ammo===8&&g.save.autoPack===0};});expect(r).toEqual({initial:[15,8,4,8],capped:[15,8,4],fallback:true,retained:true});
+});
+
+test('Storm Kite warns a locked pincer, flies missiles from its pods, lands and exposes its core',async({page})=>{
+ await battle(page);const r=await page.evaluate(()=>{const g=(window as any).__steel;g.start(9,2);const b=g.enemies.find((u:any)=>u.role==='boss');g.enemies=[b];g.world.covers=[];g.player.visual.root.position.set(0,0,20);b.visual.root.position.set(0,6.5,-10);g.bosses.update(g,b,.01);const s=g.bosses.states.get(b);s.phase='tracking';s.time=0;g.bosses.update(g,b,.01);const warned=s.phase==='charging'&&s.markers.length===3&&s.targets.length===3;const targets=JSON.stringify(s.targets);const hp=g.player.hp;g.player.visual.root.position.set(25,0,20);g.bosses.update(g,b,1.3);const locked=JSON.stringify(s.targets)===targets,flight=s.rockets.every((m:any)=>m.visible&&m.position.y>3);g.bosses.update(g,b,.8);const landing=s.phase==='landing';for(let i=0;i<150&&s.phase==='landing';i++)g.bosses.update(g,b,.1);const exposed=s.phase==='exposed'&&b.visual.root.position.y===0&&b.visual.root.getObjectByName('Core').visible;const before=b.hp;g.damageUnit(b,44,g.player.visual.root.position);const vulnerable=b.hp<before;
+ g.bosses.update(g,b,3.6);const reset=s.phase==='tracking';return {kind:b.bossKind,warned,locked,flight,landing,exposed,vulnerable,reset,dodged:g.player.hp===hp};});expect(r.kind).toBe('quadcopter');for(const [k,v] of Object.entries(r))if(k!=='kind')expect(v,k).toBe(true);
+});
+
+test('quadcopter takes anti-air damage, ignores mines in flight and preserves all rotors in Low',async({page})=>{
+ await battle(page);const r=await page.evaluate(async()=>{const g=(window as any).__steel;const b=g.makeUnit(20,0,'boss','quadcopter');g.enemies=[b];b.visual.root.position.set(20,6.5,0);b.hp=1000;g.damageUnit(b,100,g.player.visual.root.position);const immune=b.hp===1000;g.auto.fire(g);g.auto.update(g,1);const hit=b.hp<1000;const {createActivity}=await import('/src/three/activities.ts');const mine=createActivity(g.world.entities,'mine',20,0,1);g.world.activities=[mine];g.updateActivities(.01);const avoidsMine=!mine.spent;
+ const root=b.visual.root,rotors=[0,1,2,3].map(i=>root.getObjectByName('Rotor'+i));g.bosses.update(g,b,.1);const animated=rotors.every((o:any)=>Math.abs(o.rotation.y)>0);g.pause();await g.changeQuality();const retained=rotors.every((o:any,i:number)=>root.getObjectByName('Rotor'+i)===o&&o.children.length>0);g.hud.hidden=true;g.overlay.hidden=true;for(const o of g.world.entities.children)o.visible=o===root;g.world.camera.position.set(31,19,17);g.world.camera.lookAt(20,7,0);g.world.renderer.render(g.world.scene,g.world.camera);return {immune,hit,avoidsMine,animated,retained,error:g.world.renderer.getContext().getError()};});expect(r).toEqual({immune:true,hit:true,avoidsMine:true,animated:true,retained:true,error:0});await page.screenshot({path:'test-results/quadcopter-low.png'});
+});
+
+for(const viewport of [{width:1440,height:900},{width:320,height:568},{width:390,height:844},{width:844,height:390}])test(`compact shop and direct Auto controls ${viewport.width}`,async({browser})=>{
+ const mobile=viewport.width!==1440,c=await browser.newContext({viewport,isMobile:mobile,hasTouch:mobile}),page=await c.newPage(),errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/?e2e');await page.locator('[data-action=shop]').click();await page.evaluate(()=>{const g=(window as any).__steel;g.save.credits=1000;g.showShop();});
+ await expect.poll(()=>page.locator('#overlay').evaluate(el=>el.scrollTop)).toBe(0);await expect(page.locator('[data-weapon-card="0"] h3 svg path')).toHaveCount(1);const layout=await page.locator('.depot-panel').evaluate(el=>({width:el.scrollWidth,client:el.clientWidth,height:el.getBoundingClientRect().height,buttons:[...el.querySelectorAll('.price-button')].map(b=>b.getBoundingClientRect().height)}));expect(layout.width).toBeLessThanOrEqual(layout.client);expect(layout.buttons.every(h=>h>=44)).toBe(true);if(viewport.width<600)expect(layout.height).toBeLessThan(1950);await page.screenshot({path:`test-results/compact-shop-${viewport.width}.png`});
+ await page.locator('[data-action=buy-auto]').click();await page.locator('[data-action=buy][data-value=armor]').click();await page.locator('[data-action=shop-back]').click();await page.getByRole('button',{name:'DEPLOY'}).click();await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.world.activities=[];g.world.navigationRevision++;g.enemies=[];g.player.visual.root.position.set(0,0,0);const u=g.makeUnit(20,0,'heavy');u.visual.root.position.set(20,0,0);g.enemies=[u];g.updateHud();});
+ if(mobile)await page.locator('#auto').tap();else await page.keyboard.press('e');expect(await page.evaluate(()=>(window as any).__steel.auto.ammo)).toBe(5);await expect(page.locator('#auto')).toBeDisabled();await expect(page.locator('#artillery')).toBeEnabled();await expect(page.locator('#drop')).toBeEnabled();await page.screenshot({path:`test-results/direct-controls-${viewport.width}.png`});expect(errors).toEqual([]);await c.close();
+});
