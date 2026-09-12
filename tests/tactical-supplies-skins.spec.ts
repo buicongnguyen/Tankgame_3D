@@ -26,10 +26,10 @@ test('five Blender tiers retain paint triangles, bounded cost, bonuses and old-s
  const old:any=freshSave();delete old.skins;delete old.skin;expect(parseSave(JSON.stringify(old)).skins).toEqual(['classic','sunburst']);
 });
 
-test('empty special ammo steps left, skips unusable slots, keeps cooldown and preferred loadout',async({page})=>{
+test('empty special ammo prefers higher slots then steps left, skips unusable slots, keeps cooldown and preferred loadout',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const result=await page.evaluate(()=>{
   const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.enemies=[];g.world.activities=[];g.world.navigationRevision++;
-  const cases=[{from:7,owned:[6,7],ammo:[0,0,1],to:6},{from:7,owned:[5,7],ammo:[0,0,1],to:5},{from:7,owned:[4,7],ammo:[0,6,1],to:4},{from:7,owned:[3,7],ammo:[12,0,1],to:3},{from:4,owned:[3,4],ammo:[12,1,0],to:3},{from:4,owned:[2,4],ammo:[0,1,0],to:2},{from:3,owned:[1,3],ammo:[1,0,0],to:1},{from:3,owned:[3],ammo:[1,0,0],to:0}];
+  const cases=[{from:3,owned:[3,4,7],ammo:[1,6,3],to:4},{from:4,owned:[3,4,7],ammo:[12,1,3],to:7},{from:3,owned:[3,4,6],ammo:[1,0,0],to:6},{from:7,owned:[6,7],ammo:[0,0,1],to:6},{from:7,owned:[5,7],ammo:[0,0,1],to:5},{from:7,owned:[4,7],ammo:[0,6,1],to:4},{from:7,owned:[3,7],ammo:[12,0,1],to:3},{from:4,owned:[3,4],ammo:[12,1,0],to:3},{from:4,owned:[2,4],ammo:[0,1,0],to:2},{from:3,owned:[1,3],ammo:[1,0,0],to:1},{from:3,owned:[3],ammo:[1,0,0],to:0}];
   const rows=cases.map(c=>{g.save.weapons=c.owned;g.save.equippedWeapon=c.from;g.weapon=c.from;g.specialAmmo=[...c.ammo];g.reload=0;const before=g.shotsFired;g.shoot(g.player,true);return {expected:c.to,actual:g.weapon,ammo:g.specialAmmo[c.from===3?0:c.from===4?1:2],cooldown:g.reload>0,preference:g.save.equippedWeapon===c.from,shot:g.shotsFired===before+1};});
   g.save.weapons=[4,7];g.save.equippedWeapon=7;g.specialAmmo=[0,6,0];g.weapon=7;const before=g.shotsFired;g.shoot(g.player,true);const emptyAttempt=g.weapon===4&&g.shotsFired===before;g.start(0);return {rows,emptyAttempt,refilled:g.weapon===7&&g.specialAmmo[2]===3};
  });for(const r of result.rows){expect(r.actual).toBe(r.expected);expect(r.ammo).toBe(0);expect(r.cooldown&&r.preference&&r.shot).toBe(true);}expect(result.emptyAttempt&&result.refilled).toBe(true);

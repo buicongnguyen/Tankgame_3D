@@ -6,12 +6,12 @@ import {reloadSeconds} from '../src/three/armory';
 
 async function arena(page:Page){
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
- await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.world.activities=[];g.enemies=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,0);g.player.aim=0;g.syncVisual(g.player);g.save.weapons=[8];g.weapon=8;g.lootRandom=()=>.99;});
+ await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.world.activities=[];g.enemies=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,0);g.player.aim=0;g.syncVisual(g.player);g.save.weapons=[8];g.specialAmmo=[0,0,0,200];g.weapon=8;g.lootRandom=()=>.99;});
 }
 
 test('flame upgrades and old eight-weapon saves preserve purchases and append a ninth slot',()=>{
  const old=freshSave();old.weaponLevels=Array(8).fill(4);old.weapons=[3,7];old.equippedWeapon=7;old.credits=100000;
- const s=parseSave(JSON.stringify(old));expect(s.weaponLevels).toEqual([...Array(8).fill(4),0]);expect(s.equippedWeapon).toBe(7);expect(buyWeapon(s,8)).toBe(true);expect(s.credits).toBe(99520);expect(s.equippedWeapon).toBe(8);
+ const s=parseSave(JSON.stringify(old));expect(s.weaponLevels).toEqual([...Array(8).fill(4),0]);expect(s.equippedWeapon).toBe(7);expect(buyWeapon(s,8)).toBe(true);expect(s.credits).toBe(99400);expect(s.equippedWeapon).toBe(8);
  for(let i=0;i<20;i++)expect(upgradeWeapon(s,8)).toBe(true);expect(upgradeWeapon(s,8)).toBe(false);s.upgrades.reload=20;expect(reloadSeconds(s,8)).toBe(.08);expect(parseSave(JSON.stringify(s))).toEqual(s);
  for(const heading of [0,Math.PI/2,Math.PI,-Math.PI/2]){expect(flameExposure({x:0,z:0},heading,{x:Math.sin(heading)*11.99,z:Math.cos(heading)*11.99})).toBeGreaterThan(0);expect(flameExposure({x:0,z:0},heading,{x:Math.sin(heading)*12.01,z:Math.cos(heading)*12.01})).toBe(0);}
 });
@@ -20,7 +20,7 @@ test('one flame burst hits several exposed targets inside 70 degrees and never r
  await arena(page);const r=await page.evaluate(()=>{
   const g=(window as any).__steel,targets=[[0,4],[3,6],[-3,6],[0,12.01],[7,5],[0,-4]].map(([x,z])=>{const e=g.makeUnit(x,z,'rifleman');e.visual.root.position.set(x,0,z);e.hp=e.max=1000;return e;});
   const heli=g.makeUnit(0,8,'boss','helicopter');heli.visual.root.position.set(0,7,8);g.enemies=[...targets,heli];const hp=heli.hp;g.shoot(g.player,true);return {damage:targets.map(e=>1000-e.hp),air:heli.hp===hp,burns:g.flame.burns.size,shots:g.shots.length,ammo:g.specialAmmo};
- });expect(r.damage[0]).toBeCloseTo(19.6);expect(r.damage.slice(1,3).every(n=>n>0&&n<r.damage[0])).toBe(true);expect(r.damage.slice(3)).toEqual([0,0,0]);expect(r.air).toBe(true);expect(r.burns).toBe(3);expect(r.shots).toBe(0);expect(r.ammo).toEqual([0,0,0]);
+ });expect(r.damage[0]).toBeCloseTo(15.68);expect(r.damage.slice(1,3).every(n=>n>0&&n<r.damage[0])).toBe(true);expect(r.damage.slice(3)).toEqual([0,0,0]);expect(r.air).toBe(true);expect(r.burns).toBe(3);expect(r.shots).toBe(0);expect(r.ammo).toEqual([0,0,0,199]);
 });
 
 test('solid cover blocks flame, wood burns, and fuel explosions still chain into nearby objects',async({page})=>{
@@ -29,7 +29,7 @@ test('solid cover blocks flame, wood burns, and fuel explosions still chain into
   const make=(x:number,z:number,role='rifleman')=>{const e=g.makeUnit(x,z,role);e.visual.root.position.set(x,0,z);e.hp=e.max=1000;return e;};
   const hidden=make(0,8),open=make(4,7);g.enemies=[hidden,open];const mesh=g.world.clone('barricade');mesh.position.set(0,0,5);const wall={x:0,z:5,w:4,d:2,hp:176,kind:'barricade',mesh};g.world.covers=[wall];g.shoot(g.player,true);const blocked=hidden.hp===1000&&open.hp<1000&&wall.hp===176;
   g.flame.clear();const tree={...wall,z:4,w:2,d:2,hp:65,kind:'pine',mesh:g.world.clone('pine')};tree.mesh.position.set(0,0,4);g.world.covers=[tree];g.shoot(g.player,true);const wood=tree.hp<65&&g.flame.burns.has(tree)&&hidden.hp===1000;
-  g.flame.clear();g.enemies=[];const fuel={x:0,z:8,w:2,d:2,hp:25,kind:'fuelcrate',mesh:g.world.clone('fuelcrate')},barrel={x:3,z:8,w:1,d:1,hp:25,kind:'barrel',mesh:g.world.clone('barrel')};fuel.mesh.position.set(0,0,8);barrel.mesh.position.set(3,0,8);g.world.covers=[fuel,barrel];const tank=make(2,9,'heavy'),far=make(0,24,'heavy');g.enemies=[tank,far];g.shoot(g.player,true);g.shoot(g.player,true);return {blocked,wood,chain:fuel.hp<=0&&barrel.hp<=0,blast:tank.hp<900,far:far.hp===1000,player:g.player.hp===g.player.max};
+  g.flame.clear();g.enemies=[];const fuel={x:0,z:8,w:2,d:2,hp:25,kind:'fuelcrate',mesh:g.world.clone('fuelcrate')},barrel={x:3,z:8,w:1,d:1,hp:25,kind:'barrel',mesh:g.world.clone('barrel')};fuel.mesh.position.set(0,0,8);barrel.mesh.position.set(3,0,8);g.world.covers=[fuel,barrel];const tank=make(2,9,'heavy'),far=make(0,24,'heavy');g.enemies=[tank,far];g.shoot(g.player,true);g.shoot(g.player,true);g.flame.update(g,.2);return {blocked,wood,chain:fuel.hp<=0&&barrel.hp<=0,blast:tank.hp<900,far:far.hp===1000,player:g.player.hp===g.player.max};
  });expect(Object.values(r).every(Boolean),JSON.stringify(r)).toBe(true);
 });
 
@@ -40,7 +40,7 @@ test('burn damage refreshes without stacking, ends after two seconds, and matche
    g.flame.clear();g.enemies=[];g.world.settings(low);const e=g.makeUnit(0,4,'rifleman');e.visual.root.position.set(0,0,4);e.hp=e.max=1000;g.enemies=[e];g.shoot(g.player,true);g.shoot(g.player,true);const direct=1000-e.hp;g.weapon=0;
    for(let i=0;i<fps*3;i++){g.flame.update(g,1/fps);g.flame.render(g,1/fps);}rows.push({low,fps,direct,total:1000-e.hp,burns:g.flame.burns.size,particles:g.flame.tongues.length});g.weapon=8;
   }return rows;
- });for(const r of rows){expect(r.direct).toBeCloseTo(39.2);expect(r.total).toBeCloseTo(68.6);expect(r.burns).toBe(0);expect(r.particles).toBe(0);}
+ });for(const r of rows){expect(r.direct).toBeCloseTo(31.36);expect(r.total).toBeCloseTo(54.88);expect(r.burns).toBe(0);expect(r.particles).toBe(0);}
 });
 
 test('flame obeys tank armor and boss phases while upgrades strengthen a close-range weapon',async({page})=>{
@@ -48,7 +48,7 @@ test('flame obeys tank armor and boss phases while upgrades strengthen a close-r
   const g=(window as any).__steel;const e=g.makeUnit(0,4,'heavy');e.visual.root.position.set(0,0,4);e.heading=Math.PI;g.enemies=[e];g.shoot(g.player,true);const front=e.max-e.hp;g.flame.clear();e.hp=e.max;e.heading=0;g.shoot(g.player,true);const rear=e.max-e.hp;
   g.flame.clear();g.enemies=[];const b=g.makeUnit(0,5,'boss','rail');b.visual.root.position.set(0,0,5);b.heading=Math.PI;g.enemies=[b];g.bosses.update(g,b,.001);b.visual.root.position.set(0,0,5);b.heading=Math.PI;const s=g.bosses.states.get(b);s.phase='tracking';g.shoot(g.player,true);const protectedDamage=b.max-b.hp;g.flame.clear();s.phase='exposed';const hp=b.hp;g.shoot(g.player,true);const exposed=hp-b.hp;
   g.flame.clear();g.save.weaponLevels[8]=10;g.save.upgrades.power=3;const before=b.hp;g.shoot(g.player,true);return {front,rear,protectedDamage,exposed,upgraded:before-b.hp};
- });expect(r.front).toBeCloseTo(12.74);expect(r.rear).toBeCloseTo(29.4);expect(r.exposed/r.protectedDamage).toBeCloseTo(1.75/.65);expect(r.upgraded/r.exposed).toBeCloseTo(2.4);
+ });expect(r.front).toBeCloseTo(10.192);expect(r.rear).toBeCloseTo(23.52);expect(r.exposed/r.protectedDamage).toBeCloseTo(1.75/.65);expect(r.upgraded/r.exposed).toBeCloseTo(2.4);
 });
 
 test('live flame pool swaps Blender detail, pauses, clears on retry and cannot grow unbounded',async({page})=>{

@@ -4,7 +4,7 @@ import {BOUNDS} from './activities';
 import {clamp,distance} from './rules';
 import type {Point} from './rules';
 
-export const BARRAGE={count:12,range:64,blast:6,damage:180,warning:1,flight:1.15,stagger:.12,cooldown:28,maxPerTarget:2} as const;
+export const BARRAGE={count:6,range:64,blast:6,damage:90,warning:1,flight:1.15,stagger:.12,cooldown:28,maxPerTarget:2} as const;
 export interface GuidedMissile {target:Unit|null;point:T.Vector3;from:T.Vector3;age:number;delay:number;marker:T.Mesh;bomb:T.Mesh;}
 export type GuidanceConfig={[K in keyof typeof BARRAGE]:number};
 export class GuidedBarrage {
@@ -17,13 +17,13 @@ export class GuidedBarrage {
  }
  reserve(unit:Unit){this.locks.set(unit,(this.locks.get(unit)??0)+1);}
  call(g:Game){
-  if(g.phase!=='playing'||g.player.dead||g.artilleryCooldown>0||this.strikes.length)return false;
+  if(g.phase!=='playing'||g.player.dead||g.player.hp<=0||g.artilleryCooldown>0||this.strikes.length||g.save.strikeCharges<=0)return false;
   this.origin={x:g.player.visual.root.position.x,z:g.player.visual.root.position.z};const candidates=this.candidates(g);
   if(!candidates.length){g.radioMessage('AIR SUPPORT / No hostiles within 64 m. Radio ready.',3);return false;}
   this.locks.clear();const targets=candidates.slice(0,this.config.count);
   // One pass across the squad first; spare missiles reinforce armored targets only.
   for(const unit of candidates){if(targets.length>=this.config.count)break;if(!g.isInfantry(unit)&&unit.role!=='jeep')targets.push(unit);}
-  this.launch(g,targets);g.artilleryCooldown=this.config.cooldown;g.radioMessage(`STRIKE / ${targets.length} guided missiles inbound. Fuel may chain-react.`,3);return true;
+  this.launch(g,targets);g.save.strikeCharges--;g.persist();g.artilleryCooldown=this.config.cooldown;g.radioMessage(`STRIKE / ${targets.length} guided missiles inbound. Fuel may chain-react.`,3);return true;
  }
  launch(g:Game,targets:Unit[]){
   for(const [i,target] of targets.entries()){

@@ -17,11 +17,11 @@ for(const fps of [30,60])test(`all ten bosses keep bounded machine-gun fire duri
  },fps);for(const r of rows){expect(r.gun&&r.paused&&r.dead,r.kind).toBe(true);expect(r.fx).toBeLessThanOrEqual(230);for(const p of r.phases){expect(p.fired,`${r.kind}/${p.phase}`).toBeGreaterThanOrEqual(5);expect(p.fired).toBeLessThanOrEqual(7);}}
 });
 
-test('clearing all hostiles completes from anywhere, waits for reserves, and leaves escort extraction mandatory',async({page})=>{
+test('clearing all hostiles completes from anywhere, waits for reserves, and allows a surviving escort to finish early',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(()=>{
   const g=(window as any).__steel;g.frame=()=>{};g.start(0);const reserved=g.enemies.at(-1);for(const e of g.enemies)if(e!==reserved)e.dead=true;g.player.visual.root.position.set(g.world.layout.spawn.x,0,g.world.layout.spawn.z);g.step(.01);const waits=g.phase==='playing';reserved.dead=true;const credits=g.save.credits;g.step(.01);const early=g.phase==='finishing'&&g.el('objective').textContent==='AREA SECURED';const award=g.save.credits;g.step(.79);const delay=g.phase==='finishing';g.step(.02);const results=g.phase==='depot';g.complete();const once=g.save.credits===award&&award>=credits;
-  g.start(2,0);for(const e of g.enemies)e.dead=true;g.step(.01);const escortWait=g.phase==='playing';const end=g.world.layout.points.at(-1);g.convoyDistance=g.world.layout.length;g.convoy.position.set(end.x,0,end.z);g.player.visual.root.position.set(end.x+5,0,end.z);g.step(.01);const escorted=g.phase==='finishing';
-  g.start(3,0);for(const e of g.enemies)e.dead=true;g.relayHealth=0;g.step(.01);return {waits,early,delay,results,once,escortWait,escorted,lossFirst:g.phase==='failed'};
+  g.start(2,0);const reserve=g.enemies.at(-1);for(const e of g.enemies)if(e!==reserve)e.dead=true;g.step(.01);const escortWait=g.phase==='playing';reserve.dead=true;g.step(.01);const escorted=g.phase==='finishing'&&g.convoyDistance<g.world.layout.length*.1;g.start(2,0);for(const e of g.enemies)e.dead=true;g.convoyHealth=0;g.step(.01);const convoyLossFirst=g.phase==='failed';
+  g.start(3,0);for(const e of g.enemies)e.dead=true;g.relayHealth=0;g.step(.01);return {waits,early,delay,results,once,escortWait,escorted,convoyLossFirst,lossFirst:g.phase==='failed'};
  });expect(Object.values(r).every(Boolean),JSON.stringify(r)).toBe(true);
 });
 

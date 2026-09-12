@@ -5,7 +5,7 @@ import {clamp,segmentBox} from './rules';
 import type {Point} from './rules';
 import {WEAPONS} from './armory';
 
-export const FLAME={weapon:8,range:12,halfAngle:35*Math.PI/180,burnSeconds:2,burnDps:18};
+export const FLAME={weapon:8,range:12,halfAngle:35*Math.PI/180,burnSeconds:2,burnDps:14.4};
 const WOOD=new Set<Cover['kind']>(['pine','white-pine','jungle-tree','palm','house','crate','barrel','fuelcrate']);
 type Victim=Unit|Cover;
 interface Burn {remaining:number;accum:number;dps:number;source:Point;}

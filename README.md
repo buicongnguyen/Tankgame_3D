@@ -109,7 +109,7 @@ Game models and narrative are authored for this project. Barlow and Barlow Conde
 
 ## Battlefield update
 
-Explore a 144 × 120 m combat zone with flank cover, a green repair stop, combat loot and proximity mines. **R / Strike** calls up to twelve guided missiles against nearby hostiles. **T / Drop** calls a nearby parachute supply drop. Missiles lock within 64 m, follow moving targets over cover and deal 180 base damage in a 6 m blast. The first pass spreads across different enemies, with at most two missiles reserved per target. Direct support blasts spare your tank and the transport; secondary fuel explosions can still hurt them. Empty calls keep the radio ready. Every mission allows two supply drops on Easy / Crazy or one on Normal / Hard. Both choices share a 28-second cooldown. Drops provide a small health, special-ammo or shield refill based on current needs, and can only be collected after landing. Red mine circles show the enlarged 2.7 m trigger radius. Destroyed tanks can leave medical, shield, laser or arc-rocket crates beside their wrecks.
+Explore a 144 × 120 m combat zone with flank cover, a green repair stop, combat loot and proximity mines. **R / Strike** calls up to six guided missiles against nearby hostiles. **T / Drop** calls a nearby parachute supply drop. Missiles lock within 64 m, follow moving targets over cover and deal 90 base damage in a 6 m blast. The first pass spreads across different enemies, with at most two missiles reserved per target. Direct support blasts spare your tank and the transport; secondary fuel explosions can still hurt them. Empty calls keep the radio ready. Every mission allows two supply drops on Easy / Crazy or one on Normal / Hard. Both choices share a 28-second cooldown. Drops provide a small health, special-ammo or shield refill based on current needs, and can only be collected after landing. Red mine circles show the enlarged 2.7 m trigger radius. Destroyed tanks can leave medical, shield, laser or arc-rocket crates beside their wrecks.
 
 Shell tracers, rocket exhaust, muzzle flashes, debris, shock rings, smoke, dust and persistent scorched wrecks replace the original simple hit/death effects. Escorts follow their stage-specific route through every bend. Effects are capped and reduced in low graphics mode.
 
@@ -171,7 +171,7 @@ The generator writes five editable `assets/blender/skin-*.blend` files, transpar
 
 ## Purchased weapon selection
 
-The combat weapon panel always shows **Switch Gun**. Click or tap it to select a weapon, press **C** to open the same selector on PC, or use **1–9** directly. Buying a weapon sets it as the next mission's starting gun. Selecting an owned gun in combat remembers that choice for reloads, retries and later missions; temporary map pickups do not become permanent purchases. Owned lasers receive 12 shots and arc rockets 6 rounds each mission. An empty special weapon is labeled **Empty · next mission**, and its last shot selects the nearest usable weapon to its left. Collect a cache or start the next mission to replenish it.
+The combat weapon panel always shows **Switch Gun**. Click or tap it to select a weapon, press **C** to open the same selector on PC, or use **1–9** directly. Buying a weapon sets it as the next mission's starting gun. Selecting an owned gun in combat remembers that choice for reloads, retries and later missions; temporary map pickups do not become permanent purchases. Owned lasers receive 12 shots and arc rockets 6 rounds each mission. An empty special weapon is labeled **Empty · next mission**, and its last shot selects the next usable advanced slot to its right, then the nearest usable lower slot. Collect a cache or start the next mission to replenish it.
 
 ## Arc rocket range assistance
 
@@ -228,7 +228,7 @@ All nine weapons have individual upgrades from level 0 to **20**. The shop also 
 | 6 | Machine gun | 280 CR | Two simultaneous rounds; four at weapon level 10; unlimited |
 | 7 | Micro missiles | 340 CR | Smaller, faster missiles; 60 base direct damage, 3.5 m splash; unlimited |
 | 8 | Triple arc launcher | 720 CR | Three rockets per trigger; **3 volleys per mission**; 180 base damage per rocket, 5.5 m blast each |
-| 9 | Flamethrower | 480 CR | Unlimited fuel; 12 m, 70° cone; 24 base burst damage and a 2-second burn |
+| 9 | Flamethrower | 600 CR | 200 bursts per mission; 12 m, 70° cone; 19.2 base burst damage and a 2-second burn |
 
 Missile blasts hit nearby destructible cover using the object's footprint, so building edges and individual concrete panels take damage. Fuel can chain-react. Hills and other indestructible terrain remain intact. Blast damage still affects both sides. Triple-arc landing circles show the three impact areas; ordinary arc-ammo crates do not refill this special launcher. It refills on the next mission or retry. The existing Blender rocket model supplies fins, nose, exhaust and smoke for all missile sizes, with capped effects in Low detail.
 
@@ -242,7 +242,7 @@ Each map keeps six mines, with one to three placed on alternating sides of the r
 
 Five new Blender skins add vivid stripes and one through five stars: Rally Comet, Neon Sentinel, Solar Talon, Royal Nova and Prism Ace. Their shop cards state the price and actual speed, weapon damage and shield bonuses. Shared paint geometry adds only one mesh to the player and remains visible in Low detail.
 
-Desktop has a compact **1–9 weapon bar**, with both top-row and number-pad shortcuts. Touch keeps the larger gun picker. Empty advanced weapons switch to the nearest usable weapon on their left, skipping empty/unowned slots, while preserving the preferred loadout for the next mission.
+Desktop has a compact **1–9 weapon bar**, with both top-row and number-pad shortcuts. Touch keeps the larger gun picker. Empty advanced weapons prefer the next usable slot on their right, then the nearest usable slot on their left, skipping empty/unowned slots, while preserving the preferred loadout for the next mission.
 
 Design and checks: [Tactical supplies, skins and boundaries](docs/TACTICAL_SUPPLIES_SKINS_AND_BOUNDARIES.md).
 
@@ -250,7 +250,7 @@ Design and checks: [Tactical supplies, skins and boundaries](docs/TACTICAL_SUPPL
 
 All ten bosses now fire a separate 3-damage machine gun about three times per second while charging, firing and recovering from their special attacks. Cover blocks this gun; heavy-weapon warnings and exposed cores remain. The Vanguard includes a new Blender-authored light-gun mount in both graphics tiers.
 
-Defeat every remaining hostile to finish a non-escort mission from anywhere, followed by the existing 0.8-second effects delay and results/shop screen. Dormant waves count as remaining enemies. Escort missions still require guiding the transport through the signs to extraction. Uplink defense sends four finite perimeter waves, starting immediately and releasing every four seconds; there is no timer victory while attackers remain. Capture missions retain their ring-holding objective.
+Defeat every remaining hostile to finish any mission from anywhere, followed by the existing 0.8-second effects delay and results/shop screen. Dormant waves count as remaining enemies. A surviving transport can finish before extraction once all hostiles are defeated; dormant reserves still count. Uplink defense sends four finite perimeter waves, starting immediately and releasing every four seconds; there is no timer victory while attackers remain. Capture missions retain their ring-holding objective.
 
 Broad painted roads are replaced by amber direction signs, narrow traversable passages and additional destructible groves, buildings, crates and fuel drums. Escort routes retain two narrow wheel traces. New scenery reuses existing Blender models with instanced rendering, capped at 48 props per map (64 in jungle/marsh), and preserves local destruction when switching detail levels. See [implementation and verification plan](docs/NATURAL_BATTLEFIELDS_AND_UPLINK_WAVES.md).
 
@@ -260,7 +260,7 @@ Regular enemy tanks now have distinct health tiers: raiders 110 HP, sentries 150
 
 ## Flamethrower and Easy hull
 
-The ninth weapon is a close-range flamethrower with a broad 70° cone reaching 12 m. Buy it for 480 CR, upgrade it through level 20, and select **9 / Numpad 9** or **Switch Gun**. Flames damage multiple exposed enemies and leave a short burn. Trees and fuel can ignite; solid cover blocks fire. The effect uses Blender-authored flame tongues with bounded instancing in both graphics tiers.
+The ninth weapon is a close-range flamethrower with a broad 70° cone reaching 12 m. Buy it for 600 CR, upgrade it through level 20, and select **9 / Numpad 9** or **Switch Gun**. Flames damage multiple exposed enemies and leave a short burn. Trees and fuel can ignite; solid cover blocks fire. The effect uses Blender-authored flame tongues with bounded instancing in both graphics tiers.
 
 Easy now gives **+200% player hull**, or **720 HP** before armor upgrades. Normal, Hard and Crazy keep their existing player hull and enemy counts. See [the design and validation notes](docs/FLAMETHROWER_AND_EASY_MODE.md).
 
@@ -273,8 +273,10 @@ Transports start with **1,040 HP**, four times their previous hull, on every dif
 
 The compact **Strike** and **Drop** buttons act immediately. They share the existing radio cooldown. **Auto / E** replaces the repair finder; green repair crosses remain on the minimap. Buy a **40 CR pack of six Auto missiles** for the next deployment. Each press launches one vehicle-seeking missile within **42 m**, with **160 base damage**, a **3.5 m blast** and a **1.6 s** launch interval. It targets jeeps, tanks and bosses, including airborne bosses, and flies over cover. No eligible target means no ammo spent. The pack persists through shopping and pre-deployment reloads; unused rounds expire when that sortie ends, restarts or is abandoned. Pausing and graphics changes retain ammunition.
 
-Four Blender-painted specialist skins add colored stars: **Verdant Bastion** (green, 6 s shield), **Cobalt Sprint** (blue, +30% speed), **Ruby Lance** (red, +30% damage), and **Quartermaster** (violet, +25% finite ammo rounded up). Quartermaster carries **15 laser shots, 8 arc rockets, 4 Triple Arc volleys and 8 Auto missiles** when those weapons/pack are purchased. Unlimited guns stay unlimited. Weapon refills obey the increased caps.
+Four Blender-painted specialist skins add colored stars: **Verdant Bastion** (green, 6 s shield), **Cobalt Sprint** (blue, +30% speed), **Ruby Lance** (red, +30% damage), and **Quartermaster** (violet, +25% finite ammo rounded up). Quartermaster carries **15 laser shots, 8 arc rockets, 4 Triple Arc volleys, 8 Auto missiles and 250 flamethrower bursts** when those weapons/pack are purchased. Unlimited guns stay unlimited. Weapon refills obey the increased caps.
 
 **Storm Kite** debuts in White Horizon level 3 and joins later Crazy reinforcements. Its four rotors, missile pods and light gun are authored in Blender. A two-second warning marks its three-missile pincer; move out of the circles, then attack its exposed core when it lands. Detailed / Low models use **2,496 / 742 triangles**.
 
 The shop uses icon-led rows, coin-and-price buttons with accessible labels, expandable weapon details and smaller skin previews. See [design, balance and verification](docs/AUTO_SUPPORT_AND_QUADCOPTER_PLAN.md).
+
+Strike has a saved charge bank: **two charges on first deployment into each new background**, with unused charges carried forward. Level changes, retries, previews and revisits do not refill the bank. Each accepted call spends one charge and fires at most **six missiles at 90 base damage each**; rejected calls spend nothing. Drop keeps its separate per-mission allowance and shares the radio cooldown. The flamethrower costs **600 CR**, carries **200 bursts** (250 with Quartermaster), and deals **19.2 impact / 14.4 burn DPS**, both 20% below its previous output. The mobile mission card shows a small stage badge, one objective counter and a short boss warning.

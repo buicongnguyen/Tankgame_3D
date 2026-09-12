@@ -30,8 +30,8 @@ export const MISSIONS: Mission[] = [
 ];
 export const SAVE_KEY = 'steel-front-3d-v1';
 export const LEVEL_NAMES=['Approach','Counterattack','Command battle'];
-export interface Save { version: 1; mission: number; level:number; cleared: boolean[]; credits: number; weapons: number[]; weaponLevels:number[]; equippedWeapon: number; autoPack:number; skins: string[]; skin: string; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; }
-export const freshSave = (): Save => ({ version: 1, mission: 0, level:0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], weaponLevels: Array(WEAPONS.length).fill(0), equippedWeapon: 0, autoPack:0, skins: ['classic','sunburst'], skin:'classic', upgrades: { armor: 0, power: 0, reload: 0, engine:0, shield:0 }, difficulty: 'normal', sound: false, low: false });
+export interface Save { version: 1; mission: number; level:number; cleared: boolean[]; credits: number; weapons: number[]; weaponLevels:number[]; equippedWeapon: number; autoPack:number; strikeCharges:number; strikeBackgrounds:boolean[]; skins: string[]; skin: string; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; }
+export const freshSave = (): Save => ({ version: 1, mission: 0, level:0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], weaponLevels: Array(WEAPONS.length).fill(0), equippedWeapon: 0, autoPack:0, strikeCharges:0, strikeBackgrounds:Array(MISSIONS.length).fill(false), skins: ['classic','sunburst'], skin:'classic', upgrades: { armor: 0, power: 0, reload: 0, engine:0, shield:0 }, difficulty: 'normal', sound: false, low: false });
 export function parseSave(raw: string | null): Save {
   try {
     const s = JSON.parse(raw || 'null');
@@ -51,6 +51,10 @@ export function parseSave(raw: string | null): Save {
     if(!s.skins.includes(s.skin))s.skin='classic';
     // Extend either historical campaign length without changing purchases or progress.
     if(s.cleared.length<MISSIONS.length){const previous=s.cleared.length,finished=s.cleared.every(Boolean);s.cleared.push(...Array(MISSIONS.length-previous).fill(false));if(finished){s.mission=previous;s.level=0;}}
+    // Historical saves get their first allowance on the current background, not retroactive stockpiles.
+    if(!Number.isInteger(s.strikeCharges)||s.strikeCharges<0||s.strikeCharges>MISSIONS.length*2||!Array.isArray(s.strikeBackgrounds)||s.strikeBackgrounds.length!==MISSIONS.length||s.strikeBackgrounds.some((v:unknown)=>typeof v!=='boolean')){
+      s.strikeCharges=0;s.strikeBackgrounds=s.cleared.map((done:boolean,i:number)=>done&&i!==s.mission);
+    }
     // A checkpoint cannot unlock past a gap in the campaign.
     const firstUncleared = s.cleared.indexOf(false);
     if (firstUncleared >= 0 && (s.mission > firstUncleared || s.cleared.slice(firstUncleared).some(Boolean))) return freshSave();
