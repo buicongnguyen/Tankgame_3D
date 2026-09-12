@@ -6,7 +6,7 @@ import {distance,segmentBox} from './rules';
 import {MINE_TRIGGER_RADIUS} from './combat-ranges';
 
 interface Drop {activity:Activity;rig:T.Group;marker:T.Mesh;time:number;}
-/** A small mission allowance, independent of wreck loot, sharing the barrage radio cooldown. */
+/** A small mission allowance, independent of wreck loot, sharing the missile radio cooldown. */
 export class AirSupport {
  used=0;drops:Drop[]=[];
  limit(g:Game){return g.save.difficulty==='easy'||g.save.difficulty==='crazy'?2:1;}

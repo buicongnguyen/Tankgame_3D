@@ -1,6 +1,7 @@
+import {ESCORT,escortStartClear} from './escort';
 import type {Game,Unit} from './game';
 import type {Point} from './rules';
-import {circleBox,distance,segmentBox,turnToward} from './rules';
+import {circleBox,distance,segmentBox,segmentCircle,turnToward} from './rules';
 import {projectRoute,routeSample} from './stage-layout';
 export interface PatrolOrder {home:Point;radius:number;points:Point[];index:number;wait:number;repath:number;waypoint?:Point;revision:number;stuck:number;returning?:boolean;}
 export function assignPatrol(g:Game,u:Unit,index:number){
@@ -11,6 +12,7 @@ export function assignPatrol(g:Game,u:Unit,index:number){
  const candidates=[{x:approach.x+road.dx*span,z:approach.z+road.dz*span},{x:approach.x-road.dx*span,z:approach.z-road.dz*span},{x:home.x+road.dx*radius*.7,z:home.z+road.dz*radius*.7},{x:home.x-road.dx*radius*.7,z:home.z-road.dz*radius*.7}];
  const points=[home];
  for(const p of candidates){
+  if(g.convoy&&(!escortStartClear(layout,p)||segmentCircle(home,p,layout.points[0],ESCORT.startRadius)!==null||segmentCircle(home,p,layout.spawn,ESCORT.startRadius)!==null))continue;
   if(Math.abs(p.x)>69||Math.abs(p.z)>57||distance(home,p)>radius||distance(home,p)<2||Math.abs(projectRoute(layout.points,p).progress-(u.encounter?.meters??projection.progress))>Math.max(32,layout.length*.14)||g.world.covers.some(c=>c.hp>0&&circleBox(p,g.unitRadius(u)+.15,c))||g.navigation.next(g.world,home,p)===null)continue;
   points.push(p);if(points.length===4)break;
  }
@@ -30,6 +32,7 @@ export function updatePatrol(g:Game,u:Unit,dt:number){
   if(!patrol.waypoint){next();return;}toward=patrol.waypoint;
  }
  const heading=Math.atan2(toward.x-p.x,toward.z-p.z),speed=g.isInfantry(u)?1.4:u.role==='jeep'?3.2:1.9,step=Math.min(distance(p,toward),speed*dt),dx=Math.sin(heading)*step,dz=Math.cos(heading)*step,before={x:p.x,z:p.z};
+ if(g.convoy&&!patrol.returning&&!escortStartClear(g.world.layout,{x:p.x+dx,z:p.z+dz})){next();return;}
  const homeDistance=distance(p,patrol.home),nextHomeDistance=distance({x:p.x+dx,z:p.z+dz},patrol.home);
  if(patrol.returning||nextHomeDistance<=patrol.radius+2||nextHomeDistance<homeDistance)g.moveUnit(u,dx,dz,dt);
  patrol.stuck=distance(p,before)<.001?patrol.stuck+dt:0;

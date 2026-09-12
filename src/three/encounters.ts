@@ -1,3 +1,4 @@
+import {escortReady} from './escort';
 import {ENEMY_SIGHT} from './combat-ranges';
 import type {Game,Unit} from './game';
 import type {Point} from './rules';
@@ -31,7 +32,7 @@ export class RouteEncounters {
   for(const u of g.enemies){const order=u.encounter;if(u.dead||!order||order.active)continue;
    // Timed defense waves still march from the perimeter, even before spotting Kestrel.
    if(order.wakeAt!==undefined){if(g.elapsed>=order.wakeAt)order.active=true;continue;}
-   if(!scan)continue;
+   if(!scan||!escortReady(g,u))continue;
    if(seesTarget(g,u,player))this.alert(g,u,player);
    else if(g.convoy&&seesTarget(g,u,g.convoy.position))this.alert(g,u,g.convoy.position);
   }

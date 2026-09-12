@@ -59,7 +59,7 @@ The browser tests use controlled integration fixtures for mission edge cases, al
 | Drive | WASD or arrow keys | Left stick |
 | Aim/fire | Mouse or I/J/K/L aim; hold click, Space or F to fire | Right stick |
 | Switch weapon | C opens selector; 1–9 (including number pad) selects directly | Tap Switch Gun, then choose a gun |
-| Air support | R opens selector; then 1 barrage / 2 supply drop | Air Support button, then choose |
+| Air support | R opens selector; then 1 missiles / 2 supply drop | Air Support button, then choose |
 | Protective shield | Q | Shield button |
 | Find repair center | E | Find Repair button |
 | Pause | Escape | Pause button |
@@ -108,7 +108,7 @@ Game models and narrative are authored for this project. Barlow and Barlow Conde
 
 ## Battlefield update
 
-Explore a 144 × 120 m combat zone with flank cover, a green repair stop, combat loot and proximity mines. **R / AIR SUPPORT** offers a twelve-bomb ring barrage around your tank’s current position or a nearby parachute supply drop. Bombs fall 18 m from the call location with 8 m blasts, leaving the inner 10 m clear of direct barrage damage. The target ring stays fixed after you move; bombs outside the map are omitted. Stay clear of amber barrage circles. Every mission allows two supply drops on Easy / Crazy or one on Normal / Hard. Both choices share a 28-second cooldown. Drops provide a small health, special-ammo or shield refill based on current needs, and can only be collected after landing. Red mine circles show the enlarged 2.7 m trigger radius. Destroyed tanks can leave medical, shield, laser or arc-rocket crates beside their wrecks.
+Explore a 144 × 120 m combat zone with flank cover, a green repair stop, combat loot and proximity mines. **R / AIR SUPPORT** offers up to twelve guided missiles against nearby hostiles or a nearby parachute supply drop. Missiles lock within 64 m, follow moving targets over cover and deal 180 base damage in a 6 m blast. The first pass spreads across different enemies, with at most two missiles reserved per target. Direct support blasts spare your tank and the transport; secondary fuel explosions can still hurt them. Empty calls keep the radio ready. Every mission allows two supply drops on Easy / Crazy or one on Normal / Hard. Both choices share a 28-second cooldown. Drops provide a small health, special-ammo or shield refill based on current needs, and can only be collected after landing. Red mine circles show the enlarged 2.7 m trigger radius. Destroyed tanks can leave medical, shield, laser or arc-rocket crates beside their wrecks.
 
 Shell tracers, rocket exhaust, muzzle flashes, debris, shock rings, smoke, dust and persistent scorched wrecks replace the original simple hit/death effects. Escorts follow their stage-specific route through every bend. Effects are capped and reduced in low graphics mode.
 
@@ -130,7 +130,7 @@ Every level completion, including the chapter and campaign endings, offers **Sho
 
 Shop system upgrades have armor, damage, reload, engine and shield icons. Each destroyed tank has a 1-in-3 chance to leave a medical, shield, laser or arc-ammo crate near its wreck, subject to the mission loot limit. Later levels and harder modes reduce the allowance and payload. Infantry and jeeps do not generate tank salvage. These drops last for the sortie and do not purchase permanent weapon ownership.
 
-All defense missions start Kestrel near the uplink. Initial opposition starts in staggered perimeter waves, including finale bosses; four finite waves advance at 0, 4, 8 and 12 seconds and the mission ends when every hostile is defeated; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, open Air Support with R (1 barrage / 2 supply), shield with Q and locate a repair center with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
+All defense missions start Kestrel near the uplink. Initial opposition starts in staggered perimeter waves, including finale bosses; four finite waves advance at 0, 4, 8 and 12 seconds and the mission ends when every hostile is defeated; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, open Air Support with R (1 missiles / 2 supply), shield with Q and locate a repair center with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
 
 Repair centers are large green circular service pads, marked with a green cross on the minimap. Drive within 3 m to restore up to 32 HP per second; starting capacity is 160 / 100 / 80 / 60 HP on Easy / Normal / Hard / Crazy, falling by 20 HP per sublevel to a minimum of 40. Medical cases dropped by tanks can also heal; houses and weapon boxes do not. E / Find Repair reports the nearest available center and never restores health remotely.
 
@@ -235,7 +235,7 @@ Implementation and verification plan: [Level-20 armory](docs/ARMORY_LEVEL_20_AND
 
 ### Tactical supplies and tank markings
 
-Air Support supply drops are available on **every mission and difficulty**: Easy / Crazy get two calls, Normal / Hard get one. The radio cooldown remains 28 seconds, shared with ring barrages. Small crates land near the player and are collectible only after touchdown.
+Air Support supply drops are available on **every mission and difficulty**: Easy / Crazy get two calls, Normal / Hard get one. The radio cooldown remains 28 seconds, shared with guided missile strikes. Small crates land near the player and are collectible only after touchdown.
 
 Each map keeps six mines, with one to three placed on alternating sides of the road as the stage level rises; the opposite lane stays open to dodge. Continuous indestructible rock now encloses all four map edges using one instanced rectangular mesh.
 
@@ -262,3 +262,7 @@ Regular enemy tanks now have distinct health tiers: raiders 110 HP, sentries 150
 The ninth weapon is a close-range flamethrower with a broad 70° cone reaching 12 m. Buy it for 480 CR, upgrade it through level 20, and select **9 / Numpad 9** or **Switch Gun**. Flames damage multiple exposed enemies and leave a short burn. Trees and fuel can ignite; solid cover blocks fire. The effect uses Blender-authored flame tongues with bounded instancing in both graphics tiers.
 
 Easy now gives **+200% player hull**, or **720 HP** before armor upgrades. Normal, Hard and Crazy keep their existing player hull and enemy counts. See [the design and validation notes](docs/FLAMETHROWER_AND_EASY_MODE.md).
+
+## Stronger escorts and guided support
+
+Transports start with **1,040 HP**, four times their previous hull, on every difficulty. Q and shield pickups protect both vehicles. Escort starts have a clear deployment area; ambushes are spread along the usable route and activate as you approach, including either O-loop branch. Offensive Air Support now uses guided Blender missiles with smoke trails. See [design and verification plan](docs/ESCORT_AND_GUIDED_SUPPORT.md).
