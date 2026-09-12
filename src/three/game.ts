@@ -1,3 +1,4 @@
+import {enemyHealth} from './unit-health';
 import {BARRAGE,BARRAGE_INNER,barrageTargets} from './barrage';
 import {WEAPONS,weaponLevel,weaponDamage,barrels,powerMultiplier,reloadSeconds,engineMultiplier,shieldBonus,shieldCooldown as upgradedShieldCooldown} from './armory';
 import {workshop} from './workshop';
@@ -159,7 +160,7 @@ export class Game {
     if(!free(x,z)){const origin={x,z};search:for(let r=3;r<=120;r+=3)for(let a=0;a<16;a++){const px=origin.x+Math.cos(a*Math.PI/8)*r,pz=origin.z+Math.sin(a*Math.PI/8)*r;if(free(px,pz)){x=px;z=pz;break search;}}}
     const visual=this.world.tank(!player,boss,infantry?role:role==='jeep'?'scout-jeep':boss?'boss-'+kind:'tank');visual.root.position.set(x,0,z);if(boss){const core=visual.root.getObjectByName('Core');if(core)core.visible=false;}
     const difficulty=mode(this.save.difficulty).health;
-    const hp=player?(240+this.save.upgrades.armor*65)*difficulty:infantry?(role==='rifleman'?35:55):boss?BOSS[kind].health:role==='jeep'?55:role==='heavy'?160:role==='sentry'?90:65;
+    const hp=player?(240+this.save.upgrades.armor*65)*difficulty:boss?BOSS[kind].health:enemyHealth(role,this.mission,this.level);
     if(!free(x,z))throw new Error(`No free spawn for ${role}`);
     return {bossKind:boss?kind:undefined,velocity:{x:0,z:0},visual,hp,max:hp,heading:player?Math.PI:0,aim:player?Math.PI:0,cooldown:2+(this.enemies.length%3)*.8,role,dead:false};
   }

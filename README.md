@@ -251,3 +251,7 @@ All nine bosses now fire a separate 3-damage machine gun about three times per s
 Defeat every remaining hostile to finish a non-escort mission from anywhere, followed by the existing 0.8-second effects delay and results/shop screen. Dormant waves count as remaining enemies. Escort missions still require guiding the transport through the signs to extraction. Uplink defense sends four finite perimeter waves, starting immediately and releasing every four seconds; there is no timer victory while attackers remain. Capture missions retain their ring-holding objective.
 
 Broad painted roads are replaced by amber direction signs, narrow traversable passages and additional destructible groves, buildings, crates and fuel drums. Escort routes retain two narrow wheel traces. New scenery reuses existing Blender models with instanced rendering, capped at 48 props per map (64 in jungle/marsh), and preserves local destruction when switching detail levels. See [implementation and verification plan](docs/NATURAL_BATTLEFIELDS_AND_UPLINK_WAVES.md).
+
+## Enemy durability
+
+Regular enemy tanks now have distinct health tiers: raiders 110 HP, sentries 150 HP, and heavies 240 HP at the opening campaign level. Armored tank HP grows gently with campaign progress, reaching 160 / 220 / 355 HP in the last level. Scout jeeps have 75 HP; riflemen, rocketeers, bosses and the player retain their existing health. Flanking still deals more damage, and anti-tank weapons remain effective. See the [health balance review and combat targets](docs/UNIT_HEALTH_BALANCE.md).
