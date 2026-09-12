@@ -6,12 +6,12 @@ import {reloadSeconds} from '../src/three/armory';
 
 async function arena(page:Page){
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
- await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.world.activities=[];g.enemies=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,0);g.player.aim=0;g.syncVisual(g.player);g.save.weapons=[8];g.specialAmmo=[0,0,0,200];g.weapon=8;g.lootRandom=()=>.99;});
+ await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.world.activities=[];g.enemies=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,0);g.player.aim=0;g.syncVisual(g.player);g.save.weapons=[8];g.specialAmmo=[0,0,0,100];g.weapon=8;g.lootRandom=()=>.99;});
 }
 
 test('flame upgrades and old eight-weapon saves preserve purchases and append a ninth slot',()=>{
  const old=freshSave();old.weaponLevels=Array(8).fill(4);old.weapons=[3,7];old.equippedWeapon=7;old.credits=100000;
- const s=parseSave(JSON.stringify(old));expect(s.weaponLevels).toEqual([...Array(8).fill(4),0]);expect(s.equippedWeapon).toBe(7);expect(buyWeapon(s,8)).toBe(true);expect(s.credits).toBe(99400);expect(s.equippedWeapon).toBe(8);
+ const s=parseSave(JSON.stringify(old));expect(s.weaponLevels).toEqual([...Array(8).fill(4),0]);expect(s.equippedWeapon).toBe(7);expect(buyWeapon(s,8)).toBe(true);expect(s.credits).toBe(99200);expect(s.equippedWeapon).toBe(8);
  for(let i=0;i<20;i++)expect(upgradeWeapon(s,8)).toBe(true);expect(upgradeWeapon(s,8)).toBe(false);s.upgrades.reload=20;expect(reloadSeconds(s,8)).toBe(.08);expect(parseSave(JSON.stringify(s))).toEqual(s);
  for(const heading of [0,Math.PI/2,Math.PI,-Math.PI/2]){expect(flameExposure({x:0,z:0},heading,{x:Math.sin(heading)*11.99,z:Math.cos(heading)*11.99})).toBeGreaterThan(0);expect(flameExposure({x:0,z:0},heading,{x:Math.sin(heading)*12.01,z:Math.cos(heading)*12.01})).toBe(0);}
 });
@@ -20,7 +20,7 @@ test('one flame burst hits several exposed targets inside 70 degrees and never r
  await arena(page);const r=await page.evaluate(()=>{
   const g=(window as any).__steel,targets=[[0,4],[3,6],[-3,6],[0,12.01],[7,5],[0,-4]].map(([x,z])=>{const e=g.makeUnit(x,z,'rifleman');e.visual.root.position.set(x,0,z);e.hp=e.max=1000;return e;});
   const heli=g.makeUnit(0,8,'boss','helicopter');heli.visual.root.position.set(0,7,8);g.enemies=[...targets,heli];const hp=heli.hp;g.shoot(g.player,true);return {damage:targets.map(e=>1000-e.hp),air:heli.hp===hp,burns:g.flame.burns.size,shots:g.shots.length,ammo:g.specialAmmo};
- });expect(r.damage[0]).toBeCloseTo(15.68);expect(r.damage.slice(1,3).every(n=>n>0&&n<r.damage[0])).toBe(true);expect(r.damage.slice(3)).toEqual([0,0,0]);expect(r.air).toBe(true);expect(r.burns).toBe(3);expect(r.shots).toBe(0);expect(r.ammo).toEqual([0,0,0,199]);
+ });expect(r.damage[0]).toBeCloseTo(15.68);expect(r.damage.slice(1,3).every(n=>n>0&&n<r.damage[0])).toBe(true);expect(r.damage.slice(3)).toEqual([0,0,0]);expect(r.air).toBe(true);expect(r.burns).toBe(3);expect(r.shots).toBe(0);expect(r.ammo).toEqual([0,0,0,99]);
 });
 
 test('solid cover blocks flame, wood burns, and fuel explosions still chain into nearby objects',async({page})=>{
@@ -53,7 +53,7 @@ test('flame obeys tank armor and boss phases while upgrades strengthen a close-r
 
 test('live flame pool swaps Blender detail, pauses, clears on retry and cannot grow unbounded',async({page})=>{
  await arena(page);const r=await page.evaluate(async()=>{
-  const g=(window as any).__steel;const e=g.makeUnit(0,4,'heavy');e.visual.root.position.set(0,0,4);e.hp=e.max=1e6;g.enemies=[e];for(let i=0;i<200;i++)g.shoot(g.player,true);g.flame.render(g,.1);const mesh=g.flame.mesh,high=mesh.geometry.index.count/3,highCount=mesh.count,burn=g.flame.burns.get(e).remaining,hp=e.hp,age=g.flame.tongues[0].age;
+  const g=(window as any).__steel;const e=g.makeUnit(0,4,'heavy');e.visual.root.position.set(0,0,4);e.hp=e.max=1e6;g.enemies=[e];for(let i=0;i<100;i++)g.shoot(g.player,true);g.flame.render(g,.1);const mesh=g.flame.mesh,high=mesh.geometry.index.count/3,highCount=mesh.count,burn=g.flame.burns.get(e).remaining,hp=e.hp,age=g.flame.tongues[0].age;
   g.pause();g.flame.update(g,5);g.flame.render(g,0);const paused=e.hp===hp&&g.flame.burns.get(e).remaining===burn&&g.flame.tongues[0].age===age;
   await g.changeQuality();g.flame.render(g,0);const low=mesh.geometry.index.count/3,lowCount=mesh.count,preserved=g.flame.mesh===mesh&&e.hp===hp;
   g.resume();g.flame.update(g,.2);const resumed=e.hp<hp;g.start(0);return {high,low,highCount,lowCount,paused,preserved,resumed,cleared:g.flame.burns.size===0&&g.flame.tongues.length===0&&g.flame.mesh===null&&!mesh.parent};

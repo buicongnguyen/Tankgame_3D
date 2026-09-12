@@ -3,11 +3,14 @@ import {freshSave,parseSave,MISSIONS} from '../src/three/campaign';
 import {grantBackgroundStrikes} from '../src/three/strike-bank';
 import {BARRAGE} from '../src/three/barrage';
 import {WEAPONS} from '../src/three/armory';
+import {ammoCaps} from '../src/three/loot';
+import {ammoCapacity} from '../src/three/skins';
 import {FLAME} from '../src/three/flamethrower';
 
 test('exact balance and background allowance migrate and bank without replay farming',()=>{
- expect([WEAPONS[8].price,WEAPONS[8].capacity]).toEqual([600,200]);expect(WEAPONS[8].damage).toBeCloseTo(24*.8);expect(FLAME.burnDps).toBeCloseTo(18*.8);
+ expect([WEAPONS[8].price,WEAPONS[8].capacity]).toEqual([800,100]);expect(WEAPONS[8].damage).toBeCloseTo(24*.8);expect(FLAME.burnDps).toBeCloseTo(18*.8);
  expect([BARRAGE.count,BARRAGE.damage]).toEqual([6,90]);
+ expect(ammoCaps('classic')).toEqual([12,6,3,100]);expect(ammoCaps('quartermaster')).toEqual([15,8,4,250]);expect(ammoCapacity('quartermaster',6)).toBe(8);
  const s=freshSave();expect(grantBackgroundStrikes(s,0)).toBe(2);s.strikeCharges--;
  expect(grantBackgroundStrikes(s,0)).toBe(0);expect(grantBackgroundStrikes(s,1)).toBe(2);expect(s.strikeCharges).toBe(3);
  expect(parseSave(JSON.stringify(s))).toEqual(s);
@@ -23,13 +26,13 @@ test('exact balance and background allowance migrate and bank without replay far
 test('fuel counts trigger bursts, refuses empty fire, prefers higher ammo and refills owned fuel',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
  const r=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};g.save.weapons=[3,4,7,8];g.save.equippedWeapon=8;g.start(0);g.enemies=[];g.world.covers=[];g.world.activities=[];g.player.visual.root.position.set(0,0,0);const full=g.specialAmmo[3];
- const before=g.shotsFired;for(let i=0;i<199;i++)g.shoot(g.player,true);const penultimate=g.specialAmmo[3]===1&&g.weapon===8;g.shoot(g.player,true);
- const empty=g.specialAmmo[3]===0&&g.weapon===7&&g.shotsFired===before+200&&g.reload>0&&g.save.equippedWeapon===8;
- g.weapon=8;g.shoot(g.player,true);const refused=g.shotsFired===before+200&&g.weapon===7;
+ const before=g.shotsFired;for(let i=0;i<99;i++)g.shoot(g.player,true);const penultimate=g.specialAmmo[3]===1&&g.weapon===8;g.shoot(g.player,true);
+ const empty=g.specialAmmo[3]===0&&g.weapon===7&&g.shotsFired===before+100&&g.reload>0&&g.save.equippedWeapon===8;
+ g.weapon=8;g.shoot(g.player,true);const refused=g.shotsFired===before+100&&g.weapon===7;
  g.weapon=3;g.specialAmmo[0]=1;g.shoot(g.player,true);const higher=g.weapon===4;
  g.save.skin='quartermaster';g.start(0);const bonus=g.specialAmmo[3];g.shoot(g.player,true);g.pause();await g.changeQuality();g.resume();const quality=g.specialAmmo[3]===249;g.start(0);
  return {full,penultimate,empty,refused,higher,bonus,quality,refill:g.specialAmmo[3]===250};});
- expect(r).toEqual({full:200,penultimate:true,empty:true,refused:true,higher:true,bonus:250,quality:true,refill:true});
+ expect(r).toEqual({full:100,penultimate:true,empty:true,refused:true,higher:true,bonus:250,quality:true,refill:true});
 });
 
 test('Strike calls persist through reload and retry; previews cannot grant and Drop works with zero strikes',async({page})=>{

@@ -1,7 +1,7 @@
 # Combat balance and Strike bank
 
 ## Requested behavior and decisions
-- Flamethrower: 600 credits (+25%), 200 trigger bursts each mission; Quartermaster rounds the 25% capacity bonus to 250. Direct damage 24 → 19.2, burn DPS 18 → 14.4; range, arc, armor and upgrades stay consistent.
+- Flamethrower: 800 credits, 100 trigger bursts each mission; Quartermaster has a fixed 250-burst fuel tank. Its other finite magazines retain their 25% bonus, rounded up. Direct damage 24 → 19.2, burn DPS 18 → 14.4; range, arc, armor and upgrades stay consistent.
 - Consume one fuel unit per fired burst, regardless of targets, particle count or quality. Refill purchased fuel at mission start. Automatic empty-weapon selection searches the next available advanced slot to the right, then the nearest usable lower slot; preserve the player's saved preference and shot cooldown.
 - Escort: all hostiles, including dormant reserves and bosses, must be defeated for early completion. A destroyed player, transport or relay loses before the victory check. Retain the 0.8-second effects delay and one-time stage reward.
 - Strike: six guided missiles maximum, 90 damage each (half the previous count and individual damage). Range, targeting, blast radius and warning remain. Auto missiles use their own unchanged 160-damage configuration.

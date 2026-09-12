@@ -3,8 +3,9 @@ import {ammoCapacity} from './skins';
 import {normalizeDifficulty} from './difficulty';
 export type LootKind='health'|'shield'|'laser'|'arc';
 export const DROP_CHANCE=1/3;
-export const AMMO_CAPS=WEAPONS.filter(w=>w.ammoSlot!==undefined).sort((a,b)=>a.ammoSlot!-b.ammoSlot!).map(w=>w.capacity!);
-export const ammoCaps=(skin:string)=>AMMO_CAPS.map(base=>ammoCapacity(skin,base));
+const AMMO_WEAPONS=WEAPONS.filter(w=>w.ammoSlot!==undefined).sort((a,b)=>a.ammoSlot!-b.ammoSlot!);
+export const AMMO_CAPS=AMMO_WEAPONS.map(w=>w.capacity!);
+export const ammoCaps=(skin:string)=>AMMO_WEAPONS.map(w=>ammoCapacity(skin,w.capacity!,w.flame));
 export function salvageReward(roll:number,difficulty:string,level:number):{kind:LootKind;amount:number}{
  const kind:LootKind=roll<.35?'health':roll<.55?'shield':roll<.80?'laser':'arc';
  const tier=normalizeDifficulty(difficulty)??'normal';

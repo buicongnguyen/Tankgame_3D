@@ -228,7 +228,7 @@ All nine weapons have individual upgrades from level 0 to **20**. The shop also 
 | 6 | Machine gun | 280 CR | Two simultaneous rounds; four at weapon level 10; unlimited |
 | 7 | Micro missiles | 340 CR | Smaller, faster missiles; 60 base direct damage, 3.5 m splash; unlimited |
 | 8 | Triple arc launcher | 720 CR | Three rockets per trigger; **3 volleys per mission**; 180 base damage per rocket, 5.5 m blast each |
-| 9 | Flamethrower | 600 CR | 200 bursts per mission; 12 m, 70° cone; 19.2 base burst damage and a 2-second burn |
+| 9 | Flamethrower | 800 CR | 100 bursts per mission; 12 m, 70° cone; 19.2 base burst damage and a 2-second burn |
 
 Missile blasts hit nearby destructible cover using the object's footprint, so building edges and individual concrete panels take damage. Fuel can chain-react. Hills and other indestructible terrain remain intact. Blast damage still affects both sides. Triple-arc landing circles show the three impact areas; ordinary arc-ammo crates do not refill this special launcher. It refills on the next mission or retry. The existing Blender rocket model supplies fins, nose, exhaust and smoke for all missile sizes, with capped effects in Low detail.
 
@@ -260,7 +260,7 @@ Regular enemy tanks now have distinct health tiers: raiders 110 HP, sentries 150
 
 ## Flamethrower and Easy hull
 
-The ninth weapon is a close-range flamethrower with a broad 70° cone reaching 12 m. Buy it for 600 CR, upgrade it through level 20, and select **9 / Numpad 9** or **Switch Gun**. Flames damage multiple exposed enemies and leave a short burn. Trees and fuel can ignite; solid cover blocks fire. The effect uses Blender-authored flame tongues with bounded instancing in both graphics tiers.
+The ninth weapon is a close-range flamethrower with a broad 70° cone reaching 12 m. Buy it for 800 CR, upgrade it through level 20, and select **9 / Numpad 9** or **Switch Gun**. Flames damage multiple exposed enemies and leave a short burn. Trees and fuel can ignite; solid cover blocks fire. The effect uses Blender-authored flame tongues with bounded instancing in both graphics tiers.
 
 Easy now gives **+200% player hull**, or **720 HP** before armor upgrades. Normal, Hard and Crazy keep their existing player hull and enemy counts. See [the design and validation notes](docs/FLAMETHROWER_AND_EASY_MODE.md).
 
@@ -273,10 +273,10 @@ Transports start with **1,040 HP**, four times their previous hull, on every dif
 
 The compact **Strike** and **Drop** buttons act immediately. They share the existing radio cooldown. **Auto / E** replaces the repair finder; green repair crosses remain on the minimap. Buy a **40 CR pack of six Auto missiles** for the next deployment. Each press launches one vehicle-seeking missile within **42 m**, with **160 base damage**, a **3.5 m blast** and a **1.6 s** launch interval. It targets jeeps, tanks and bosses, including airborne bosses, and flies over cover. No eligible target means no ammo spent. The pack persists through shopping and pre-deployment reloads; unused rounds expire when that sortie ends, restarts or is abandoned. Pausing and graphics changes retain ammunition.
 
-Four Blender-painted specialist skins add colored stars: **Verdant Bastion** (green, 6 s shield), **Cobalt Sprint** (blue, +30% speed), **Ruby Lance** (red, +30% damage), and **Quartermaster** (violet, +25% finite ammo rounded up). Quartermaster carries **15 laser shots, 8 arc rockets, 4 Triple Arc volleys, 8 Auto missiles and 250 flamethrower bursts** when those weapons/pack are purchased. Unlimited guns stay unlimited. Weapon refills obey the increased caps.
+Four Blender-painted specialist skins add colored stars: **Verdant Bastion** (green, 6 s shield), **Cobalt Sprint** (blue, +30% speed), **Ruby Lance** (red, +30% damage), and **Quartermaster** (violet, 250 flame bursts and +25% to other finite ammo, rounded up). Quartermaster carries **15 laser shots, 8 arc rockets, 4 Triple Arc volleys, 8 Auto missiles and 250 flamethrower bursts** when those weapons/pack are purchased. Unlimited guns stay unlimited. Weapon refills obey the increased caps.
 
 **Storm Kite** debuts in White Horizon level 3 and joins later Crazy reinforcements. Its four rotors, missile pods and light gun are authored in Blender. A two-second warning marks its three-missile pincer; move out of the circles, then attack its exposed core when it lands. Detailed / Low models use **2,496 / 742 triangles**.
 
 The shop uses icon-led rows, coin-and-price buttons with accessible labels, expandable weapon details and smaller skin previews. See [design, balance and verification](docs/AUTO_SUPPORT_AND_QUADCOPTER_PLAN.md).
 
-Strike has a saved charge bank: **two charges on first deployment into each new background**, with unused charges carried forward. Level changes, retries, previews and revisits do not refill the bank. Each accepted call spends one charge and fires at most **six missiles at 90 base damage each**; rejected calls spend nothing. Drop keeps its separate per-mission allowance and shares the radio cooldown. The flamethrower costs **600 CR**, carries **200 bursts** (250 with Quartermaster), and deals **19.2 impact / 14.4 burn DPS**, both 20% below its previous output. The mobile mission card shows a small stage badge, one objective counter and a short boss warning.
+Strike has a saved charge bank: **two charges on first deployment into each new background**, with unused charges carried forward. Level changes, retries, previews and revisits do not refill the bank. Each accepted call spends one charge and fires at most **six missiles at 90 base damage each**; rejected calls spend nothing. Drop keeps its separate per-mission allowance and shares the radio cooldown. The flamethrower costs **800 CR**, carries **100 bursts** (250 with Quartermaster), and deals **19.2 impact / 14.4 burn DPS**, both 20% below its original output. The mobile mission card shows a small stage badge, one objective counter and a short boss warning.

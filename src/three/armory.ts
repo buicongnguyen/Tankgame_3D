@@ -10,7 +10,7 @@ export const WEAPONS:WeaponDefinition[]=[
  {name:'Multi-barrel machine gun',label:'MACHINE GUN',description:'Two rounds together. Four barrels unlock at weapon level 10.',price:280,damage:8,speed:62,reload:.28,splash:0},
  {name:'Micro missiles',label:'MICRO MISSILES',description:'Compact, fast missiles with a small splash. Unlimited ammo.',price:340,damage:60,speed:46,reload:.7,splash:3.5,rocket:true},
  {name:'Triple arc launcher',label:'TRIPLE ARC',description:'Three rockets together, over cover. Only 3 volleys per mission.',price:720,damage:180,speed:0,reload:3.2,splash:5.5,ammoSlot:2,capacity:3,rocket:true,arc:true},
- {name:'Flamethrower',label:'FLAMETHROWER',description:'12 m / 70° cone. Heavy close-range fire + 2s burn. Cover blocks flames. 200 bursts per mission.',price:600,damage:19.2,speed:0,reload:.12,splash:0,flame:true,ammoSlot:3,capacity:200},
+ {name:'Flamethrower',label:'FLAMETHROWER',description:'12 m / 70° cone. Heavy close-range fire + 2s burn. Cover blocks flames. 100 bursts per mission; Quartermaster: 250.',price:800,damage:19.2,speed:0,reload:.12,splash:0,flame:true,ammoSlot:3,capacity:100},
 ];
 const level=(n:number|undefined)=>clamp(n??0,0,UPGRADE_CAP);
 export const weaponLevel=(save:Save,id:number)=>level(save.weaponLevels?.[id]);
