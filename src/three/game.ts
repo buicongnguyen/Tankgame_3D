@@ -134,7 +134,7 @@ export class Game {
   menuAction(action:string,value?:string){
     if(this.qualityChanging)return;
     if(action==='hangar'&&this.phase==='menu'){this.shopReturn='menu';this.shopTab='skins';this.showShop();}
-    if(action==='shop-tab'&&this.phase==='depot'&&(value==='skins'||value==='equipment')){this.shopTab=value;this.showShop();}
+    if(action==='shop-tab'&&this.phase==='depot'&&(value==='skins'||value==='equipment')){this.shopTab=value;this.overlay.scrollTop=0;this.showShop();}
     if(action==='skin-buy'&&this.phase==='depot'&&buySkin(this.save,value??'')){this.persist();this.world.applySkin(this.player.visual.root,this.save.skin);this.showShop();}
     if(action==='skin-equip'&&this.phase==='depot'&&this.save.skins.includes(value??'')){this.save.skin=value!;this.persist();this.world.applySkin(this.player.visual.root,this.save.skin);this.showShop();}
 
@@ -532,7 +532,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   }
   showShop(){
     const focus=this.overlay.querySelector<HTMLButtonElement>(':focus'),action=focus?.dataset.action,value=focus?.dataset.value;
-    const scroll=this.overlay.querySelector('.depot-panel')&&action!=='shop-tab'?this.overlay.scrollTop:0;
+    const scroll=this.overlay.querySelector('.depot-panel')?this.overlay.scrollTop:0;
     requestAnimationFrame(()=>{const target=action&&action!=='shop-tab'?this.overlay.querySelector<HTMLButtonElement>(`[data-action="${action}"]${value?`[data-value="${value}"]`:''}`):null;(target&&!target.disabled?target:this.overlay.querySelector<HTMLButtonElement>('.shop-tabs button'))?.focus({preventScroll:true});this.overlay.scrollTop=scroll;});
     this.setPhase('depot');
     if(this.shopTab==='skins'){this.showSkins();return;}

@@ -31,4 +31,4 @@
 - Save migration defaults old profiles to no queued pack. Pack consumption occurs only in `start`, never in preview `prepare`; pause and quality swaps keep runtime ammo. Pack purchase is bounded, and no-target Auto calls spend nothing.
 - Vehicle-only homing, retargeting, allied blast protection, magazine refill caps, nearest-left fallback, all ten bosses' light guns, safe Crazy spawns and every escort variation were checked locally. Existing shield/transport behavior remains covered.
 - Shop review removed a redundant detail row, repaired missing weapon icon paths and reset initial shop scroll. Purchases retain their scroll position. Desktop and 320/390/844 px shop controls pass; seven portrait/landscape mobile sizes preserve 44 px action targets without overlaps.
-- TypeScript/Vite build and asset checks pass. Full release workflow runs 304 browser/logic checks, followed by Pages publication and isolated public desktop/mobile smoke checks.
+- TypeScript/Vite build and asset checks pass. Full release workflow runs 305 browser/logic checks, followed by Pages publication and isolated public desktop/mobile smoke checks.
