@@ -1,3 +1,4 @@
+import {GroundNavigation} from './navigation';
 import {MISSIONS} from './campaign';
 import * as T from 'three';
 import type {Game,Unit} from './game';
@@ -22,15 +23,16 @@ const isMissile=(kind:BossKind):kind is MissileBoss=>['missile','helicopter','si
 const isMech=(kind:BossKind)=>kind==='quad-mech'||kind==='siege-mech';
 interface State{auxTime:number;auxRound?:number;rounds?:number;launches?:T.Vector3[];phase:'tracking'|'charging'|'exposed'|'landing'|'firing';time:number;burst?:number;landing?:Point;heading:number;targets:Point[];markers:T.Mesh[];rockets:T.Mesh[];}
 export class BossCombat{
+ navigation=new Map<number,GroundNavigation>();
  states=new Map<Unit,State>();
  cancel(unit:Unit){const state=this.states.get(unit);if(state)for(const r of state.rockets)r.removeFromParent();if(state)for(const m of state.markers){m.removeFromParent();m.geometry.dispose();(m.material as T.Material).dispose();}unit.visual.beam.visible=false;this.states.delete(unit);}
- clear(){for(const u of [...this.states.keys()])this.cancel(u);}
+ clear(){for(const u of [...this.states.keys()])this.cancel(u);this.navigation.clear();}
  multiplier(unit:Unit){return this.states.get(unit)?.phase==='exposed'?1.75:.65;}
  status(unit:Unit){const phase=this.states.get(unit)?.phase;if(unit.bossKind==='helicopter'&&unit.visual.root.position.y>2)return phase==='landing'?'LANDING':phase==='charging'?'ROCKETS INBOUND':'AIRBORNE · LASER / ARC';return phase==='firing'?(unit.bossKind==='quad-mech'?'FOUR-GUN BURST':'LASER BURST'):phase==='charging'?'ATTACK INBOUND':phase==='exposed'?'CORE EXPOSED':'ARMORED';}
  update(g:Game,u:Unit,dt:number){
   if(u.dead||dt<=0||g.phase!=='playing')return;
   const kind=u.bossKind??bossKind(g.mission),cfg=BOSS[kind],p=u.visual.root.position,target=g.player.visual.root.position;
-  let s=this.states.get(u);if(!s){s={auxTime:1.1,phase:'tracking',time:2.2+g.enemies.indexOf(u)%4*.55,heading:u.aim,targets:[],markers:[],rockets:[]};this.states.set(u,s);}
+  let s=this.states.get(u);if(!s){s={auxTime:.7,phase:'tracking',time:2.2+g.enemies.indexOf(u)%4*.55,heading:u.aim,targets:[],markers:[],rockets:[]};this.states.set(u,s);}
   const core=u.visual.root.getObjectByName('Core');if(core)core.visible=s.phase==='exposed';u.visual.beam.visible=false;u.visual.root.userData.walking=false;
   if(kind==='helicopter'){const rotor=u.visual.root.getObjectByName('Rotor'),tail=u.visual.root.getObjectByName('TailRotor');if(rotor)rotor.rotation.y+=dt*(s.phase==='exposed'?5:28);if(tail)tail.rotation.x+=dt*35;}
   if(s.phase==='tracking'){
@@ -39,13 +41,19 @@ export class BossCombat{
     if(!s.landing||dist>50&&distance(p,s.landing)<1||!this.freeLanding(g,u,s.landing))s.landing=this.landingPoint(g,u);this.fly(u,s.landing,6.5,dt);u.heading=turnToward(u.heading,aim,dt);
    }else if(dist>24||kind==='walker'||kind==='spider'||isMech(kind)){
     if(kind==='spider'&&s.time<=0)s.landing??=this.landingPoint(g,u);
-    const seeking=kind==='spider'&&s.landing,march=seeking?Math.atan2(s.landing!.x-p.x,s.landing!.z-p.z):aim;
-    const forward=seeking?1:dist>24?1:dist<15?-.6:kind==='spider'?.7:isMech(kind)?.3:0,side=seeking?0:kind==='walker'||kind==='spider'?.6:0;
+    const seeking=kind==='spider'&&s.landing;
+    let detour:Point|null=null;
+    if(kind!=='spider'&&dist>24&&g.world.covers.some(c=>c.hp>0&&segmentBox(p,target,c,cfg.radius+.2)!==null)){
+     let navigation=this.navigation.get(cfg.radius);if(!navigation){navigation=new GroundNavigation(cfg.radius);this.navigation.set(cfg.radius,navigation);}
+     detour=navigation.next(g.world,p,target);
+    }
+    const march=seeking?Math.atan2(s.landing!.x-p.x,s.landing!.z-p.z):detour?Math.atan2(detour.x-p.x,detour.z-p.z):aim;
+    const forward=seeking?1:dist>24?1:dist<15?-.6:kind==='spider'?.7:isMech(kind)?.3:0,side=seeking||detour?0:kind==='walker'||kind==='spider'?.6:0;
     const dx=(Math.sin(march)*forward+Math.cos(march)*side)*2.3*dt,dz=(Math.cos(march)*forward-Math.sin(march)*side)*2.3*dt;
     if(kind==='spider')this.climb(g,u,dx,dz,dt);else g.moveUnit(u,dx,dz,dt);u.heading=turnToward(u.heading,aim,dt);
    }
-   if(kind==='spider'&&(p.y>.2||g.world.covers.some(c=>c.hp>0&&circleBox(p,g.unitRadius(u),c)))){s.time-=dt;g.syncVisual(u);this.legs(g,u,4);return;}
-   if(dist>52){g.syncVisual(u);return;}s.time-=dt;
+   if(kind==='spider'&&(p.y>.2||g.world.covers.some(c=>c.hp>0&&circleBox(p,g.unitRadius(u),c)))){s.time-=dt;g.syncVisual(u);this.legs(g,u,4);this.secondary(g,u,s,dt);return;}
+   if(dist>52){g.syncVisual(u);this.secondary(g,u,s,dt);return;}s.time-=dt;
    if(s.time<=0){if(kind==='spider')s.landing=undefined;s.phase='charging';s.time=cfg.charge;s.heading=aim;u.aim=aim;s.targets=isMissile(kind)?(kind==='siege-mech'||kind==='missile-truck'?[-1,1]:[-1,0,1]).map(side=>({x:clamp(target.x+side*BOSS[kind].targetSpread*(kind==='siege-mech'||kind==='missile-truck'?Math.cos(aim):1),-BOUNDS.x,BOUNDS.x),z:clamp(target.z+(kind==='siege-mech'||kind==='missile-truck'?-Math.sin(aim)*side*BOSS[kind].targetSpread:side===0?3:-2),-BOUNDS.z,BOUNDS.z)})):[];
     s.launches=[];for(const [index,t] of s.targets.entries()){const radius=isMissile(kind)?BOSS[kind].blastRadius:0;const marker=new T.Mesh(new T.RingGeometry(radius-.2,radius,48),new T.MeshBasicMaterial({color:0xff6655,transparent:true,opacity:.8,side:T.DoubleSide}));marker.rotation.x=-Math.PI/2;marker.position.set(t.x,.18,t.z);marker.renderOrder=2;(marker.material as T.Material).depthWrite=false;g.world.entities.add(marker);s.markers.push(marker);const rocket=g.world.rocket();rocket.visible=false;rocket.rotation.x=Math.PI/2;rocket.position.set(t.x,28,t.z);g.world.entities.add(rocket);s.rockets.push(rocket);const launch=u.visual.root.getObjectByName('LaunchMuzzle'+index);u.visual.root.updateMatrixWorld(true);s.launches.push(launch?launch.getWorldPosition(new T.Vector3()):p.clone());}
    }
@@ -88,10 +96,11 @@ export class BossCombat{
 
  }
  secondary(g:Game,u:Unit,s:State,dt:number){
-  const gun=u.visual.root.getObjectByName('LightGun');if(!gun||s.phase!=='tracking')return;
+  const gun=u.visual.root.getObjectByName('LightGun');if(!gun)return;
   const p=u.visual.root.position,target=g.player.visual.root.position,aim=Math.atan2(target.x-p.x,target.z-p.z);gun.rotation.y=aim-u.aim;
-  if(distance(p,target)>36||g.world.covers.some(c=>c.hp>0&&segmentBox(p,target,c,.1)!==null))return;
-  s.auxTime-=dt;if(s.auxTime<=0){s.auxTime=1.1;const siege=u.bossKind==='siege-mech',muzzle=siege&&(s.auxRound??0)%2?'GunMuzzle0':'LightMuzzle';s.auxRound=(s.auxRound??0)+1;g.bossRound(u,aim,siege?8:6,muzzle);}
+  if(g.player.dead||distance(p,target)>42||g.world.covers.some(c=>c.hp>0&&segmentBox(p,target,c,.1)!==null)){s.auxTime=Math.max(s.auxTime,.35);return;}
+  s.auxTime-=dt;
+  if(s.auxTime<=0){s.auxTime=Math.max(0,s.auxTime)+.32;g.syncVisual(u);g.bossRound(u,aim,3,'LightMuzzle',44);s.auxRound=(s.auxRound??0)+1;if(u.bossKind==='siege-mech'&&s.auxRound%7===0)g.bossRound(u,aim,8,'GunMuzzle0');}
  }
  legs(g:Game,u:Unit,count:number){for(let i=0;i<count;i++)for(const side of ['L','R']){const leg=u.visual.root.getObjectByName('Leg'+i+side);if(leg)leg.rotation.z=u.visual.root.userData.walking?Math.sin(g.elapsed*6+i*2+(side==='L'?0:Math.PI))*.18:0;}}
  freeLanding(g:Game,u:Unit,p:Point){const r=g.unitRadius(u),reserved=[...this.states].some(([other,state])=>other!==u&&!other.dead&&state.landing&&distance(p,state.landing)<r+g.unitRadius(other)+.5);return !reserved&&Math.abs(p.x)<BOUNDS.x-r&&Math.abs(p.z)<BOUNDS.z-r&&!g.world.covers.some(c=>c.hp>0&&circleBox(p,r,c))&&[g.player,...g.enemies].every(e=>e===u||e.dead||g.airborne(e)||distance(p,e.visual.root.position)>r+g.unitRadius(e)+.5)&&(!g.convoy||distance(p,g.convoy.position)>r+2.5);}

@@ -1,7 +1,7 @@
 import {mode} from './difficulty';
 import {crewMaterial,packCrewSurfaces} from './crew-material';
+import {buildRouteScenery} from './route-scenery';
 import {buildGuardLandmarks} from './enemy-posts';
-import {roadVertices} from './road-geometry';
 import {stageLayout,overlapsReservation,roadDistance,projectRoute,routeSample} from './stage-layout';
 import {terrainAt,terrainSpeed} from './terrain';
 import {groundTexture} from './frontier-surfaces';
@@ -20,7 +20,7 @@ import { CombatEffects } from './effects';
 import { BOUNDS, buildActivities } from './activities';
 import type { Activity } from './activities';
 export interface TankVisual { root: T.Group; hull: T.Object3D; turret: T.Object3D; muzzle: T.Object3D; bar: T.Mesh; beam: T.Mesh; }
-export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; natural?:boolean; boundary?:boolean; section?: {parts:T.InstancedMesh[];index:number;wall:object}; }
+export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; natural?:boolean; boundary?:boolean; scenery?:{parts:T.InstancedMesh[];index:number;maxHP:number}; section?: {parts:T.InstancedMesh[];index:number;wall:object}; }
 interface Effect { mesh: T.Mesh; life: number; max: number; velocity: T.Vector3; }
 const scratch = new T.Vector3();
 export class World {
@@ -36,8 +36,9 @@ export class World {
   templates = new Map<string, T.Group>();
   private modelPacks = new Map<boolean, Map<string, T.Group>>();
   covers: Cover[] = [];
+  missionKind='assault';
   layout=stageLayout(0);navigationRevision=0;loopReverse=false;
-  firmRoad(p:Box|{x:number;z:number}){return ['snow','glacier','desert','marsh'].includes(this.environment.biome)&&roadDistance(this.layout.points,p)<=4;}
+  firmRoad(p:Box|{x:number;z:number}){return this.missionKind==='escort'&&['snow','glacier','desert','marsh'].includes(this.environment.biome)&&roadDistance(this.layout.points,p)<=3.2;}
   terrainKind(p:{x:number;z:number}){return this.firmRoad(p)?undefined:terrainAt(this.environment.biome,p);}
   groundSpeed(p:{x:number;z:number}){return this.firmRoad(p)?1:terrainSpeed(this.environment.biome,p.x,p.z);}
   effects: Effect[] = [];
@@ -209,7 +210,7 @@ export class World {
     }
   }
   build(index:number,kind:string,level=0,difficulty='normal') {
-    this.clear();this.navigationRevision++;this.layout=stageLayout(index,level,kind,difficulty);
+    this.clear();this.missionKind=kind;this.navigationRevision++;this.layout=stageLayout(index,level,kind,difficulty);
     const frontier=GROUND_COLORS[BIOMES[index]]!==undefined;
     const ground=this.box(frontier?184:164,.7,frontier?164:144,GROUND_COLORS[BIOMES[index]]??(BIOMES[index]==='snow'?0xc6d5d5:index===3?0x74776c:0xa69c78),0,-.4,0);ground.castShadow=false;if(GROUND_COLORS[BIOMES[index]]!==undefined)(ground.material as T.MeshStandardMaterial).map=groundTexture(BIOMES[index]);
     // Winter snow replaces dirt detail; nearly coplanar patches underneath can shimmer.
@@ -240,7 +241,7 @@ export class World {
     // Extraction pylons frame the road.
     const previous=this.layout.points.at(-2)!,angle=Math.atan2(exit.x-previous.x,exit.z-previous.z);
     for(const side of [-4,4]){const x=exit.x+Math.cos(angle)*side,z=exit.z-Math.sin(angle)*side;this.box(.45,3.2,.45,0x3e5751,x,1.6,z);this.box(.65,.2,.65,0x98f3bf,x,3.3,z);}
-    this.environment.build(this,index);buildGuardLandmarks(this,kind);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
+    this.environment.build(this,index);buildRouteScenery(this);buildGuardLandmarks(this,kind);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
     this.target.set(0,0,0);
   }
   private naturalBarriers(){
@@ -279,24 +280,21 @@ export class World {
     });
   }
   updateConcrete(cover:Cover){
-    if(!cover.section)return;const {parts,index}=cover.section;
+    const placement=cover.section??cover.scenery;if(!placement)return;const {parts,index}=placement;
     for(const part of parts){
       if(cover.hp<=0){part.setMatrixAt(index,new T.Matrix4().makeScale(0,0,0));part.instanceMatrix.needsUpdate=true;}
-      else{part.setColorAt(index,new T.Color().setScalar(.45+.55*cover.hp/176));if(part.instanceColor)part.instanceColor.needsUpdate=true;}
+      else{part.setColorAt(index,new T.Color().setScalar(.45+.55*cover.hp/(cover.scenery?.maxHP??176)));if(part.instanceColor)part.instanceColor.needsUpdate=true;}
     }
   }
   private buildRoad(kind:string){
-    const vertices=roadVertices(this.layout.points,this.layout.rotation);
-    const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();
-    const color=this.environment.biome==='city'?0x465358:['snow','glacier'].includes(this.environment.biome)?0x90a6aa:this.environment.biome==='desert'?0xbea176:0x777762;
-    const road=new T.Mesh(geometry,new T.MeshStandardMaterial({color,roughness:.97}));road.userData.owned=true;road.receiveShadow=true;road.name='StageRoad';this.arena.add(road);
     for(let i=1;i<this.layout.points.length;i++){
       const a=this.layout.points[i-1],b=this.layout.points[i],length=Math.hypot(b.x-a.x,b.z-a.z),angle=Math.atan2(b.x-a.x,b.z-a.z);
+      if(kind==='escort')for(const side of [-1,1]){const trace=this.box(.22,.008,length,0x9f9d82,(a.x+b.x)/2+Math.cos(angle)*side*.7,.105,(a.z+b.z)/2-Math.sin(angle)*side*.7);trace.name='ConvoyWheelTrace';trace.rotation.y=angle;trace.castShadow=false;}
       for(let d=6;d<length-2;d+=12){const x=a.x+(b.x-a.x)*d/length,z=a.z+(b.z-a.z)*d/length;
         if(this.layout.closed){const mark=this.box(.14,.012,1.15,0xd6c395,x,.12,z);mark.rotation.y=angle;mark.castShadow=false;}else for(const side of [-1,1]){const mark=this.box(.12,.012,.95,0xd6c395,x+Math.cos(angle)*side*.28,.12,z-Math.sin(angle)*side*.28);mark.rotation.y=angle-side*.65;mark.castShadow=false;}
       }
     }
-    if(kind==='defense')road.material.color.multiplyScalar(.9);
+
   }
   settings(low:boolean){this.scene.environment=low?null:this.studioEnvironment;this.low=low;this.fx.low=low;this.renderer.shadowMap.enabled=!low;document.body.dataset.graphics=low?'low':'detailed';this.resize();}
   resize(){const w=window.innerWidth,h=window.innerHeight;this.renderer.setPixelRatio(this.low?Math.min(devicePixelRatio,.8,960/Math.max(w,h)):Math.min(devicePixelRatio,1.6));this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}

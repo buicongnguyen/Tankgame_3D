@@ -37,9 +37,9 @@
   },
   {
     "asset": "boss-quad-mech",
-    "detailedTriangles": 2164,
-    "lowTriangles": 638,
-    "bytes": 63260
+    "detailedTriangles": 2228,
+    "lowTriangles": 657,
+    "bytes": 66544
   },
   {
     "asset": "boss-rail",

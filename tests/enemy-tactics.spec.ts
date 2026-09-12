@@ -42,10 +42,10 @@ test('campaign patrols use nearby landmarks while preserving clear spawn footpri
 });
 
 
-test('capture reinforcements advance on the relay and waiting defense units react to visible intruders',async({page})=>{
+test('capture attackers advance on the relay and defense reserves keep their wave schedule',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.start(1);g.enemies=[];g.world.covers=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,55);const e=g.defenseSpawn(0,'raider');g.enemies=[e];const before=Math.hypot(e.visual.root.position.x,e.visual.root.position.z+13);for(let i=0;i<120;i++){g.elapsed+=1/60;g.updateEnemies(1/60);}const after=Math.hypot(e.visual.root.position.x,e.visual.root.position.z+13),unseen=e.lastSeen===undefined;
-  g.start(3);g.world.covers=[];g.world.navigationRevision++;const later=g.enemies.find((e:any)=>e.encounter.wakeAt>0);const pos=later.visual.root.position;g.player.visual.root.position.set(pos.x*.88,0,pos.z*.88);g.updateEnemies(.01);return {advanced:after<before-3,unseen,early:later.encounter.active&&g.elapsed<later.encounter.wakeAt};
- });expect(r).toEqual({advanced:true,unseen:true,early:true});
+  g.start(3);g.world.covers=[];g.world.navigationRevision++;const later=g.enemies.find((e:any)=>e.encounter.wakeAt>0);const pos=later.visual.root.position;g.player.visual.root.position.set(pos.x*.88,0,pos.z*.88);g.updateEnemies(.01);return {advanced:after<before-3,unseen,scheduled:!later.encounter.active&&g.elapsed<later.encounter.wakeAt};
+ });expect(r).toEqual({advanced:true,unseen:true,scheduled:true});
 });
 
 for(const mobile of [false,true])test(`guard landmarks stay readable and preserve patrol state in Low detail on ${mobile?'mobile':'desktop'}`,async({browser})=>{

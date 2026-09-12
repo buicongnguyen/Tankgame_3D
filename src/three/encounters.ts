@@ -30,7 +30,7 @@ export class RouteEncounters {
   if(scan){this.revision=g.world.navigationRevision;this.scanAt=g.elapsed+.18;this.view={x:player.x,z:player.z};this.convoyView=g.convoy?{x:g.convoy.position.x,z:g.convoy.position.z}:undefined;}
   for(const u of g.enemies){const order=u.encounter;if(u.dead||!order||order.active)continue;
    // Timed defense waves still march from the perimeter, even before spotting Kestrel.
-   if(order.wakeAt!==undefined){if(g.elapsed>=order.wakeAt)order.active=true;else if(scan&&seesTarget(g,u,player))this.alert(g,u,player);continue;}
+   if(order.wakeAt!==undefined){if(g.elapsed>=order.wakeAt)order.active=true;continue;}
    if(!scan)continue;
    if(seesTarget(g,u,player))this.alert(g,u,player);
    else if(g.convoy&&seesTarget(g,u,g.convoy.position))this.alert(g,u,g.convoy.position);

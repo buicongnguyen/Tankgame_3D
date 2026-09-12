@@ -67,7 +67,7 @@ export function stageLayout(stage:number,level=0,kind='assault',difficulty='norm
  const mirror=level===1&&![10,13].includes(stage)?-1:1;
  const pattern=routePattern(stage,level),shape=pattern?.shape??'winding';
  const points=pattern?.points??approach(stage,level).map(([x,z])=>({x:x*mirror,z})),length=routeLength(points),rng=random(9127+stage*7919+level*104729);
- const corridors=points.slice(1).map((p,i)=>({a:points[i],b:p,width:10})),heading=Math.atan2(points[1].x-points[0].x,points[1].z-points[0].z);
+ const corridors=points.slice(1).map((p,i)=>({a:points[i],b:p,width:kind==='escort'?6.4:4.2})),heading=Math.atan2(points[1].x-points[0].x,points[1].z-points[0].z);
  const spawn=kind==='defense'?{x:-4,z:-3}:{x:points[0].x-Math.cos(heading)*4,z:points[0].z+Math.sin(heading)*4};
  const count=mode(difficulty).supplies,pool:SupplyKind[]=count===2?['repair',(['laser','arc','shield','health'] as SupplyKind[])[stage%4]]:['repair'];
  // Keep recovery early; shuffle the other kinds within deterministic route slots.
@@ -88,8 +88,8 @@ export function stageLayout(stage:number,level=0,kind='assault',difficulty='norm
   supplies.push({kind:pool[slot],...chosen,...(weapon?{guardGroup}:{})});access.push(connector(anchor,chosen,9));
  }
  const encounters=ENCOUNTER_FRACTIONS.map(f=>alongRoute(points,length*f));
- const reserved=[...access,{x:spawn.x,z:spawn.z,w:10,d:10},{x:0,z:-13,w:17,d:17},...encounters.map(p=>({x:p.x,z:p.z,w:23,d:23})),...supplies.map(s=>({x:s.x,z:s.z,w:9,d:9}))];
- if(kind==='defense')reserved.push({x:0,z:0,w:16,d:128});
+ const reserved=[...access,{x:spawn.x,z:spawn.z,w:10,d:10},{x:0,z:-13,w:17,d:17},...encounters.map(p=>({x:p.x,z:p.z,w:11,d:11})),...supplies.map(s=>({x:s.x,z:s.z,w:9,d:9}))];
+ if(kind==='defense')reserved.push({x:0,z:0,w:6.4,d:128});
  const reservation={reserved,corridors};
  const landforms:Landform[]=[],breaches:Box[][]=[],breachFootprints:Box[]=[];let terrainSlot=0;
  // City routes use buildings as their enclosing terrain, preserving dense urban blocks.

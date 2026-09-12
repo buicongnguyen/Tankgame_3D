@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(Path(__file__).parent))
 from asset_detail import material,box,cyl
+from boss_machine_gun import add_vanguard_gun
 
 def empty(name,parent=None,loc=(0,0,0)):
  o=bpy.data.objects.new(name,None);bpy.context.collection.objects.link(o);o.parent=parent;o.location=loc;return o
@@ -93,6 +94,7 @@ for kind in ['quad-mech','siege-mech','missile-truck']:
     cyl(arm,'Hand muzzle',(0,-2.02,-1.13),.26,.20,trim,(math.pi/2,0,0),12)
     cyl(arm,'Hand bore',(0,-2.126,-1.13),.15,.012,dark,(math.pi/2,0,0),12)
     empty('GunMuzzle0',arm,(0,-2.15,-1.13))
+  if kind=='quad-mech':add_vanguard_gun(turret)
   if kind=='siege-mech':light_gun(turret,(1.65,-.72,2.55),True)
   empty('Muzzle',turret,(0,-2.2,2.60))
  else:

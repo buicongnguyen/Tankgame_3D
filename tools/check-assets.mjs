@@ -17,7 +17,7 @@ for(const name of names){
   for(const mesh of json.meshes)for(const p of mesh.primitives)triangles+=(p.indices!==undefined?json.accessors[p.indices].count:json.accessors[p.attributes.POSITION].count)/3;
   assert.ok(triangles<(name==='tank'?12000:name.startsWith('boss-')?4500:3000));
   if(['tank','rifleman','rocketeer','scout-jeep'].includes(name)||name.startsWith('boss-'))for(const node of ['Hull','Turret','Muzzle'])assert.ok(json.nodes.some(n=>n.name===node),`Missing ${node}`);
-  if(name.startsWith('boss-')&&name!=='boss-quad-mech')for(const node of ['LightGun','LightMuzzle'])assert.ok(json.nodes.some(n=>n.name===node),`${name} missing ${node}`);
+  if(name.startsWith('boss-'))for(const node of ['LightGun','LightMuzzle'])assert.ok(json.nodes.some(n=>n.name===node),`${name} missing ${node}`);
   if(name==='boss-quad-mech')for(let i=0;i<4;i++)assert.ok(json.nodes.some(n=>n.name===`GunMuzzle${i}`));
   if(['boss-siege-mech','boss-missile-truck'].includes(name))for(let i=0;i<2;i++)assert.ok(json.nodes.some(n=>n.name===`LaunchMuzzle${i}`));
   const low=fs.readFileSync(`public/models/low/${name}.glb`);lowTotal+=low.length;

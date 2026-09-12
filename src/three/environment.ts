@@ -20,7 +20,7 @@ export class Environment{
    if(overlapsReservation(world.layout,{x,z,w,d}))return null;
    if(snow&&name==='pine')name='white-pine';const mesh=world.clone(name);mesh.position.set(x,0,z);world.arena.add(mesh);world.covers.push({kind:name,x,z,w,d,hp,mesh});return mesh;
   };
-  // The central road, original spawn footprints, relay and service pads remain reachable.
+  // Marked passages, spawn footprints, the relay and service pads remain reachable.
   for(const [x,z] of [[-14,41],[15,43],[-36,-37],[39,-24]])add('house',x,z,6,5,220);
   for(const [x,z] of [[-27,23],[29,23],[-38,-45],[37,-43]])add('stonewall',x,z,6,1.4,180);
   for(const [x,z] of [[-22,-32],[22,-34]])add('steelwall',x,z,6,1.1,Infinity);

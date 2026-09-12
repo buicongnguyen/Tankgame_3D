@@ -44,7 +44,7 @@ test('all 48 real layouts keep routes, supplies and spawns clear',async({page})=
  for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++){
   g.start(stage,level);const covers=g.world.covers.filter((c:any)=>c.hp>0),route=g.world.layout;
   for(const u of [g.player,...g.enemies])if(covers.some((c:any)=>circleBox(u.visual.root.position,g.unitRadius(u),c)))issues.push({stage,level,overlap:u.role});
-  for(let i=1;i<route.points.length;i++)for(const c of covers)if(segmentBox(route.points[i-1],route.points[i],c,2.3)!==null)issues.push({stage,level,blocked:c.kind,x:c.x,z:c.z});
+  for(let i=1;i<route.points.length;i++)for(const c of covers)if(segmentBox(route.points[i-1],route.points[i],c,g.convoy?2.3:g.unitRadius(g.player))!==null)issues.push({stage,level,blocked:c.kind,x:c.x,z:c.z});
   for(const a of g.world.activities.filter((a:any)=>a.kind!=='mine')){if(covers.some((c:any)=>circleBox(a,2.8,c)))issues.push({stage,level,pickup:a.kind});if(covers.some((c:any)=>['fuelcrate','barrel'].includes(c.kind)&&Math.hypot(c.x-a.x,c.z-a.z)<7))issues.push({stage,level,fuelNear:a.kind});}
   for(const mine of route.supplies.filter((s:any)=>s.kind==='mine'&&roadDistance(route.points,s)<4)){
    const p=routeSample(route.points,projectRoute(route.points,mine).progress),dodge={x:p.x-(mine.x-p.x)/1.8*3,z:p.z-(mine.z-p.z)/1.8*3};

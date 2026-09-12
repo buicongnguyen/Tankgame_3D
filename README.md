@@ -13,7 +13,7 @@ Lead Kestrel through sixteen stages, each with three levels (48 levels in total)
 - Polar ice carries momentum; desert sand traps reduce player and enemy speed to exactly one quarter.
 - Volcanic rocks warn for 2.6 seconds before landing and can damage either side, infantry and destructible cover.
 - Earthquakes warn before stopping ground tanks for 1.6 seconds, with rising dust; guns, infantry and airborne helicopters remain active.
-- Marsh water holes slow and visually sink tanks; periodic traction recovery lets them escape. Bridge and road routes preserve speed.
+- Marsh water holes slow and visually sink tanks; periodic traction recovery lets them escape. Bridges and narrow convoy wheel traces preserve speed.
 - Destructible cover, supply crates, explosive fuel drums and gasoline crates.
 - S, mirrored S, diagonal S, U and open O loops on 22 later levels. Every background starts with a direct route or short relay circuit, then uses progressively longer routes. O loops allow either direction during play. Most interior ridges become two or three rows of destructible concrete, with a few indestructible Blender hills and basalt landmarks remaining. See [O loops and boss reinforcements](docs/O_LOOPS_AND_BOSS_REINFORCEMENTS.md).
 - Cannon, unlockable autocannon and siege rockets, plus collectible pulse laser and arc rockets.
@@ -58,7 +58,7 @@ The browser tests use controlled integration fixtures for mission edge cases, al
 | --- | --- | --- |
 | Drive | WASD or arrow keys | Left stick |
 | Aim/fire | Mouse or I/J/K/L aim; hold click, Space or F to fire | Right stick |
-| Switch weapon | C opens selector; 1 / 2 / 3 / 4 / 5 selects directly | Tap Switch Gun, then choose a gun |
+| Switch weapon | C opens selector; 1–8 (including number pad) selects directly | Tap Switch Gun, then choose a gun |
 | Air support | R opens selector; then 1 barrage / 2 supply drop | Air Support button, then choose |
 | Protective shield | Q | Shield button |
 | Find repair center | E | Find Repair button |
@@ -81,7 +81,7 @@ Editable sources include `assets/blender/steel-front.blend` and `assets/blender/
 npm run test:assets
 ```
 
-Use your own Blender executable location on another machine. The 33 detailed exports total 3,991,144 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
+Use your own Blender executable location on another machine. The 33 detailed exports total 3,997,296 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
 
 ## Architecture and planning
 
@@ -130,7 +130,7 @@ Every level completion, including the chapter and campaign endings, offers **Sho
 
 Shop system upgrades have armor, damage, reload, engine and shield icons. Each destroyed tank has a 1-in-3 chance to leave a medical, shield, laser or arc-ammo crate near its wreck, subject to the mission loot limit. Later levels and harder modes reduce the allowance and payload. Infantry and jeeps do not generate tank salvage. These drops last for the sortie and do not purchase permanent weapon ownership.
 
-All defense missions start Kestrel near the uplink. Initial opposition starts in staggered perimeter waves, including finale bosses; reinforcements also spawn at map corners and approach the center; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, open Air Support with R (1 barrage / 2 supply), shield with Q and locate a repair center with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
+All defense missions start Kestrel near the uplink. Initial opposition starts in staggered perimeter waves, including finale bosses; four finite waves advance at 0, 4, 8 and 12 seconds and the mission ends when every hostile is defeated; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, open Air Support with R (1 barrage / 2 supply), shield with Q and locate a repair center with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
 
 Repair centers are large green circular service pads, marked with a green cross on the minimap. Drive within 3 m to restore up to 32 HP per second; starting capacity is 160 / 100 / 80 / 60 HP on Easy / Normal / Hard / Crazy, falling by 20 HP per sublevel to a minimum of 40. Medical cases dropped by tanks can also heal; houses and weapon boxes do not. E / Find Repair reports the nearest available center and never restores health remotely.
 
@@ -144,7 +144,7 @@ Effects reuse the existing shard geometry and a single small procedural texture.
 
 A completed objective starts a 0.8-second finish sequence: combat stops while destruction effects keep playing. The results screen then shows elapsed time, remaining hull, defeated tanks and soldiers, base reward, time bonus, hull bonus and total credits. Boss endings include the same breakdown and Shop access.
 
-On the first clear, the hull bonus is 25% of the base reward multiplied by remaining hull percentage. The time bonus is 25% of the base reward multiplied by the fraction of the target time saved, clamped to zero for a late finish. Both round to whole credits. Target times for operations 1-9 are 90, 90, 150, fixed timer, 120, 150, 120, 150, fixed timer seconds. Level-one targets for stages 10–16 are 110, 150, 180, fixed timer, 170, 140 and 190 seconds. Counterattack target times increase by 20%; Command battle targets increase by 60%. Per-level base rewards are 65%, 80% and 100% of the stage reward. Counterattack capture/defense durations also increase by 20%. Fixed-duration defense stages have no time bonus. Replays show performance but do not grant duplicate rewards. Credits and progression save when the objective completes, before the short visual delay.
+On the first clear, the hull bonus is 25% of the base reward multiplied by remaining hull percentage. The time bonus is 25% of the base reward multiplied by the fraction of the target time saved, clamped to zero for a late finish. Both round to whole credits. Target times for operations 1-9 are 90, 90, 150, fixed timer, 120, 150, 120, 150, fixed timer seconds. Level-one targets for stages 10–16 are 110, 150, 180, fixed timer, 170, 140 and 190 seconds. Counterattack target times increase by 20%; Command battle targets increase by 60%. Per-level base rewards are 65%, 80% and 100% of the stage reward. Counterattack capture durations also increase by 20%; defense missions use finite waves without a time limit. Defense stages retain their hull bonus but have no time bonus. Replays show performance but do not grant duplicate rewards. Credits and progression save when the objective completes, before the short visual delay.
 
 ## Blender tank skins
 
@@ -170,7 +170,7 @@ The generator writes five editable `assets/blender/skin-*.blend` files, transpar
 
 ## Purchased weapon selection
 
-The combat weapon panel always shows **Switch Gun**. Click or tap it to select a weapon, press **C** to open the same selector on PC, or use **1–8** directly. Buying a weapon sets it as the next mission's starting gun. Selecting an owned gun in combat remembers that choice for reloads, retries and later missions; temporary map pickups do not become permanent purchases. Owned lasers receive 12 shots and arc rockets 6 rounds each mission. An empty special weapon is labeled **Empty · next mission**, and its last shot returns to the cannon. Collect a cache or start the next mission to replenish it.
+The combat weapon panel always shows **Switch Gun**. Click or tap it to select a weapon, press **C** to open the same selector on PC, or use **1–8** directly. Buying a weapon sets it as the next mission's starting gun. Selecting an owned gun in combat remembers that choice for reloads, retries and later missions; temporary map pickups do not become permanent purchases. Owned lasers receive 12 shots and arc rockets 6 rounds each mission. An empty special weapon is labeled **Empty · next mission**, and its last shot selects the nearest usable weapon to its left. Collect a cache or start the next mission to replenish it.
 
 ## Arc rocket range assistance
 
@@ -180,7 +180,7 @@ Arc rockets now adapt their landing distance to live enemies in an 18-degree con
 
 The tank now has sloped armor, layered track shoes, wheel hubs, a gun mantlet and sleeve, optics, smoke launchers and engine louvres. Vehicles gain glazing, mirrors, grilles and cargo ribs; houses gain window frames, sills, roof seams, gutters and chimney details. Supplies, bosses, infantry and foliage have additional structural geometry. Metal, rubber, glass and paint use distinct PBR responses, with reflected studio lighting in normal mode and simplified lighting in low mode.
 
-The expanded 33-model kit uses 3,991,144 bytes, below its 4 MB detailed-tier budget. Runtime meshes are grouped by material within animated pivots; turrets, legs, muzzle/exhaust attachments and boss weak points remain independent. Five shop previews are rendered in Blender Eevee at 512 x 384. See [visual quality scope and rebuilding](docs/VISUAL_QUALITY.md). This is a more detailed browser art pass, not a claim of full AAA photorealism.
+The expanded 33-model kit uses 3,997,296 bytes, below its 4 MB detailed-tier budget. Runtime meshes are grouped by material within animated pivots; turrets, legs, muzzle/exhaust attachments and boss weak points remain independent. Five shop previews are rendered in Blender Eevee at 512 x 384. See [visual quality scope and rebuilding](docs/VISUAL_QUALITY.md). This is a more detailed browser art pass, not a claim of full AAA photorealism.
 
 ## Winter wreck stability and infantry contact
 
@@ -243,3 +243,11 @@ Five new Blender skins add vivid stripes and one through five stars: Rally Comet
 Desktop has a compact **1–8 weapon bar**, with both top-row and number-pad shortcuts. Touch keeps the larger gun picker. Empty advanced weapons switch to the nearest usable weapon on their left, skipping empty/unowned slots, while preserving the preferred loadout for the next mission.
 
 Design and checks: [Tactical supplies, skins and boundaries](docs/TACTICAL_SUPPLIES_SKINS_AND_BOUNDARIES.md).
+
+## Natural battlefields and continuous boss guns
+
+All nine bosses now fire a separate 3-damage machine gun about three times per second while charging, firing and recovering from their special attacks. Cover blocks this gun; heavy-weapon warnings and exposed cores remain. The Vanguard includes a new Blender-authored light-gun mount in both graphics tiers.
+
+Defeat every remaining hostile to finish a non-escort mission from anywhere, followed by the existing 0.8-second effects delay and results/shop screen. Dormant waves count as remaining enemies. Escort missions still require guiding the transport through the signs to extraction. Uplink defense sends four finite perimeter waves, starting immediately and releasing every four seconds; there is no timer victory while attackers remain. Capture missions retain their ring-holding objective.
+
+Broad painted roads are replaced by amber direction signs, narrow traversable passages and additional destructible groves, buildings, crates and fuel drums. Escort routes retain two narrow wheel traces. New scenery reuses existing Blender models with instanced rendering, capped at 48 props per map (64 in jungle/marsh), and preserves local destruction when switching detail levels. See [implementation and verification plan](docs/NATURAL_BATTLEFIELDS_AND_UPLINK_WAVES.md).

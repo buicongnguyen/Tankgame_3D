@@ -46,7 +46,7 @@ test('campaign escort completion and defense failure, retry and success',async({
   await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)e.dead=true;const end=g.world.layout.points.at(-1);g.convoyDistance=g.world.layout.length-.01;g.convoy.position.set(end.x,0,end.z-.01*Math.sign(end.z));g.player.visual.root.position.set(end.x+4,0,end.z);g.step(.1);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
   await page.evaluate(()=>{const g=(window as any).__steel;g.start(3);g.elapsed=44.99;g.relayHealth=0;g.step(.02);});await expect(page.getByRole('heading',{name:'We go again.'})).toBeVisible();
   await page.getByRole('button',{name:/RETRY LONG NIGHT/}).click();expect(await page.evaluate(()=>(window as any).__steel.relayHealth)).toBe(300);
-  await page.evaluate(()=>{const g=(window as any).__steel;g.elapsed=44.99;g.step(.02);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
+  await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)g.damageUnit(e,999999,g.player.visual.root.position,true);g.step(.02);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
 });
 test('campaign siege completion and first chapter ending retain cleared stages',async({page})=>{
   await deployCheckpoint(page,4,2);
