@@ -47,5 +47,19 @@ test('winter ground marks remain visible through camera motion and bounded clean
 
 
 test('frontier instances switch detail and release only their own GPU resources',async({page})=>{
- await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const result=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};g.start(13);const instances=g.world.arena.children.filter((o:any)=>o.isInstancedMesh);let disposed=0,sharedDisposed=0;for(const o of instances){o.addEventListener('dispose',()=>disposed++);o.geometry.addEventListener('dispose',()=>sharedDisposed++);}const first=instances[0],matrix=Array.from(first.instanceMatrix.array),before=first.geometry.attributes.position.count,material=first.material;await g.world.load(true);g.world.settings(true);const switched=before>first.geometry.attributes.position.count&&first.material===material&&JSON.stringify(matrix)===JSON.stringify(Array.from(first.instanceMatrix.array))&&first.boundingSphere.radius>0;g.start(0);return {count:instances.length,disposed,sharedDisposed,switched};});expect(result.count).toBeGreaterThan(0);expect(result.switched).toBe(true);expect(result.disposed).toBe(result.count);expect(result.sharedDisposed).toBe(0);
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const result=await page.evaluate(async()=>{
+  const g=(window as any).__steel;g.frame=()=>{};g.start(13,2);
+  const instances:any[]=[];g.world.arena.traverse((o:any)=>{if(o.isInstancedMesh)instances.push(o);});
+  const shared=instances.filter(o=>o.userData.modelAsset),owned=instances.filter(o=>o.userData.owned);
+  let disposed=0,sharedDisposed=0,ownedGeometryDisposed=0,ownedMaterialDisposed=0;
+  for(const o of instances)o.addEventListener('dispose',()=>disposed++);
+  for(const geometry of new Set(shared.map(o=>o.geometry)))geometry.addEventListener('dispose',()=>sharedDisposed++);
+  for(const o of owned){o.geometry.addEventListener('dispose',()=>ownedGeometryDisposed++);o.material.addEventListener('dispose',()=>ownedMaterialDisposed++);}
+  const snapshots=shared.map(o=>({o,matrix:JSON.stringify(Array.from(o.instanceMatrix.array)),vertices:o.geometry.attributes.position.count,material:o.material}));
+  const boundary=owned.find(o=>o.name==='SolidRockBoundary'),geometry=boundary.geometry,material=boundary.material,matrix=JSON.stringify(Array.from(boundary.instanceMatrix.array));
+  await g.world.load(true);g.world.settings(true);
+  const switched=snapshots.some(s=>s.vertices>s.o.geometry.attributes.position.count)&&snapshots.every(s=>s.o.material===s.material&&s.matrix===JSON.stringify(Array.from(s.o.instanceMatrix.array))&&s.o.boundingSphere.radius>0);
+  const rockStable=boundary.geometry===geometry&&boundary.material===material&&matrix===JSON.stringify(Array.from(boundary.instanceMatrix.array));
+  g.start(0);return {count:instances.length,shared:shared.length,owned:owned.length,disposed,sharedDisposed,ownedGeometryDisposed,ownedMaterialDisposed,switched,rockStable};
+ });expect(result.shared).toBeGreaterThan(0);expect(result.owned).toBe(1);expect(result.switched&&result.rockStable).toBe(true);expect(result.disposed).toBe(result.count);expect(result.sharedDisposed).toBe(0);expect(result.ownedGeometryDisposed).toBe(1);expect(result.ownedMaterialDisposed).toBe(1);
 });
