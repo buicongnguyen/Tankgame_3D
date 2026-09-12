@@ -79,6 +79,11 @@ export function buildFrontier(world:World,biome:Biome){
  }
  // More explosive opportunities without burying service pads or the central route.
  for(let i=0;i<180&&world.covers.filter(c=>c.kind==='fuelcrate').length<14;i++)add('fuelcrate',(i%2?1:-1)*(20+i*13%43),-48+i*19%96,2.2,1.55,35);
+ // Wide routes and natural ridges can displace the original fuel candidates.
+ fuelFallback:for(let x=-62;x<=62;x+=8)for(let z=-50;z<=50;z+=10){
+  if(world.covers.filter(c=>c.kind==='fuelcrate').length>=14)break fuelFallback;
+  add('fuelcrate',x,z,2.2,1.55,35);
+ }
  // Native points are cheap decoration and completely disabled by Low detail.
  if(biome==='glacier'||biome==='volcanic'||biome==='jungle'){
   const positions=new Float32Array(80*3);for(let i=0;i<80;i++){positions[i*3]=Math.sin(i*17)*72;positions[i*3+1]=i*7%26+2;positions[i*3+2]=Math.cos(i*13)*60;}

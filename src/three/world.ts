@@ -14,7 +14,7 @@ import { CombatEffects } from './effects';
 import { BOUNDS, buildActivities } from './activities';
 import type { Activity } from './activities';
 export interface TankVisual { root: T.Group; hull: T.Object3D; turret: T.Object3D; muzzle: T.Object3D; bar: T.Mesh; beam: T.Mesh; }
-export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; section?: {parts:T.InstancedMesh[];index:number}; }
+export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; natural?:boolean; section?: {parts:T.InstancedMesh[];index:number}; }
 interface Effect { mesh: T.Mesh; life: number; max: number; velocity: T.Vector3; }
 const scratch = new T.Vector3();
 export class World {
@@ -219,6 +219,7 @@ export class World {
       this.arena.add(mesh);this.covers.push({x,z,w:kind==='barricade'?6.4:kind==='crate'?1.3:1,d:kind==='barricade'?1.8:kind==='crate'?1.3:1,kind,hp:kind==='barricade'?176:kind==='crate'?55:25,mesh});
     }
     for(const [x,z] of [[-20,9],[24,-8],[-41,-32],[39,22]]){if(overlapsReservation(this.layout,{x,z,w:2.2,d:1.55})||this.layout.supplies.some(p=>Math.hypot(x-p.x,z-p.z)<9))continue;const mesh=this.clone('fuelcrate');mesh.position.set(x,0,z);this.arena.add(mesh);this.covers.push({x,z,w:2.2,d:1.55,kind:'fuelcrate',hp:35,mesh});}
+    this.naturalBarriers();
     for(const barrier of this.layout.barriers)this.concreteBarrier(barrier);
     if(GROUND_COLORS[BIOMES[index]]!==undefined)frontierBoundary(this,BIOMES[index]);
     else {
@@ -239,6 +240,19 @@ export class World {
     for(const side of [-4,4]){const x=exit.x+Math.cos(angle)*side,z=exit.z-Math.sin(angle)*side;this.box(.45,3.2,.45,0x3e5751,x,1.6,z);this.box(.65,.2,.65,0x98f3bf,x,3.3,z);}
     this.environment.build(this,index);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);
     this.target.set(0,0,0);
+  }
+  private naturalBarriers(){
+    for(const kind of ['hill','volcanic-rock'] as const){
+      const forms=this.layout.landforms.filter(p=>p.kind===kind);if(!forms.length)continue;
+      const template=this.templates.get(kind)!;template.updateMatrixWorld(true);
+      const root=new T.Group();root.name='RouteLandforms';this.arena.add(root);
+      template.traverse(o=>{if(!(o instanceof T.Mesh))return;
+        const instances=new T.InstancedMesh(o.geometry,o.material,forms.length);instances.userData={...o.userData};instances.castShadow=true;instances.receiveShadow=true;
+        forms.forEach((p,i)=>{const matrix=new T.Matrix4().makeScale(p.w/(kind==='hill'?14:2.6),(kind==='hill'?1:5)*(.9+i%3*.1),p.d/(kind==='hill'?10:2.2));matrix.setPosition(p.x,kind==='hill'?0:1.1,p.z);matrix.multiply(o.matrixWorld);instances.setMatrixAt(i,matrix);if(!Array.isArray(o.material)&&o.material.name==='Basalt')instances.setColorAt(i,new T.Color().setRGB(2.2,2.2,2.2));});
+        instances.computeBoundingSphere();root.add(instances);
+      });
+      for(const p of forms){const mesh=new T.Group();mesh.name='NaturalCover';mesh.position.set(p.x,0,p.z);this.arena.add(mesh);this.covers.push({...p,hp:Infinity,mesh,natural:true});}
+    }
   }
   private concreteBarrier(box:Box){
     const vertical=box.d>box.w,length=vertical?box.d:box.w,count=Math.ceil(length/6.4),width=length/count;

@@ -1,10 +1,13 @@
+import {routePattern,landformCandidates} from './route-patterns';
+import type {RouteShape} from './route-patterns';
 import {clamp,distance,segmentBox} from './rules';
 import {mode} from './difficulty';
 import type {Box,Point} from './rules';
 
 export type SupplyKind='repair'|'supply'|'mine'|'laser'|'arc'|'health'|'shield';
 export interface SupplyPosition extends Point {kind:SupplyKind;}
-export interface StageLayout {points:Point[];length:number;spawn:Point;heading:number;barriers:Box[];supplies:SupplyPosition[];reserved:Box[];encounters:Point[];southbound:boolean;direction:string;}
+export interface Landform extends Box {kind:'hill'|'volcanic-rock';}
+export interface StageLayout {shape:RouteShape;landforms:Landform[];points:Point[];length:number;spawn:Point;heading:number;barriers:Box[];supplies:SupplyPosition[];reserved:Box[];encounters:Point[];southbound:boolean;direction:string;}
 // Orthogonal bends keep the road and swept convoy footprint in agreement.
 const ROUTES:number[][][]=[
  [[0,48],[0,34],[-16,34],[-16,10],[16,10],[16,-18],[-12,-18],[-12,-42],[0,-42],[0,-50]],
@@ -39,7 +42,8 @@ function connector(a:Point,b:Point,padding=9):Box{return {x:(a.x+b.x)/2,z:(a.z+b
 const overlaps=(a:Box,b:Box)=>Math.abs(a.x-b.x)<(a.w+b.w)/2+.5&&Math.abs(a.z-b.z)<(a.d+b.d)/2+.5;
 export function stageLayout(stage:number,level=0,kind='assault',difficulty='normal'):StageLayout{
  const mirror=level===1&&![10,13].includes(stage)?-1:1;
- const points=ROUTES[stage].map(([x,z])=>({x:x*mirror,z})),length=routeLength(points),rng=random(9127+stage*7919+level*104729);
+ const pattern=routePattern(stage,level),shape=pattern?.shape??'winding';
+ const points=pattern?.points??ROUTES[stage].map(([x,z])=>({x:x*mirror,z})),length=routeLength(points),rng=random(9127+stage*7919+level*104729);
  const roadBoxes=points.slice(1).map((p,i)=>connector(points[i],p,10)),heading=Math.atan2(points[1].x-points[0].x,points[1].z-points[0].z);
  const spawn=kind==='defense'?{x:-4,z:-3}:{x:points[0].x-Math.cos(heading)*4,z:points[0].z+Math.sin(heading)*4};
  const count=mode(difficulty).supplies,pool:SupplyKind[]=count===10?['laser','health','shield','repair','arc','supply','health','shield','repair','arc']:count===8?['laser','health','shield','repair','arc','supply','health','shield']:count===6?['laser','health','repair','shield','arc','supply']:[stage%2?'arc':'laser','health','repair','shield'];
@@ -61,6 +65,14 @@ export function stageLayout(stage:number,level=0,kind='assault',difficulty='norm
  const encounters=[.17,.4,.65,.9].map(f=>alongRoute(points,length*f));
  const reserved=[...roadBoxes,...access,{x:spawn.x,z:spawn.z,w:10,d:10},{x:0,z:-13,w:17,d:17},...encounters.map(p=>({x:p.x,z:p.z,w:23,d:23})),...supplies.map(s=>({x:s.x,z:s.z,w:9,d:9}))];
  if(kind==='defense')reserved.push({x:0,z:0,w:16,d:128});
+ const landforms:Landform[]=[];
+ for(const p of landformCandidates(shape)){
+  const box={...p,w:14,d:10};
+  if(reserved.some(r=>overlaps(box,r))||stage===10&&distance(box,{x:-28,z:-38})<28)continue;
+  landforms.push({...box,kind:[4,5,10,14].includes(stage)?'volcanic-rock':'hill'});
+ }
+ // Landforms reserve scenery space but may meet one another to form a solid ridge.
+ reserved.push(...landforms);
  const barriers:Box[]=[];
  if(kind!=='defense')for(let i=1;i<points.length&&barriers.length<8;i++){
   const a=points[i-1],b=points[i],vertical=a.x===b.x,offset=vertical?a.x:a.z;
@@ -85,6 +97,6 @@ export function stageLayout(stage:number,level=0,kind='assault',difficulty='norm
  }
  const start=points[0],end=points.at(-1)!,dx=end.x-start.x,dz=end.z-start.z;
  const direction=Math.abs(dx)>Math.abs(dz)*2?(dx>0?'east':'west'):Math.abs(dz)>Math.abs(dx)*2?(dz>0?'south':'north'):(dz>0?'south':'north')+(dx>0?'east':'west');
- return {points,length,spawn,heading,barriers,supplies,reserved,encounters,southbound:start.z<end.z,direction};
+ return {shape,landforms,points,length,spawn,heading,barriers,supplies,reserved,encounters,southbound:start.z<end.z,direction};
 }
 export function overlapsReservation(layout:StageLayout,box:Box){return layout.reserved.some(c=>overlaps(c,box));}

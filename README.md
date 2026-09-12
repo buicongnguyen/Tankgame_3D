@@ -15,6 +15,7 @@ Lead Kestrel through sixteen stages, each with three levels (48 levels in total)
 - Earthquakes warn before stopping ground tanks for 1.6 seconds, with rising dust; guns, infantry and airborne helicopters remain active.
 - Marsh water holes slow and visually sink tanks; periodic traction recovery lets them escape. Bridge and road routes preserve speed.
 - Destructible cover, supply crates, explosive fuel drums and gasoline crates.
+- S and mirrored S sweeps, L routes and U loops on 23 levels; indestructible Blender hills and basalt outcrops shape the lanes. See [map shapes and hard terrain](docs/MAP_SHAPES_AND_HARD_TERRAIN.md).
 - Cannon, unlockable autocannon and siege rockets, plus collectible pulse laser and arc rockets.
 - Six boss types: Rail Titan, Tempest Carrier, Iron Sovereign, helicopter, climbing spider and laser tank. Each has attack warnings and exposed-core windows. Helicopters land behind cover; spiders climb it and rest; laser bursts stop at solid cover.
 - Blender riflemen and rocketeers support enemy armor across the campaign.

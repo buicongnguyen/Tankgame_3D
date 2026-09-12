@@ -15,7 +15,7 @@ for(const difficulty of DIFFICULTIES)test(`${difficulty} layouts keep supplies s
 });
 
 test('campaign includes eastward, northward, diagonal and southward journeys',()=>{
- for(const [stage,direction] of [[4,'east'],[13,'east'],[0,'north'],[5,'northeast'],[10,'northeast'],[11,'northeast'],[7,'south']] as const){const layout=stageLayout(stage);expect(layout.direction).toBe(direction);expect(layout.points.length).toBeGreaterThan(5);const end=alongRoute(layout.points,layout.length);expect(end).toEqual(layout.points.at(-1));}
+ for(const [stage,direction] of [[4,'northeast'],[13,'east'],[0,'north'],[5,'southeast'],[10,'northeast'],[11,'northeast'],[7,'south']] as const){const layout=stageLayout(stage);expect(layout.direction).toBe(direction);expect(layout.points.length).toBeGreaterThanOrEqual(3);const end=alongRoute(layout.points,layout.length);expect(end).toEqual(layout.points.at(-1));}
 });
 
 test('waiting route groups hold position, wake near their zone and counterattack when hit',async({page})=>{
