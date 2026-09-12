@@ -19,7 +19,7 @@ test('ordinary enemies investigate last sighting, stop blind fire and forget hid
  const r=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.enemies=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,20);const e=g.makeUnit(0,0,'raider');g.enemies=[e];e.cooldown=0;g.updateEnemies(.1);const seen={...e.lastSeen};g.shots=[];
   g.world.covers=[{x:0,z:10,w:12,d:2,hp:Infinity,kind:'steelwall'}];g.world.navigationRevision++;g.player.visual.root.position.set(5,0,22);g.moveUnit=()=>{};e.cooldown=0;g.updateEnemies(.1);const remembered=e.lastSeen.x===seen.x&&e.lastSeen.z===seen.z,noBlindFire=g.shots.length===0&&!e.visual.beam.visible;
   g.elapsed+=7;g.updateEnemies(.1);const stopped=!e.visual.root.userData.walking&&g.shots.length===0;
-  g.player.visual.root.position.set(18,0,15);for(let i=0;i<12;i++)g.updateEnemies(.1);return {remembered,noBlindFire,stopped,reacquired:e.lastSeen.x===18&&e.lastSeen.z===15,shot:g.shots.length>0};
+  g.player.visual.root.position.set(18,0,15);for(let i=0;i<11;i++)g.updateEnemies(.1);const warned=e.visual.beam.visible&&g.shots.length===0;g.updateEnemies(.2);return {remembered,noBlindFire,stopped,warned,reacquired:e.lastSeen.x===18&&e.lastSeen.z===15,shot:g.shots.length>0};
  });expect(Object.values(r).every(Boolean),JSON.stringify(r)).toBe(true);
 });
 
