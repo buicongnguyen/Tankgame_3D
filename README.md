@@ -124,11 +124,11 @@ Mines hurt both sides. Gasoline crates damage nearby tanks, soldiers and destruc
 
 ## Between-level shop
 
-Every level completion, including the chapter and campaign endings, offers **Shop · Upgrades & Weapons**. The command screen also opens the shop. Spend supply credits on permanent armor, damage and reload upgrades or weapon ownership. Autocannon costs 120 CR and siege rockets 180 CR; their existing free campaign unlocks still apply. Pulse laser costs 360 CR and starts each mission with 12 shots; arc rockets cost 420 CR and start with 6 rounds. Wreck crates replenish ammunition up to the 12-laser / 6-rocket carry limits. Full ammunition leaves the crate available for later. Purchases persist across reloads and retries, and owned weapons cannot be purchased twice. Older saves migrate with their earned credits and upgrades intact.
+Every level completion, including the chapter and campaign endings, offers **Shop · Upgrades & Weapons**. The command screen also opens the shop. Spend supply credits on level-20 armor, damage, reload, engine and shield tracks, weapon ownership, and individual level-20 weapon upgrades. Autocannon costs 120 CR and siege rockets 180 CR; their existing free campaign unlocks still apply. Pulse laser costs 360 CR and starts each mission with 12 shots; arc rockets cost 420 CR and start with 6 rounds. Wreck crates replenish ammunition up to the 12-laser / 6-rocket carry limits. Full ammunition leaves the crate available for later. Purchases persist across reloads and retries, and owned weapons cannot be purchased twice. Older saves migrate with their earned credits and upgrades intact.
 
 ## Combat usability update
 
-Shop upgrades have shield, damage and reload icons. Tank salvage becomes rarer with difficulty: every 2 / 4 / 12 / 32 tank kills on Easy / Normal / Hard / Crazy, capped at 4 / 2 / 1 / 1 drops per stage. Boxes alternate 12 laser shots and 6 arc rockets and are placed on the clear nearby road; drive over one to collect. These field drops last for the sortie and do not purchase permanent ownership. Infantry do not trigger tank drops, and no health pickups are dropped.
+Shop system upgrades have armor, damage, reload, engine and shield icons. Each destroyed tank has a 1-in-3 chance to leave a medical, shield, laser or arc-ammo crate near its wreck, subject to the mission loot limit. Later levels and harder modes reduce the allowance and payload. Infantry and jeeps do not generate tank salvage. These drops last for the sortie and do not purchase permanent weapon ownership.
 
 All defense missions start Kestrel near the uplink. Initial opposition starts in staggered perimeter waves, including finale bosses; reinforcements also spawn at map corners and approach the center; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, open Air Support with R (1 barrage / 2 supply), shield with Q and locate a repair center with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
 
@@ -170,7 +170,7 @@ The generator writes five editable `assets/blender/skin-*.blend` files, transpar
 
 ## Purchased weapon selection
 
-The combat weapon panel always shows **Switch Gun**. Click or tap it to select a weapon, press **C** to open the same selector on PC, or use **1–5** directly. Buying a weapon sets it as the next mission's starting gun. Selecting an owned gun in combat remembers that choice for reloads, retries and later missions; temporary map pickups do not become permanent purchases. Owned lasers receive 12 shots and arc rockets 6 rounds each mission. An empty special weapon is labeled **Empty · find ammo**, and its last shot returns to the cannon. Collect a cache or start the next mission to replenish it.
+The combat weapon panel always shows **Switch Gun**. Click or tap it to select a weapon, press **C** to open the same selector on PC, or use **1–8** directly. Buying a weapon sets it as the next mission's starting gun. Selecting an owned gun in combat remembers that choice for reloads, retries and later missions; temporary map pickups do not become permanent purchases. Owned lasers receive 12 shots and arc rockets 6 rounds each mission. An empty special weapon is labeled **Empty · next mission**, and its last shot returns to the cannon. Collect a cache or start the next mission to replenish it.
 
 ## Arc rocket range assistance
 
@@ -211,3 +211,23 @@ See the [infantry, jeep, patrol and loot balance plan](docs/INFANTRY_JEEPS_PATRO
 ## Air support and route progression
 
 See [Air support, threat ranges and breachable routes](docs/AIR_SUPPORT_AND_BREACHABLE_ROUTES.md) for the design and verification plan. Enemy sight reaches 34 m for infantry, 44 m for ordinary vehicles and 48 m for bosses; solid cover still blocks detection. Concrete rows share batched rendering but keep independent wall and section damage. A base cannon breaks one section in four hits; laser passes through the first row without damaging it and stops at the second.
+
+
+## Level-20 armory and missile expansion
+
+All eight weapons have individual upgrades from level 0 to **20**. The shop also offers 20 levels each for armor, damage, autoloader, engine and shield. Early upgrades preserve their old benefits; higher damage/reload upgrades use diminishing returns and minimum firing intervals. Credits remain limited by first-clear rewards, so choose which systems to specialize in. Older saves keep their purchases, skins and progression, and receive level-zero defaults for the new tracks.
+
+| Key | Weapon | Purchase | Ammunition / behavior |
+| --- | --- | --- | --- |
+| 1 | Cannon | Starting weapon | Unlimited; individually upgradeable |
+| 2 | Autocannon | 120 CR or First Light unlock | Rapid single shots |
+| 3 | Siege rockets | 180 CR or Homeward unlock | 140 base direct damage; 6.5 m splash |
+| 4 | Pulse laser | 360 CR | 12 shots each mission; pierces one concrete barrier without damaging it |
+| 5 | Arc rockets | 420 CR | 6 rockets each mission; 240 base damage, 8 m blast, flies over cover |
+| 6 | Machine gun | 280 CR | Two simultaneous rounds; four at weapon level 10; unlimited |
+| 7 | Micro missiles | 340 CR | Smaller, faster missiles; 60 base direct damage, 3.5 m splash; unlimited |
+| 8 | Triple arc launcher | 720 CR | Three rockets per trigger; **3 volleys per mission**; 180 base damage per rocket, 5.5 m blast each |
+
+Missile blasts hit nearby destructible cover using the object's footprint, so building edges and individual concrete panels take damage. Fuel can chain-react. Hills and other indestructible terrain remain intact. Blast damage still affects both sides. Triple-arc landing circles show the three impact areas; ordinary arc-ammo crates do not refill this special launcher. It refills on the next mission or retry. The existing Blender rocket model supplies fins, nose, exhaust and smoke for all missile sizes, with capped effects in Low detail.
+
+Implementation and verification plan: [Level-20 armory](docs/ARMORY_LEVEL_20_AND_MISSILE_EXPANSION.md).

@@ -162,9 +162,9 @@ export class World {
   rocket(){const mesh=new T.Mesh(this.rocketGeometry,this.rocketMaterial);mesh.add(this.clone('rocket'));mesh.userData.rocket=true;mesh.userData.shared=true;return mesh;}
   rocketTrail(mesh:T.Object3D){
     mesh.updateMatrixWorld(true);const exhaust=mesh.getObjectByName('Exhaust');if(!exhaust)return;const tail=new T.Vector3();exhaust.getWorldPosition(tail);
-    const backward=new T.Vector3(0,0,-1).applyQuaternion(mesh.quaternion);
-    this.fx.emit(tail,'flash',0xffc76b,.55,.07,backward.clone().multiplyScalar(3));
-    this.fx.emit(tail,'smoke',0x69737b,.95,1.5,backward.multiplyScalar(1.4).add(new T.Vector3(0,.7,0)));
+    const size=mesh.scale.x,backward=new T.Vector3(0,0,-1).applyQuaternion(mesh.quaternion);
+    this.fx.emit(tail,'flash',0xffc76b,.55*size,.07,backward.clone().multiplyScalar(3));
+    this.fx.emit(tail,'smoke',0x69737b,.95*size,1.5,backward.multiplyScalar(1.4).add(new T.Vector3(0,.7,0)));
   }
   skinMaterials=new Map<string,T.MeshStandardMaterial>();
   applySkin(root:T.Object3D,id:string){const palette:Record<string,string>=skinPalette(id);

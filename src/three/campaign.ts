@@ -1,3 +1,5 @@
+import {WEAPONS,weaponUpgradeCost} from './armory';
+import {UPGRADES,UPGRADE_CAP} from './rules';
 import {routePattern} from './route-patterns';
 import {normalizeDifficulty,mode} from './difficulty';
 import type {Difficulty} from './difficulty';
@@ -28,18 +30,22 @@ export const MISSIONS: Mission[] = [
 ];
 export const SAVE_KEY = 'steel-front-3d-v1';
 export const LEVEL_NAMES=['Approach','Counterattack','Command battle'];
-export interface Save { version: 1; mission: number; level:number; cleared: boolean[]; credits: number; weapons: number[]; equippedWeapon: number; skins: string[]; skin: string; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; }
-export const freshSave = (): Save => ({ version: 1, mission: 0, level:0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], equippedWeapon: 0, skins: ['classic','sunburst'], skin:'classic', upgrades: { armor: 0, power: 0, reload: 0 }, difficulty: 'normal', sound: false, low: false });
+export interface Save { version: 1; mission: number; level:number; cleared: boolean[]; credits: number; weapons: number[]; weaponLevels:number[]; equippedWeapon: number; skins: string[]; skin: string; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; }
+export const freshSave = (): Save => ({ version: 1, mission: 0, level:0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], weaponLevels: Array(WEAPONS.length).fill(0), equippedWeapon: 0, skins: ['classic','sunburst'], skin:'classic', upgrades: { armor: 0, power: 0, reload: 0, engine:0, shield:0 }, difficulty: 'normal', sound: false, low: false });
 export function parseSave(raw: string | null): Save {
   try {
     const s = JSON.parse(raw || 'null');
     if (!s || s.version !== 1 || !Number.isInteger(s.mission) || s.mission < 0 || s.mission >= s.cleared?.length || !Array.isArray(s.cleared) || ![6,9,14,MISSIONS.length].includes(s.cleared.length) || s.cleared.some((v: unknown) => typeof v !== 'boolean') || !Number.isInteger(s.credits) || s.credits < 0 || s.credits > 100000 || !normalizeDifficulty(s.difficulty)) return freshSave();
     s.difficulty=normalizeDifficulty(s.difficulty);s.level??=0;
     if(!Number.isInteger(s.level)||s.level<0||s.level>2)return freshSave();
-    if (!s.upgrades || ['armor','power','reload'].some(k => !Number.isInteger(s.upgrades[k]) || s.upgrades[k] < 0 || s.upgrades[k] > 3)) return freshSave();
+    if(!s.upgrades)return freshSave();s.upgrades.engine??=0;s.upgrades.shield??=0;
+    if(UPGRADES.some(k=>!Number.isInteger(s.upgrades[k])||s.upgrades[k]<0||s.upgrades[k]>UPGRADE_CAP))return freshSave();
+    s.weaponLevels??=Array(WEAPONS.length).fill(0);
+    if(!Array.isArray(s.weaponLevels)||s.weaponLevels.length>WEAPONS.length||s.weaponLevels.some((n:unknown)=>!Number.isInteger(n)||Number(n)<0||Number(n)>UPGRADE_CAP))return freshSave();
+    s.weaponLevels=Array.from({length:WEAPONS.length},(_,i)=>s.weaponLevels[i]??0);
     s.weapons ??= [];
-    if(!Array.isArray(s.weapons)||s.weapons.some((w:unknown)=>!Number.isInteger(w)||Number(w)<1||Number(w)>4)||new Set(s.weapons).size!==s.weapons.length)return freshSave();
-    if(!Number.isInteger(s.equippedWeapon)||s.equippedWeapon<0||s.equippedWeapon>4||!ownsWeapon(s,s.equippedWeapon))s.equippedWeapon=0;
+    if(!Array.isArray(s.weapons)||s.weapons.some((w:unknown)=>!Number.isInteger(w)||Number(w)<1||Number(w)>=WEAPONS.length)||new Set(s.weapons).size!==s.weapons.length)return freshSave();
+    if(!Number.isInteger(s.equippedWeapon)||s.equippedWeapon<0||s.equippedWeapon>=WEAPONS.length||!ownsWeapon(s,s.equippedWeapon))s.equippedWeapon=0;
     s.skins=[...new Set(['classic','sunburst',...(Array.isArray(s.skins)?s.skins.filter((id:unknown)=>SKINS.some(skin=>skin.id===id)):[])])];
     if(!s.skins.includes(s.skin))s.skin='classic';
     // Extend either historical campaign length without changing purchases or progress.
@@ -71,12 +77,18 @@ export function levelMission(index:number,level:number):Mission{
  return {...m,kind,duration,objective,briefing,radio,parTime:Math.max(basePar,routePar)};
 }
 export const unlockedLevel=(save:Save,mission:number)=>save.cleared[mission]?2:mission===save.mission?save.level:0;
-export const weaponNames = ['120 mm cannon', '30 mm autocannon', 'Siege rockets','Pulse laser','Arc rockets'];
+export const weaponNames = WEAPONS.map(w=>w.name);
 export function weaponCount(save: Save): number { return Math.max(save.cleared[2]?3:save.cleared[0]?2:1,...save.weapons.filter(w=>w<3).map(w=>w+1)); }
 
-export const weaponPrices:Record<number,number>={1:120,2:180,3:360,4:420};
-export function ownsWeapon(save:Save,id:number){return id<3?id<weaponCount(save):save.weapons.includes(id);}
-export function buyWeapon(save:Save,id:number){const cost=weaponPrices[id];if(!cost||ownsWeapon(save,id)||save.credits<cost)return false;save.credits-=cost;save.weapons.push(id);save.equippedWeapon=id;return true;}
+export const weaponPrices:Record<number,number>=Object.fromEntries(WEAPONS.map((w,i)=>[i,w.price]));
+export function ownsWeapon(save:Save,id:number){return Number.isInteger(id)&&!!WEAPONS[id]&&(id<3?id<weaponCount(save):save.weapons.includes(id));}
+export function buyWeapon(save:Save,id:number){const cost=weaponPrices[id];if(!Number.isInteger(id)||!WEAPONS[id]||!cost||ownsWeapon(save,id)||save.credits<cost)return false;save.credits-=cost;save.weapons.push(id);save.equippedWeapon=id;return true;}
+
+export function upgradeWeapon(save:Save,id:number){
+ if(!Number.isInteger(id)||!WEAPONS[id]||!ownsWeapon(save,id))return false;
+ const n=save.weaponLevels[id],cost=weaponUpgradeCost(n);if(!Number.isInteger(n)||n<0||n>=UPGRADE_CAP||save.credits<cost)return false;
+ save.credits-=cost;save.weaponLevels[id]++;return true;
+}
 
 export function encounterSize(index:number,level:number,difficulty:string){
  const settings=mode(difficulty),scale=settings.enemies;

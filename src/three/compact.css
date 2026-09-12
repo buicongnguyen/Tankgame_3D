@@ -83,8 +83,8 @@ button.primary{padding:13px 16px;font-size:12px}.briefing details{margin-top:12p
 .weapon-picker small{display:block;font-size:9px;letter-spacing:0;margin-top:5px}.weapon-picker button:disabled{opacity:.6}
 @media(pointer:coarse) and (orientation:portrait){.weapon-picker{bottom:calc(235px + env(safe-area-inset-bottom))}}
 @media(pointer:coarse) and (orientation:landscape){.weapon-picker{bottom:calc(110px + env(safe-area-inset-bottom))}}
-/* Five weapon choices: special cache weapons occupy a second row on portrait phones. */
-.weapon-picker{grid-template-columns:repeat(5,minmax(0,1fr));width:min(620px,calc(100vw - 20px))}
+/* Eight weapon choices use three compact rows on portrait phones. */
+.weapon-picker{grid-template-columns:repeat(4,minmax(0,1fr));width:min(620px,calc(100vw - 20px))}
 @media(pointer:coarse) and (orientation:portrait){.weapon-picker{grid-template-columns:repeat(3,minmax(0,1fr));width:min(440px,calc(100vw - 20px))}}
 @media(pointer:coarse) and (orientation:landscape){.weapon-picker{width:min(620px,calc(100vw - 20px))}.weapon-picker button{font-size:9px}}
 #boss-readout{font-size:10px;line-height:1.4;color:#ffc995;margin-top:5px}
@@ -95,7 +95,7 @@ button.primary{padding:13px 16px;font-size:12px}.briefing details{margin-top:12p
 
 .upgrade-icon{width:30px;height:30px;flex:none;color:var(--mint)}.upgrade-card h3{display:flex;align-items:center;gap:9px}@media(pointer:coarse){.pc-fire{display:none!important}}
 
-@media(pointer:fine) and (min-width:900px){.desktop-hint{display:block;bottom:74px;left:16px;padding:5px 8px;background:#14262bdd;color:#d9e7da;font-size:10px;border-radius:3px}}
+@media(pointer:fine) and (min-width:900px){.desktop-hint{display:block;bottom:110px;left:16px;padding:5px 8px;background:#14262bdd;color:#d9e7da;font-size:10px;border-radius:3px}}
 
 .stage-summary{text-align:left;width:100%}.stage-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 0;border-block:1px solid var(--line)}.stage-metrics span{font-size:9px;color:var(--muted)}.stage-metrics strong{display:block;font-size:20px;color:var(--mint);margin-top:4px}.stage-rewards{margin:12px 0}.stage-rewards>div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:13px}.stage-rewards dd{margin:0;color:var(--amber);white-space:nowrap}.stage-rewards small{font-size:9px;color:var(--muted)}.stage-total{border-top:1px solid var(--line);margin-top:6px;font-weight:700}.stage-summary .reward-note{font-size:11px;line-height:1.4}.victory-panel .stage-summary{margin-top:16px}
 
@@ -116,3 +116,6 @@ body[data-graphics="low"] .vignette{box-shadow:none}
 
 /* Compact radio choices reuse the existing touch-safe weapon panel. */
 .weapon-picker.support-picker{grid-template-columns:repeat(2,minmax(0,1fr));width:min(340px,calc(100vw - 20px))}
+
+.weapon-stat{color:var(--mint);font-size:11px;letter-spacing:0}.weapon-picker:not(.support-picker){grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(pointer:coarse) and (orientation:portrait){.weapon-picker:not(.support-picker){grid-template-columns:repeat(3,minmax(0,1fr))}}

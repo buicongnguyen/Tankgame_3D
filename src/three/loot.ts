@@ -1,7 +1,7 @@
 import {normalizeDifficulty} from './difficulty';
 export type LootKind='health'|'shield'|'laser'|'arc';
 export const DROP_CHANCE=1/3;
-export const AMMO_CAPS=[12,6];
+export const AMMO_CAPS=[12,6,3];
 export function salvageReward(roll:number,difficulty:string,level:number):{kind:LootKind;amount:number}{
  const kind:LootKind=roll<.35?'health':roll<.55?'shield':roll<.80?'laser':'arc';
  const tier=normalizeDifficulty(difficulty)??'normal';

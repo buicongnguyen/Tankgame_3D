@@ -38,9 +38,11 @@ export function armorMultiplier(target: Point, heading: number, source: Point): 
 export function turnToward(current: number, target: number, amount: number): number {
   return current + clamp(Math.atan2(Math.sin(target - current), Math.cos(target - current)), -amount, amount);
 }
-export type Upgrade = 'armor' | 'power' | 'reload';
-export const upgradeCost = (level: number) => 120 + level * 100;
+export type Upgrade = 'armor' | 'power' | 'reload' | 'engine' | 'shield';
+export const UPGRADE_CAP=20;
+export const UPGRADES:Upgrade[]=['armor','power','reload','engine','shield'];
+export const upgradeCost = (level: number) => 120 + Math.min(level,3)*100 + Math.max(0,level-3)*20;
 export function purchase(credits: number, level: number): { credits: number; level: number } | null {
-  if (!Number.isInteger(level) || level < 0 || level >= 3 || credits < upgradeCost(level)) return null;
+  if (!Number.isInteger(level) || level < 0 || level >= UPGRADE_CAP || credits < upgradeCost(level)) return null;
   return { credits: credits - upgradeCost(level), level: level + 1 };
 }
