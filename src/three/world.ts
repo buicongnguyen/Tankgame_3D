@@ -4,10 +4,12 @@ import {buildGuardLandmarks} from './enemy-posts';
 import {roadVertices} from './road-geometry';
 import {stageLayout,overlapsReservation,roadDistance,projectRoute,routeSample} from './stage-layout';
 import {terrainAt,terrainSpeed} from './terrain';
-import {groundTexture,frontierBoundary} from './frontier-surfaces';
+import {groundTexture} from './frontier-surfaces';
+import {buildRockBoundary} from './rock-boundary';
 import {GROUND_COLORS} from './frontier-environment';
 import MODEL_NAMES from './model-catalog.json';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import {SkinMarkings} from './skin-markings';
 import { skinPalette } from './skins';
 import * as T from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -18,7 +20,7 @@ import { CombatEffects } from './effects';
 import { BOUNDS, buildActivities } from './activities';
 import type { Activity } from './activities';
 export interface TankVisual { root: T.Group; hull: T.Object3D; turret: T.Object3D; muzzle: T.Object3D; bar: T.Mesh; beam: T.Mesh; }
-export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; natural?:boolean; section?: {parts:T.InstancedMesh[];index:number;wall:object}; }
+export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; natural?:boolean; boundary?:boolean; section?: {parts:T.InstancedMesh[];index:number;wall:object}; }
 interface Effect { mesh: T.Mesh; life: number; max: number; velocity: T.Vector3; }
 const scratch = new T.Vector3();
 export class World {
@@ -166,12 +168,13 @@ export class World {
     this.fx.emit(tail,'flash',0xffc76b,.55*size,.07,backward.clone().multiplyScalar(3));
     this.fx.emit(tail,'smoke',0x69737b,.95*size,1.5,backward.multiplyScalar(1.4).add(new T.Vector3(0,.7,0)));
   }
+  skinMarkings=new SkinMarkings();
   skinMaterials=new Map<string,T.MeshStandardMaterial>();
   applySkin(root:T.Object3D,id:string){const palette:Record<string,string>=skinPalette(id);
     root.traverse(o=>{if(!(o instanceof T.Mesh)||!(o.material instanceof T.MeshStandardMaterial)||!palette[o.material.name])return;
       const key=id+':'+o.material.name;let material=this.skinMaterials.get(key);
       if(!material){material=o.material.clone();material.color.set('#'+palette[material.name]);this.skinMaterials.set(key,material);}o.material=material;
-    });root.userData.skin=id;
+    });this.skinMarkings.apply(root,id);root.userData.skin=id;
   }
   enemyMaterials=new Map<string,T.MeshStandardMaterial>();
   clear() { this.environment.clear();this.fx.clear();this.wrecks=[];this.activities=[];
@@ -227,14 +230,7 @@ export class World {
     for(const [x,z] of [[-20,9],[24,-8],[-41,-32],[39,22]]){if(overlapsReservation(this.layout,{x,z,w:2.2,d:1.55})||this.layout.supplies.some(p=>Math.hypot(x-p.x,z-p.z)<9))continue;const mesh=this.clone('fuelcrate');mesh.position.set(x,0,z);this.arena.add(mesh);this.covers.push({x,z,w:2.2,d:1.55,kind:'fuelcrate',hp:35,mesh});}
     this.naturalBarriers();
     this.concreteBarriers(this.layout.barriers);
-    if(GROUND_COLORS[BIOMES[index]]!==undefined)frontierBoundary(this,BIOMES[index]);
-    else {
-    for(let i=0;i<60;i++){
-      const side=i%2?-1:1,x=side*(76+(i%3)),z=-62+Math.floor(i/2)*4.2;
-      const rock=this.box(2+(i%3),1.4+(i%4)*.8,3.5,0x6d7262,x,1,z);rock.rotation.y=i*.7;
-    }
-    for(let i=0;i<29;i++){const x=-75+i*5.4;this.box(3,2.8+(i%3),2.5,0x737762,x,1,-65);}
-    }
+    buildRockBoundary(this,BIOMES[index]);
     this.ring.visible=true;
     const exit=this.layout.points.at(-1)!;this.ring.position.set(['capture','defense'].includes(kind)?0:exit.x,.12,['capture','defense'].includes(kind)?-13:exit.z);
     this.ring.scale.setScalar(['capture','defense'].includes(kind)?1:.7);

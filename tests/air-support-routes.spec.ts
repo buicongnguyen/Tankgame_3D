@@ -36,7 +36,7 @@ test('supply calls respect mission limits, shared cooldown, landing and retry cl
   g.artilleryCooldown=0;g.player.visual.root.position.set(25,0,20);const second=g.airSupport.request(g);g.artilleryCooldown=0;const exhausted=!g.airSupport.request(g)&&g.airSupport.remaining(g)===0;
   const rig=g.airSupport.drops[0].rig;g.start(3,0);return {rows,accepted,airborne,double,paused,landed,second,exhausted,clean:g.airSupport.used===0&&g.airSupport.drops.length===0&&!rig.parent&&!g.world.activities.some((a:any)=>a.airborne)};
  });
- expect(r.rows.map(v=>v.limit)).toEqual([0,0,0,0,0,0,0,1,1,0,2,2]);expect(r.double).toBe(false);for(const [key,value] of Object.entries(r).filter(([k])=>!['rows','double'].includes(k)))expect(value,key).toBe(true);
+ expect(r.rows.map(v=>v.limit)).toEqual([2,2,2,1,1,1,1,1,1,2,2,2]);expect(r.double).toBe(false);for(const [key,value] of Object.entries(r).filter(([k])=>!['rows','double'].includes(k)))expect(value,key).toBe(true);
 });
 
 test('supply payloads stay small and failed landing requests do not spend the allowance',async({page})=>{

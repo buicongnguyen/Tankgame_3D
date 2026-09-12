@@ -34,5 +34,40 @@ export const SKIN_PALETTES = {
     "Gunmetal": "315967",
     "Signal": "65ffff",
     "Tracks": "253b42"
+  },
+  "comet": {
+    "Armor": "ff6729",
+    "Trim": "142354",
+    "Gunmetal": "435277",
+    "Signal": "fff776",
+    "Tracks": "253048"
+  },
+  "sentinel": {
+    "Armor": "09dbe3",
+    "Trim": "7e27fa",
+    "Gunmetal": "42507e",
+    "Signal": "fafffb",
+    "Tracks": "233342"
+  },
+  "talon": {
+    "Armor": "ffcf18",
+    "Trim": "f32a86",
+    "Gunmetal": "663c69",
+    "Signal": "fffdf2",
+    "Tracks": "352b40"
+  },
+  "nova": {
+    "Armor": "9239fa",
+    "Trim": "29f8d6",
+    "Gunmetal": "543582",
+    "Signal": "fff068",
+    "Tracks": "302844"
+  },
+  "prism": {
+    "Armor": "ff3493",
+    "Trim": "13e7f2",
+    "Gunmetal": "49365e",
+    "Signal": "fff4a8",
+    "Tracks": "302a46"
   }
 } as const;

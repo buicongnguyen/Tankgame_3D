@@ -9,7 +9,7 @@ interface Drop {activity:Activity;rig:T.Group;marker:T.Mesh;time:number;}
 /** A small mission allowance, independent of wreck loot, sharing the barrage radio cooldown. */
 export class AirSupport {
  used=0;drops:Drop[]=[];
- limit(g:Game){return ['defense','capture'].includes(g.missionData().kind)?g.save.difficulty==='crazy'?2:g.save.difficulty==='hard'?1:0:0;}
+ limit(g:Game){return g.save.difficulty==='easy'||g.save.difficulty==='crazy'?2:1;}
  remaining(g:Game){return Math.max(0,this.limit(g)-this.used);}
  payload(g:Game):{kind:'health'|'laser'|'arc'|'shield';amount:number}{
   if(g.player.hp<g.player.max*.8)return {kind:'health',amount:g.save.difficulty==='crazy'?35:40};

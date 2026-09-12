@@ -108,7 +108,7 @@ Game models and narrative are authored for this project. Barlow and Barlow Conde
 
 ## Battlefield update
 
-Explore a 144 × 120 m combat zone with flank cover, a green repair stop, combat loot and proximity mines. **R / AIR SUPPORT** offers a twelve-bomb ring barrage around your tank’s current position or a nearby parachute supply drop. Bombs fall 18 m from the call location with 8 m blasts, leaving the inner 10 m clear of direct barrage damage. The target ring stays fixed after you move; bombs outside the map are omitted. Stay clear of amber barrage circles. Hard capture/defense missions allow one supply drop; Crazy allows two. Both choices share a 28-second cooldown. Drops provide a small health, special-ammo or shield refill based on current needs, and can only be collected after landing. Red mine circles show the enlarged 2.7 m trigger radius. Destroyed tanks can leave medical, shield, laser or arc-rocket crates beside their wrecks.
+Explore a 144 × 120 m combat zone with flank cover, a green repair stop, combat loot and proximity mines. **R / AIR SUPPORT** offers a twelve-bomb ring barrage around your tank’s current position or a nearby parachute supply drop. Bombs fall 18 m from the call location with 8 m blasts, leaving the inner 10 m clear of direct barrage damage. The target ring stays fixed after you move; bombs outside the map are omitted. Stay clear of amber barrage circles. Every mission allows two supply drops on Easy / Crazy or one on Normal / Hard. Both choices share a 28-second cooldown. Drops provide a small health, special-ammo or shield refill based on current needs, and can only be collected after landing. Red mine circles show the enlarged 2.7 m trigger radius. Destroyed tanks can leave medical, shield, laser or arc-rocket crates beside their wrecks.
 
 Shell tracers, rocket exhaust, muzzle flashes, debris, shock rings, smoke, dust and persistent scorched wrecks replace the original simple hit/death effects. Escorts follow their stage-specific route through every bend. Effects are capped and reduced in low graphics mode.
 
@@ -194,7 +194,7 @@ See the [implementation plan](docs/RENDERING_AND_FRONTIER_POLISH_PLAN.md) and [c
 
 ## Routes and field supplies
 
-All 48 levels use marked routes, including west-to-east zigzags, south-to-north journeys, southwest-to-northeast approaches, southbound convoy tracks and circuits around defense relays. Each map has one fixed repair center, with one extra field cache on Easy, plus six off-road mines. Fixed recovery sits 7–10 m off the route; optional Easy weapon caches sit near road guards. Tank and boss kills roll a one-in-three chance for a nearby crate: medical 35%, shield 20%, laser 25%, arc rockets 20% of successful rolls. Drops must fit on reachable open ground within 8 m of the wreck. Infantry and jeeps never drop items. Per-level caps are 6 / 4 / 4 / 5 on Easy / Normal / Hard / Crazy, so larger enemy counts cannot multiply recovery indefinitely. Later sublevels and harder modes reduce crate contents. Layouts are reproducible; combat drops are random.
+All 48 levels use marked routes, including west-to-east zigzags, south-to-north journeys, southwest-to-northeast approaches, southbound convoy tracks and circuits around defense relays. Each map has one fixed repair center, with one extra field cache on Easy, plus six mines: one to three on-road as stage level rises, the rest off-road. Fixed recovery sits 7–10 m off the route; optional Easy weapon caches sit near road guards. Tank and boss kills roll a one-in-three chance for a nearby crate: medical 35%, shield 20%, laser 25%, arc rockets 20% of successful rolls. Drops must fit on reachable open ground within 8 m of the wreck. Infantry and jeeps never drop items. Per-level caps are 6 / 4 / 4 / 5 on Easy / Normal / Hard / Crazy, so larger enemy counts cannot multiply recovery indefinitely. Later sublevels and harder modes reduce crate contents. Layouts are reproducible; combat drops are random.
 
 Enemies occupy route sectors near buildings, fuel or trees. Some guard their posts; others make local patrols with pauses to scan. Tanks farther from the road use wider patrol loops reaching toward it, and scout jeeps move faster. Clear sight or a hit alerts nearby squadmates; solid cover hides you. After investigating a lost sighting, patrolling units return home. Bosses guard the final approach; defense stages retain timed perimeter waves. Waiting and patrolling vehicles remain included in objectives. Assault and boss stages require the marked exit after clearing their combat objective. Convoys follow every bend, stop for ground traffic, and reach extraction only after the complete route.
 
@@ -231,3 +231,15 @@ All eight weapons have individual upgrades from level 0 to **20**. The shop also
 Missile blasts hit nearby destructible cover using the object's footprint, so building edges and individual concrete panels take damage. Fuel can chain-react. Hills and other indestructible terrain remain intact. Blast damage still affects both sides. Triple-arc landing circles show the three impact areas; ordinary arc-ammo crates do not refill this special launcher. It refills on the next mission or retry. The existing Blender rocket model supplies fins, nose, exhaust and smoke for all missile sizes, with capped effects in Low detail.
 
 Implementation and verification plan: [Level-20 armory](docs/ARMORY_LEVEL_20_AND_MISSILE_EXPANSION.md).
+
+### Tactical supplies and tank markings
+
+Air Support supply drops are available on **every mission and difficulty**: Easy / Crazy get two calls, Normal / Hard get one. The radio cooldown remains 28 seconds, shared with ring barrages. Small crates land near the player and are collectible only after touchdown.
+
+Each map keeps six mines, with one to three placed on alternating sides of the road as the stage level rises; the opposite lane stays open to dodge. Continuous indestructible rock now encloses all four map edges using one instanced rectangular mesh.
+
+Five new Blender skins add vivid stripes and one through five stars: Rally Comet, Neon Sentinel, Solar Talon, Royal Nova and Prism Ace. Their shop cards state the price and actual speed, weapon damage and shield bonuses. Shared paint geometry adds only one mesh to the player and remains visible in Low detail.
+
+Desktop has a compact **1–8 weapon bar**, with both top-row and number-pad shortcuts. Touch keeps the larger gun picker. Empty advanced weapons switch to the nearest usable weapon on their left, skipping empty/unowned slots, while preserving the preferred loadout for the next mission.
+
+Design and checks: [Tactical supplies, skins and boundaries](docs/TACTICAL_SUPPLIES_SKINS_AND_BOUNDARIES.md).

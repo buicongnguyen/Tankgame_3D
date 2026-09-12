@@ -16,7 +16,7 @@ test('every level has reproducible, separated supplies and varied routes',()=>{
 
 test('upgraded laser pierces one concrete and never damages either barrier after repeated shots',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
- const result=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.enemies=[];g.player.visual.root.position.set(0,0,35);g.player.aim=Math.PI;
+ const result=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.enemies=[];g.world.activities=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,35);g.player.aim=Math.PI;
  const targets=[28,12,-8,-30].map(z=>{const e=g.makeUnit(0,z,'heavy');e.visual.root.position.set(0,0,z);e.hp=e.max=10000;return e;});g.enemies=targets;
  const wall=(z:number,kind='barricade',hp=Infinity)=>{const mesh=g.world.clone(kind);mesh.position.set(0,0,z);g.world.arena.add(mesh);return {x:0,z,w:6,d:1.8,kind,hp,mesh};};
  const first=wall(20),second=wall(0,'stonewall',180),children=[first,second].map(c=>c.mesh.children.length);g.world.covers=[second,first];g.save.upgrades.power=3;g.save.skin='inferno';g.powerBoost=25;g.specialAmmo[0]=12;g.weapon=3;
@@ -34,18 +34,22 @@ test('upgraded laser pierces one concrete and never damages either barrier after
 
 test('laser hits infantry and aircraft through damaged stone without damaging the stone',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const result=await page.evaluate(()=>{
- const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.enemies=[];g.player.visual.root.position.set(0,0,35);g.player.aim=Math.PI;
+ const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.enemies=[];g.world.activities=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,35);g.player.aim=Math.PI;
  const infantry=g.makeUnit(0,28,'rifleman'),heli=g.makeUnit(0,10,'boss','helicopter');heli.visual.root.position.set(0,7,10);heli.hp=10000;g.enemies=[infantry,heli];const mesh=g.world.clone('stonewall');mesh.position.set(0,0,20);const stone={x:0,z:20,w:6,d:1.4,hp:7,kind:'stonewall',mesh};g.world.covers=[stone];const children=mesh.children.length;g.special.fire(g,3);const dead=infantry.dead,air=heli.hp<10000,first=stone.hp===7;const kills=g.infantryKills;for(let i=0;i<3;i++)g.special.fire(g,3);return {dead,air,first,intact:stone.hp===7&&stone.mesh.visible&&mesh.children.length===children,once:g.infantryKills===kills};});expect(Object.values(result).every(Boolean),JSON.stringify(result)).toBe(true);
 });
 
 test('all 48 real layouts keep routes, supplies and spawns clear',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const issues=await page.evaluate(async()=>{
- const g=(window as any).__steel;g.frame=()=>{};const {circleBox,segmentBox}=await import('/src/three/rules.ts');const issues:any[]=[];
+ const g=(window as any).__steel;g.frame=()=>{};const {circleBox,segmentBox}=await import('/src/three/rules.ts');const {roadDistance,projectRoute,routeSample}=await import('/src/three/stage-layout.ts');const issues:any[]=[];
  for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++){
   g.start(stage,level);const covers=g.world.covers.filter((c:any)=>c.hp>0),route=g.world.layout;
   for(const u of [g.player,...g.enemies])if(covers.some((c:any)=>circleBox(u.visual.root.position,g.unitRadius(u),c)))issues.push({stage,level,overlap:u.role});
   for(let i=1;i<route.points.length;i++)for(const c of covers)if(segmentBox(route.points[i-1],route.points[i],c,2.3)!==null)issues.push({stage,level,blocked:c.kind,x:c.x,z:c.z});
   for(const a of g.world.activities.filter((a:any)=>a.kind!=='mine')){if(covers.some((c:any)=>circleBox(a,2.8,c)))issues.push({stage,level,pickup:a.kind});if(covers.some((c:any)=>['fuelcrate','barrel'].includes(c.kind)&&Math.hypot(c.x-a.x,c.z-a.z)<7))issues.push({stage,level,fuelNear:a.kind});}
+  for(const mine of route.supplies.filter((s:any)=>s.kind==='mine'&&roadDistance(route.points,s)<4)){
+   const p=routeSample(route.points,projectRoute(route.points,mine).progress),dodge={x:p.x-(mine.x-p.x)/1.8*3,z:p.z-(mine.z-p.z)/1.8*3};
+   if(covers.some((c:any)=>segmentBox(p,dodge,c,1.25)!==null))issues.push({stage,level,mineDodgeBlocked:true});
+  }
   if(g.convoy&&covers.some((c:any)=>circleBox(g.convoy.position,2.3,c)))issues.push({stage,level,convoy:true});
  }return issues;
  });expect(issues).toEqual([]);

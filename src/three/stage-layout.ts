@@ -123,7 +123,17 @@ export function stageLayout(stage:number,level=0,kind='assault',difficulty='norm
   }
  }
  barriers.push(...breaches.flat());
- for(let i=0;i<6;i++)for(let attempt=0;attempt<500;attempt++){
+ const roadMines=level+1;
+ for(let i=0;i<roadMines;i++)for(let attempt=0;attempt<600;attempt++){
+  const meters=length*(.12+rng()*.76),p=routeSample(points,meters),side=(i%2?1:-1)*(attempt<300?1:-1);
+  const candidate={x:p.x+p.dz*1.8*side,z:p.z-p.dx*1.8*side};
+  const dodge={x:p.x-p.dz*3*side,z:p.z+p.dx*3*side};
+  // Leave the opposite lane open; avoid bends, the spawn, relay, exit and supplies.
+  if(points.some(v=>distance(v,p)<7)||distance(candidate,spawn)<15||distance(candidate,{x:0,z:-13})<12||supplies.some(s=>distance(s,candidate)<10)||Math.abs(candidate.x)>65||Math.abs(candidate.z)>53||
+   [...barriers,...landforms].some(b=>segmentBox(candidate,dodge,b,2)!==null)||stage===10&&distance(candidate,{x:-28,z:-38})<22)continue;
+  supplies.push({kind:'mine',...candidate});reserved.push(connector(candidate,dodge,7));break;
+ }
+ for(let i=supplies.filter(s=>s.kind==='mine').length;i<6;i++)for(let attempt=0;attempt<500;attempt++){
   const p={x:(rng()-.5)*124,z:(rng()-.5)*100};
   if(roadDistance(points,p)>10&&distance(p,spawn)>15&&supplies.every(s=>distance(s,p)>10)&&!overlapsReservation(reservation,{...p,w:6,d:6})&&!barriers.some(b=>segmentBox(p,p,b,4)!==null)&&!(stage===10&&distance(p,{x:-28,z:-38})<22)){supplies.push({kind:'mine',...p});reserved.push({x:p.x,z:p.z,w:7,d:7});break;}
  }
