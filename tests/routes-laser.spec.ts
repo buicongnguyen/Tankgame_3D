@@ -69,8 +69,8 @@ test('health and shield cases are finite and never waste full-health recovery',a
  return {full,capped,once,protectedNow,protectedOnce,manualCannotShorten};});expect(Object.values(result).every(Boolean),JSON.stringify(result)).toBe(true);
 });
 
-test('ground attacker navigates around a concrete checkpoint',async({page})=>{
- await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.enemies=[];g.player.visual.root.position.set(0,0,-35);const e=g.makeUnit(0,20,'heavy');e.visual.root.position.set(0,0,20);g.enemies=[e];const mesh=g.world.clone('barricade');mesh.position.set(0,0,0);g.world.covers=[{x:0,z:0,w:34,d:1.8,hp:Infinity,kind:'barricade',mesh}];g.world.navigationRevision++;let flank=0;for(let i=0;i<1500;i++){g.elapsed+=1/30;g.updateEnemies(1/30);flank=Math.max(flank,Math.abs(e.visual.root.position.x));}return {z:e.visual.root.position.z,flank};});expect(r.flank).toBeGreaterThan(18);expect(r.z).toBeLessThan(-3);
+test('provoked ground attacker navigates around a concrete checkpoint',async({page})=>{
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.enemies=[];g.player.visual.root.position.set(0,0,-35);const e=g.makeUnit(0,20,'heavy');e.visual.root.position.set(0,0,20);g.enemies=[e];const mesh=g.world.clone('barricade');mesh.position.set(0,0,0);g.world.covers=[{x:0,z:0,w:34,d:1.8,hp:Infinity,kind:'barricade',mesh}];g.world.navigationRevision++;let flank=0;for(let i=0;i<1500;i++){g.elapsed+=1/30;if(i%90===0)g.damageUnit(e,.01,g.player.visual.root.position);g.updateEnemies(1/30);flank=Math.max(flank,Math.abs(e.visual.root.position.x));}return {z:e.visual.root.position.z,flank};});expect(r.flank).toBeGreaterThan(18);expect(r.z).toBeLessThan(-3);
 });
 
 

@@ -18,7 +18,7 @@ Lead Kestrel through sixteen stages, each with three levels (48 levels in total)
 - S, mirrored S, diagonal S, U and open O loops on 26 levels. Traveling stages progress from shorter to longer routes. O loops allow either direction during play; indestructible Blender hills and basalt outcrops shape the lanes. See [O loops and boss reinforcements](docs/O_LOOPS_AND_BOSS_REINFORCEMENTS.md).
 - Cannon, unlockable autocannon and siege rockets, plus collectible pulse laser and arc rockets.
 - Nine boss types: Rail Titan, Tempest Carrier, Iron Sovereign, helicopter, climbing spider, laser tank, Iron Vanguard four-gun robot, Siege Marshal rocket/gun robot and Atlas Launcher missile truck. Each has attack warnings and exposed-core windows. Helicopters land behind cover; spiders climb it and rest; laser bursts stop at solid cover.
-- Blender riflemen and rocketeers support enemy armor across the campaign.
+- Blender riflemen and rocketeers watch from trees; tanks guard buildings and fuel containers. Solid cover blocks detection and aimed fire. Nearby squadmates react to sightings or hits; ordinary enemies investigate the last sighting for six seconds. See [enemy guard posts and sight](docs/ENEMY_GUARD_POSTS_AND_SIGHT.md).
 - Shield and fixed green repair centers.
 - Four difficulty modes; stage/level checkpoints, retries and replay.
 - Responsive command screen, minimap, objective HUD and simultaneous touch sticks.

@@ -1,5 +1,6 @@
 import {ROUTE_LABELS} from './route-patterns';
-import {RouteEncounters} from './encounters';
+import {RouteEncounters,clearSight,seesTarget} from './encounters';
+import {guardPost} from './enemy-posts';
 import type {EncounterOrder} from './encounters';
 import {GroundNavigation} from './navigation';
 import {alongRoute,routeSample,projectRoute,ENCOUNTER_FRACTIONS} from './stage-layout';
@@ -24,7 +25,7 @@ import type { Save } from './campaign';
 import { armorMultiplier, clamp, circleBox, distance, purchase, segmentBox, segmentCircle, turnToward, upgradeCost } from './rules';
 import type { Point, Upgrade } from './rules';
 type Phase='menu'|'finishing'|'playing'|'paused'|'depot'|'failed'|'victory';
-export interface Unit { encounter?:EncounterOrder; bossKind?:BossKind; mudTime?:number; velocity:Point; visual:TankVisual; hp:number; max:number; heading:number; aim:number; cooldown:number; role:'player'|'raider'|'sentry'|'heavy'|'boss'|'rifleman'|'rocketeer'; dead:boolean; }
+export interface Unit { lastSeen?:Point; searchUntil?:number; encounter?:EncounterOrder; bossKind?:BossKind; mudTime?:number; velocity:Point; visual:TankVisual; hp:number; max:number; heading:number; aim:number; cooldown:number; role:'player'|'raider'|'sentry'|'heavy'|'boss'|'rifleman'|'rocketeer'; dead:boolean; }
 interface Shot { height?:{start:number;range:number;traveled:number}; mesh:T.Mesh; p:Point; from:Point; dx:number; dz:number; speed:number; damage:number; life:number; friendly:boolean; splash:number; }
 export class Game {
   root:HTMLElement; world:World; input:Input; save:Save=freshSave(); phase:Phase='menu'; mission=0;level=0;armoredGoal=0;
@@ -97,7 +98,7 @@ export class Game {
   controls(){return '<div class="control-guide"><span><kbd>W A S D</kbd> Drive</span><span><kbd>I J K L / MOUSE</kbd> Aim</span><span><kbd>SPACE / F / CLICK</kbd> Fire</span><span><kbd>C / 1–5</kbd> Switch gun</span><span><kbd>Q</kbd> Shield</span><span><kbd>E</kbd> Find repair center</span><span><kbd>R</kbd> Artillery</span><span><kbd>ESC</kbd> Pause</span><p class="touch-guide">On touch: left stick drives; right stick aims and fires. Tap Switch Gun to choose a gun. Strike, shield and the repair-center finder have separate buttons.</p></div>';}
   showMenu(){
     this.setPhase('menu');this.world.target.copy(this.player.visual.root.position);const m=this.missionData();
-    this.overlay.innerHTML=`<main class="command-screen"><header class="brand"><span class="brand-mark">◈</span><span>KESTREL DIVISION<small>MERIDIAN RECOVERY COMMAND</small></span><span class="build-label">3D CAMPAIGN / 01</span></header><section class="hero"><span class="eyebrow">MERIDIAN CAMPAIGN</span><h1>STEEL<br><em>FRONT</em><span>LAST SIGNAL</span></h1></section><aside class="briefing panel"><div class="panel-top"><span class="eyebrow">STAGE ${String(this.mission+1).padStart(2,'0')} / ${MISSIONS.length}</span></div><h2>${m.name}</h2><div class="mission-task"><span>OBJECTIVE</span><strong>${m.objective}${this.level===2?` · ${mode(this.save.difficulty).bosses} boss${mode(this.save.difficulty).bosses>1?'es':''}`:''}</strong></div><div class="difficulty" aria-label="Difficulty">${DIFFICULTIES.map(d=>`<button data-action="difficulty" data-value="${d}" aria-pressed="${this.save.difficulty===d}" class="${this.save.difficulty===d?'active':''}">${MODES[d].label}</button>`).join('')}</div><small class="mode-hint">${mode(this.save.difficulty).hint}</small><div class="level-select" aria-label="Stage level">${LEVEL_NAMES.map((name,i)=>`<button data-action="level" data-value="${i}" aria-pressed="${i===this.level}" ${i>unlockedLevel(this.save,this.mission)?'disabled':''}>${i+1} · ${name}</button>`).join('')}</div><button class="primary deploy" data-action="deploy">DEPLOY <span>→</span></button><button class="hangar-button" data-action="hangar"><img src="${import.meta.env.BASE_URL}skins/${this.save.skin}.png" alt=""/><span>SKIN · ${getSkin(this.save.skin).name}<small>${getSkin(this.save.skin).bonus} · Change →</small></span></button><details><summary>Briefing & controls</summary><p class="briefing-copy">${m.briefing} ${m.kind==='defense'?'Supplies mark a circuit around the relay.':`${this.world.layout.closed?'O loop: circle either way and return to the gate. The convoy follows your first branch.':`${ROUTE_LABELS[this.world.layout.shape]} · follow the amber chevrons ${this.world.layout.direction} to the exit.`}`}</p>${this.controls()}<p class="manual">Front armor absorbs damage. Flank for stronger hits. Driving at speed can run down hostile infantry; a stationary tank cannot. Red lines warn of incoming fire. Amber marks the objective. Mines hit ground units on both sides. Helicopters fly over cover and land to expose their core; use laser or arc rockets while they are airborne. Spiders climb cover and rest between attacks. Laser bosses warn before their beam burst. Vanguard fires four arm guns; Marshal and Atlas warn before paired missiles. Boss light guns pause during heavy attacks and core recovery. Red drums and gasoline crates explode and can chain-react. White medical cases restore 60 HP; blue shield cases grant 6s of protection. Weapon caches sit on the road near ambushes. Health, shields and repair pads sit on side detours; harder modes have fewer. Green repair centers provide more healing. E locates the nearest center. Cannon is available immediately; clear First Light for autocannon and Homeward for rockets. Tap Switch Gun to choose. Cyan and purple map caches grant 12 laser shots or 6 arc rockets. Laser pierces enemies and one concrete barrier; the second stops it. Laser does not damage concrete. Four standard cannon hits break one concrete section. Hills and volcanic rocks cannot be destroyed; drive around them. Assault and boss stages finish at the marked exit. Arc rockets fly over cover and blast both sides. Keys 4/5 select collected weapons. R calls a wide five-round barrage at your aim point; amber circles show danger to both sides.</p></details></aside><section class="campaign-route"><div class="route-heading"><span class="eyebrow">THE ROAD HOME</span><span>${this.save.cleared.filter(Boolean).length} / ${MISSIONS.length} COMPLETE</span></div><div class="route-list">${this.route()}</div></section><footer><button data-action="shop">SHOP · ${this.save.credits} CR</button>${this.settings()}<button class="quiet" data-action="reset-prompt">Reset campaign</button></footer>${this.saveWarning?'<p class="storage-warning">Browser storage is unavailable. Progress will last only for this session.</p>':''}</main>`;
+    this.overlay.innerHTML=`<main class="command-screen"><header class="brand"><span class="brand-mark">◈</span><span>KESTREL DIVISION<small>MERIDIAN RECOVERY COMMAND</small></span><span class="build-label">3D CAMPAIGN / 01</span></header><section class="hero"><span class="eyebrow">MERIDIAN CAMPAIGN</span><h1>STEEL<br><em>FRONT</em><span>LAST SIGNAL</span></h1></section><aside class="briefing panel"><div class="panel-top"><span class="eyebrow">STAGE ${String(this.mission+1).padStart(2,'0')} / ${MISSIONS.length}</span></div><h2>${m.name}</h2><div class="mission-task"><span>OBJECTIVE</span><strong>${m.objective}${this.level===2?` · ${mode(this.save.difficulty).bosses} boss${mode(this.save.difficulty).bosses>1?'es':''}`:''}</strong></div><div class="difficulty" aria-label="Difficulty">${DIFFICULTIES.map(d=>`<button data-action="difficulty" data-value="${d}" aria-pressed="${this.save.difficulty===d}" class="${this.save.difficulty===d?'active':''}">${MODES[d].label}</button>`).join('')}</div><small class="mode-hint">${mode(this.save.difficulty).hint}</small><div class="level-select" aria-label="Stage level">${LEVEL_NAMES.map((name,i)=>`<button data-action="level" data-value="${i}" aria-pressed="${i===this.level}" ${i>unlockedLevel(this.save,this.mission)?'disabled':''}>${i+1} · ${name}</button>`).join('')}</div><button class="primary deploy" data-action="deploy">DEPLOY <span>→</span></button><button class="hangar-button" data-action="hangar"><img src="${import.meta.env.BASE_URL}skins/${this.save.skin}.png" alt=""/><span>SKIN · ${getSkin(this.save.skin).name}<small>${getSkin(this.save.skin).bonus} · Change →</small></span></button><details><summary>Briefing & controls</summary><p class="briefing-copy">${m.briefing} ${m.kind==='defense'?'Supplies mark a circuit around the relay.':`${this.world.layout.closed?'O loop: circle either way and return to the gate. The convoy follows your first branch.':`${ROUTE_LABELS[this.world.layout.shape]} · follow the amber chevrons ${this.world.layout.direction} to the exit.`}`}</p>${this.controls()}<p class="manual">Tanks guard buildings and fuel; infantry watch from trees. Solid cover blocks their view. Nearby squads react when they spot you or take a hit. Break sight to stop aimed fire. Front armor absorbs damage. Flank for stronger hits. Driving at speed can run down hostile infantry; a stationary tank cannot. Red lines warn of incoming fire. Amber marks the objective. Mines hit ground units on both sides. Helicopters fly over cover and land to expose their core; use laser or arc rockets while they are airborne. Spiders climb cover and rest between attacks. Laser bosses warn before their beam burst. Vanguard fires four arm guns; Marshal and Atlas warn before paired missiles. Boss light guns pause during heavy attacks and core recovery. Red drums and gasoline crates explode and can chain-react. White medical cases restore 60 HP; blue shield cases grant 6s of protection. Weapon caches sit on the road near ambushes. Health, shields and repair pads sit on side detours; harder modes have fewer. Green repair centers provide more healing. E locates the nearest center. Cannon is available immediately; clear First Light for autocannon and Homeward for rockets. Tap Switch Gun to choose. Cyan and purple map caches grant 12 laser shots or 6 arc rockets. Laser pierces enemies and one concrete barrier; the second stops it. Laser does not damage concrete. Four standard cannon hits break one concrete section. Hills and volcanic rocks cannot be destroyed; drive around them. Assault and boss stages finish at the marked exit. Arc rockets fly over cover and blast both sides. Keys 4/5 select collected weapons. R calls a wide five-round barrage at your aim point; amber circles show danger to both sides.</p></details></aside><section class="campaign-route"><div class="route-heading"><span class="eyebrow">THE ROAD HOME</span><span>${this.save.cleared.filter(Boolean).length} / ${MISSIONS.length} COMPLETE</span></div><div class="route-list">${this.route()}</div></section><footer><button data-action="shop">SHOP · ${this.save.credits} CR</button>${this.settings()}<button class="quiet" data-action="reset-prompt">Reset campaign</button></footer>${this.saveWarning?'<p class="storage-warning">Browser storage is unavailable. Progress will last only for this session.</p>':''}</main>`;
     this.focusPrimary();
   }
   pause(){if(this.phase!=='playing')return;this.setPhase('paused');this.renderPause();}
@@ -139,10 +140,13 @@ export class Game {
     if(action==='reset-prompt'){this.overlay.innerHTML='<section class="panel pause-panel"><span class="eyebrow">NEW CAMPAIGN</span><h1>Start a new road?</h1><p>This clears unlocked operations, credits and upgrades saved in this browser.</p><button class="primary" data-action="menu">KEEP MY CAMPAIGN</button><button data-action="reset">Reset and start over</button></section>';this.focusPrimary();}
     if(action==='reset'){const {sound,low}=this.save;this.save={...freshSave(),sound,low};this.persist();this.prepare(0);this.showMenu();}
   }
+  canSpawnUnit(x:number,z:number,role:Unit['role'],kind:BossKind=bossKind(this.mission)){
+    const player=role==='player',radius=role==='rifleman'||role==='rocketeer'?.55:role==='boss'?BOSS[kind].radius:1.25;
+    return Math.abs(x)<BOUNDS.x-radius&&Math.abs(z)<BOUNDS.z-radius&&!this.world.covers.some(c=>c.hp>0&&circleBox({x,z},radius,c))&&!this.enemies.some(e=>!e.dead&&!this.airborne(e)&&distance({x,z},e.visual.root.position)<radius+this.unitRadius(e)+.25)&&(!this.convoy||distance({x,z},this.convoy.position)>radius+2.3)&&(player||!this.player||this.navigation.next(this.world,{x,z},this.player.visual.root.position)!==null)&&(player||!this.player||distance({x,z},this.player.visual.root.position)>radius+3);
+  }
   makeUnit(x:number,z:number,role:Unit['role'],kind:BossKind=bossKind(this.mission)):Unit{
-    const boss=role==='boss',player=role==='player';
-    const infantry=role==='rifleman'||role==='rocketeer';const radius=infantry?.55:boss?BOSS[kind].radius:1.25;
-    const free=(px:number,pz:number)=>Math.abs(px)<BOUNDS.x-radius&&Math.abs(pz)<BOUNDS.z-radius&&!this.world.covers.some(c=>c.hp>0&&circleBox({x:px,z:pz},radius,c))&&!this.enemies.some(e=>!e.dead&&!this.airborne(e)&&distance({x:px,z:pz},e.visual.root.position)<radius+this.unitRadius(e)+.25)&&(!this.convoy||distance({x:px,z:pz},this.convoy.position)>radius+2.3)&&(player||!this.player||this.navigation.next(this.world,{x:px,z:pz},this.player.visual.root.position)!==null)&&(player||!this.player||distance({x:px,z:pz},this.player.visual.root.position)>radius+3);
+    const boss=role==='boss',player=role==='player',infantry=role==='rifleman'||role==='rocketeer';
+    const free=(px:number,pz:number)=>this.canSpawnUnit(px,pz,role,kind);
     if(!free(x,z)){const origin={x,z};search:for(let r=3;r<=120;r+=3)for(let a=0;a<16;a++){const px=origin.x+Math.cos(a*Math.PI/8)*r,pz=origin.z+Math.sin(a*Math.PI/8)*r;if(free(px,pz)){x=px;z=pz;break search;}}}
     const visual=this.world.tank(!player,boss,infantry?role:boss?'boss-'+kind:'tank');visual.root.position.set(x,0,z);if(boss){const core=visual.root.getObjectByName('Core');if(core)core.visible=false;}
     const difficulty=mode(this.save.difficulty).health;
@@ -162,7 +166,8 @@ export class Game {
     const deploy=(i:number,total:number,role:Unit['role'],kind?:BossKind)=>{
       const boss=role==='boss',group=boss?4:Math.round(i*3/Math.max(1,total-1)),fraction=boss?Math.max(.9,1-14/route.length):ENCOUNTER_FRACTIONS[group],meters=route.length*fraction,p=routeSample(route.points,meters);
       const lateral=(i%2?1:-1)*(boss?6:4+Math.floor(i/8)%3*2.8),forward=boss?Math.floor(i/2)*7:(i%3-1)*4;
-      const unit=m.kind==='defense'?this.defenseSpawn(i+(boss?count+encounter.infantry:role==='rifleman'||role==='rocketeer'?count:0),role,kind):this.makeUnit(p.x+p.dz*lateral+p.dx*forward,p.z-p.dx*lateral+p.dz*forward,role,kind);
+      const fallback={x:p.x+p.dz*lateral+p.dx*forward,z:p.z-p.dx*lateral+p.dz*forward},post=boss||m.kind==='defense'?fallback:guardPost(this,p,fallback,role,i,group);
+      const unit=m.kind==='defense'?this.defenseSpawn(i+(boss?count+encounter.infantry:role==='rifleman'||role==='rocketeer'?count:0),role,kind):this.makeUnit(post.x,post.z,role,kind);
       const facing=m.kind==='defense'?{x:-unit.visual.root.position.x,z:-13-unit.visual.root.position.z}:{x:-p.dx,z:-p.dz};unit.heading=unit.aim=Math.atan2(facing.x,facing.z);
       unit.encounter={group,anchor:{x:p.x,z:p.z},meters,active:false,...(m.kind==='defense'?{wakeAt:boss?21:group*7}:{})};this.enemies.push(unit);
     };
@@ -277,15 +282,21 @@ export class Game {
     for(let i=0;i<this.enemies.length;i++){
       const e=this.enemies[i];if(e.dead)continue;if(e.encounter&&!e.encounter.active){e.visual.root.userData.walking=false;e.visual.beam.visible=false;continue;}if(e.role==='boss'){this.bosses.update(this,e,dt);continue;}
       const p=e.visual.root.position;e.visual.root.userData.walking=false;
-      let target:Point=playerPos;
-      if(m.kind==='defense'&&distance(p,playerPos)>18)target={x:0,z:-13};
-      if(this.convoy&&distance(p,this.convoy.position)<distance(p,playerPos)+3)target=this.convoy.position;
+      const playerVisible=seesTarget(this,e,playerPos),convoyVisible=!!this.convoy&&seesTarget(this,e,this.convoy.position);
+      let target:Point|undefined,objectiveTarget=false;
+      if(playerVisible)target=playerPos;
+      if(convoyVisible&&(!target||distance(p,this.convoy!.position)<distance(p,target)+3))target=this.convoy!.position;
+      if(target){e.lastSeen={x:target.x,z:target.z};e.searchUntil=this.elapsed+6;}
+      else if(m.kind==='defense'||m.kind==='capture'&&!e.encounter){target={x:0,z:-13};objectiveTarget=true;}
+      else if(e.lastSeen&&(e.searchUntil??0)>this.elapsed&&distance(p,e.lastSeen)>2)target=e.lastSeen;
+      if(!target){e.visual.beam.visible=false;this.moveUnit(e,0,0,dt);this.syncVisual(e);continue;}
+      const investigating=target===e.lastSeen,capturing=objectiveTarget&&m.kind==='capture';
       const dist=distance(p,target),desired=Math.atan2(target.x-p.x,target.z-p.z);
       e.aim=turnToward(e.aim,desired,dt*2);
       const obstruction=this.world.covers.some(c=>c.hp>0&&segmentBox(p,target,c,this.unitRadius(e)+.2)!==null);
       if(e.role!=='sentry'||dist>26||obstruction){
-        const advance=dist>17||obstruction?1:dist<10?-.55:0;
-        const side=e.role==='raider'?.5:obstruction?.7:0;
+        const advance=dist>(investigating?2:capturing?4:17)||obstruction?1:dist<10&&!investigating&&!capturing?-.55:0;
+        const side=investigating||capturing?0:e.role==='raider'?.5:obstruction?.7:0;
         const detour=obstruction?this.navigation.next(this.world,p,target):null;
         const direction=detour?Math.atan2(detour.x-p.x,detour.z-p.z):desired+Math.sin(this.elapsed*.8+i)*.2;
         const speed=this.isInfantry(e)?2.4:e.role==='heavy'?2.9:4;
@@ -293,18 +304,19 @@ export class Game {
         this.moveUnit(e,dx,dz,dt);if(Math.abs(dx)+Math.abs(dz)>.001)e.heading=turnToward(e.heading,Math.atan2(dx,dz),dt*2);
       }
       if(e.role==='sentry'&&dist<=26&&!obstruction&&terrainAt(this.world.environment.biome,p)==='ice')this.moveUnit(e,0,0,dt);
-      const range=m.kind==='defense'&&target!==playerPos?24:38;
-      if(dist<range)e.cooldown-=dt;else e.cooldown=Math.max(e.cooldown,.85);
-      const beam=e.visual.beam;beam.visible=e.cooldown<.85&&dist<range;beam.scale.z=dist;beam.position.set(p.x+Math.sin(e.aim)*dist/2,.12,p.z+Math.cos(e.aim)*dist/2);beam.rotation.y=e.aim;
+      const canFire=(target===playerPos||target===this.convoy?.position||objectiveTarget&&!capturing)&&clearSight(this,p,target);
+      const range=objectiveTarget?24:38;
+      if(dist<range&&canFire)e.cooldown-=dt;else e.cooldown=Math.max(e.cooldown,.85);
+      const beam=e.visual.beam;beam.visible=canFire&&e.cooldown<.85&&dist<range;beam.scale.z=dist;beam.position.set(p.x+Math.sin(e.aim)*dist/2,.12,p.z+Math.cos(e.aim)*dist/2);beam.rotation.y=e.aim;
       this.syncVisual(e);
-      if(e.cooldown<=0&&dist<range&&(!this.isInfantry(e)||!obstruction)){this.shoot(e,false);e.cooldown=e.role==='rifleman'?1.1:e.role==='rocketeer'?3.5:e.role==='sentry'?2.6:3.1;}
+      if(e.cooldown<=0&&dist<range&&canFire){this.shoot(e,false);e.cooldown=e.role==='rifleman'?1.1:e.role==='rocketeer'?3.5:e.role==='sentry'?2.6:3.1;}
     }
   }
   airborne(unit:Unit){return unit.bossKind==='helicopter'&&unit.visual.root.position.y>2;}
   damageUnit(unit:Unit,damage:number,source:Point,antiAir=false){
     if(this.airborne(unit)&&!antiAir)return;
     if(unit.dead||unit===this.player&&this.shieldTime>0)return;
-    if(unit!==this.player&&damage>0)this.encounters.alert(this,unit);
+    if(unit!==this.player&&damage>0)this.encounters.alert(this,unit,source);
     const multiplier=this.isInfantry(unit)?1:armorMultiplier(unit.visual.root.position,unit.heading,source);
     unit.hp-=damage*multiplier*(unit.role==='boss'?this.bosses.multiplier(unit):1);
     const impact=unit.visual.root.position.clone();impact.y+=1.4;this.world.fx.impact(impact);

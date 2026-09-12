@@ -1,3 +1,4 @@
+import {buildGuardLandmarks} from './enemy-posts';
 import {roadVertices} from './road-geometry';
 import {stageLayout,overlapsReservation,roadDistance,projectRoute,routeSample} from './stage-layout';
 import {terrainAt,terrainSpeed} from './terrain';
@@ -239,7 +240,7 @@ export class World {
     // Extraction pylons frame the road.
     const previous=this.layout.points.at(-2)!,angle=Math.atan2(exit.x-previous.x,exit.z-previous.z);
     for(const side of [-4,4]){const x=exit.x+Math.cos(angle)*side,z=exit.z-Math.sin(angle)*side;this.box(.45,3.2,.45,0x3e5751,x,1.6,z);this.box(.65,.2,.65,0x98f3bf,x,3.3,z);}
-    this.environment.build(this,index);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);
+    this.environment.build(this,index);buildGuardLandmarks(this,kind);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);
     this.target.set(0,0,0);
   }
   private naturalBarriers(){
