@@ -6,14 +6,14 @@ import {DIFFICULTIES} from '../src/three/difficulty';
 import {segmentBox,circleBox} from '../src/three/rules';
 
 test('S, mirrored S, O and U have distinct whole-map geometry and fair travel time',()=>{
- const s=routePattern(4,2)!,mirror=routePattern(6,2)!,l=routePattern(5,0)!,u=routePattern(5,1)!;
+ const s=routePattern(4,2)!,mirror=routePattern(6,2)!,l=routePattern(2,1)!,u=routePattern(5,1)!;
  expect(s.length).toBe(388);expect(l.length).toBeCloseTo(225.6);expect(u.length).toBe(276);
  expect(mirror.points).toEqual(s.points.map(p=>({x:-p.x,z:p.z})));
  const points=s.points;expect(Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x))).toBe(100);expect(Math.max(...points.map(p=>p.z))-Math.min(...points.map(p=>p.z))).toBe(88);
  expect(new Set(points.filter(p=>p.x&&p.z).map(p=>`${Math.sign(p.x)},${Math.sign(p.z)}`)).size).toBe(4);
  expect(l.points[0]).toEqual(l.points.at(-1));expect(new Set(l.points.map(p=>p.x)).size).toBe(3);
  expect(u.points[0].z).toBe(u.points.at(-1)!.z);expect(u.points[2].z).not.toBe(u.points[0].z);
- let changed=0;for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++){const p=routePattern(stage,level);if(!p)continue;changed++;const m=levelMission(stage,level);expect(m.parTime).toBeGreaterThan(p.length/(m.kind==='escort'?3.4:9)+30);}expect(changed).toBe(26);
+ let changed=0;for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++){const p=routePattern(stage,level);if(!p)continue;changed++;const m=levelMission(stage,level);expect(m.parTime).toBeGreaterThan(p.length/(m.kind==='escort'?3.4:9)+30);}expect(changed).toBe(22);
 });
 
 test('natural landforms preserve every route, shoulder and volcano across all difficulties',()=>{
@@ -41,7 +41,7 @@ test('every shaped Crazy level keeps all enemies and supply connections clear',a
 
 test('natural cover stops cannon and laser, survives bombardment and retains Low detail collision',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
- const result=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};g.start(4,0);const cover=g.world.covers.find((c:any)=>c.natural);g.world.covers=[cover];g.enemies=[];g.player.visual.root.position.set(cover.x,0,cover.z+14);g.player.aim=Math.PI;g.syncVisual(g.player);const target=g.makeUnit(cover.x,cover.z-12,'heavy');target.visual.root.position.set(cover.x,0,cover.z-12);target.hp=target.max=10000;g.enemies=[target];
+ const result=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};g.start(4,2);const cover=g.world.covers.find((c:any)=>c.natural);g.world.covers=[cover];g.enemies=[];g.player.visual.root.position.set(cover.x,0,cover.z+14);g.player.aim=Math.PI;g.syncVisual(g.player);const target=g.makeUnit(cover.x,cover.z-12,'heavy');target.visual.root.position.set(cover.x,0,cover.z-12);target.hp=target.max=10000;g.enemies=[target];
   for(let shot=0;shot<10;shot++){g.shoot(g.player,true);for(let n=0;n<40;n++)g.updateShots(1/60);}g.special.fire(g,3);const protectedTarget=target.hp===10000,revision=g.world.navigationRevision;g.hitCover(cover,999999);const solid=cover.hp===Infinity&&cover.mesh.visible&&revision===g.world.navigationRevision;
   const old=g.world.arena.getObjectByName('RouteLandforms').children[0],matrix=Array.from(old.instanceMatrix.array);await g.world.load(true);g.world.settings(true);g.player.visual.root.position.set(cover.x,0,cover.z+cover.d/2+1.35);for(let i=0;i<20;i++)g.moveUnit(g.player,0,-.9,1/60);const collision=g.player.visual.root.position.z>=cover.z+cover.d/2+1.25;
   g.player.visual.root.position.set(cover.x+cover.w/2+1.5,0,cover.z+cover.d/2+1.35);for(let i=0;i<20;i++)g.moveUnit(g.player,0,-.9,1/60);const flank=g.player.visual.root.position.z<cover.z-cover.d/2;

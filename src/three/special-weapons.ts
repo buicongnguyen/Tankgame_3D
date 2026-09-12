@@ -24,7 +24,7 @@ export class SpecialWeapons{
    for(const hit of intersections){
     hits.push(hit);if(!hit.cover)continue;
     // Adjacent panels share one barrier: crossing a seam must not consume another wall.
-    if(isConcrete(hit.cover))concrete.add(hit.cover.section?.parts??hit.cover);
+    if(isConcrete(hit.cover))concrete.add(hit.cover.section?.wall??hit.cover);
     if(!isConcrete(hit.cover)||concrete.size===2){limit=hit.t;break;}
    }
    for(const hit of hits){if(hit.cover)g.hitCover(hit.cover,damage,true);else if(hit.unit)g.damageUnit(hit.unit,damage,start,true);}

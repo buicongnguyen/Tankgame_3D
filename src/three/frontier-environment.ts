@@ -39,7 +39,7 @@ export function buildFrontier(world:World,biome:Biome){
   // The caldera occupies a real, blocked footprint; walkable ground has no fake lava.
   for(const c of [...world.covers])if(Math.abs(c.x-VOLCANO.x)<(c.w+VOLCANO.width)/2&&Math.abs(c.z-VOLCANO.z)<(c.d+VOLCANO.width)/2){c.hp=0;world.updateConcrete(c);c.mesh.removeFromParent();world.covers.splice(world.covers.indexOf(c),1);}
   add('volcano',VOLCANO.x,VOLCANO.z,VOLCANO.width,VOLCANO.width,Infinity,true)!.scale.setScalar(VOLCANO.scale);
-  for(let i=0;i<28;i++)add('volcanic-rock',(i%2?1:-1)*(18+i*13%47),-52+i*19%104,2.6,2.2,Infinity);
+  for(let i=0;i<10;i++)add('volcanic-rock',(i%2?1:-1)*(18+i*13%47),-52+i*19%104,2.6,2.2,Infinity);
   for(const [x,z] of [[-23,40],[26,43],[38,-12]])add('house',x,z,6,5,220);
  }
  if(biome==='desert'){
@@ -71,7 +71,7 @@ export function buildFrontier(world:World,biome:Biome){
   housing:for(let x=-64;x<=64;x+=8)for(let z=-50;z<=50;z+=8){if(world.covers.filter(c=>c.kind==='cityblock'||c.kind==='house').length>=26)break housing;add('house',x,z,6,5,220);}
  }
  if(biome==='quake'){
-  for(let i=0;i<34;i++)add('volcanic-rock',(i%2?1:-1)*(18+i*11%46),-51+i*19%102,2.6,2.2,Infinity);
+  for(let i=0;i<12;i++)add('volcanic-rock',(i%2?1:-1)*(18+i*11%46),-51+i*19%102,2.6,2.2,Infinity);
   for(let i=0;i<22;i++){const x=(i%2?1:-1)*(17+i*13%48),z=-52+i*17%104;const crack=plane(new T.PlaneGeometry(5+i%4,.16),0x393329,x,z,.07);crack.rotation.z=Math.sin(i)*.8;}
   for(const [x,z] of [[-24,46],[25,-45],[-47,-20]])add('house',x,z,6,5,220);
  }

@@ -8,8 +8,8 @@ export type SupplyKind='repair'|'supply'|'mine'|'laser'|'arc'|'health'|'shield';
 export interface SupplyPosition extends Point {kind:SupplyKind;guardGroup?:number;}
 export interface Landform extends Box {kind:'hill'|'volcanic-rock';}
 export interface RoadCorridor {a:Point;b:Point;width:number;}
-export interface StageLayout {shape:RouteShape;closed:boolean;rotation:number;corridors:RoadCorridor[];landforms:Landform[];points:Point[];length:number;spawn:Point;heading:number;barriers:Box[];supplies:SupplyPosition[];reserved:Box[];encounters:Point[];southbound:boolean;direction:string;}
-// Legacy routes retain their established bends; named patterns can rotate the whole route.
+export interface StageLayout {shape:RouteShape;closed:boolean;rotation:number;corridors:RoadCorridor[];landforms:Landform[];points:Point[];length:number;spawn:Point;heading:number;barriers:Box[];breaches:Box[][];supplies:SupplyPosition[];reserved:Box[];encounters:Point[];southbound:boolean;direction:string;}
+// Intermediate relay approaches keep their bends; introductory travel routes are direct.
 const ROUTES:number[][][]=[
  [[0,48],[0,34],[-16,34],[-16,10],[16,10],[16,-18],[-12,-18],[-12,-42],[0,-42],[0,-50]],
  [[0,-50],[18,-50],[18,-32],[-16,-32],[-16,-13],[0,-13]],
@@ -28,6 +28,17 @@ const ROUTES:number[][][]=[
  [[0,48],[-16,48],[-16,24],[16,24],[16,-2],[-16,-2],[-16,-32],[0,-32],[0,-50]],
  [[0,-50],[0,-44],[16,-44],[16,-20],[-16,-20],[-16,8],[16,8],[16,38],[0,38],[0,50]],
 ];
+function approach(stage:number,level:number){
+ const defense=[3,8,12].includes(stage),capture=[1,9].includes(stage);
+ if(level===0){
+  if(defense)return [[-4,-3],[-4,12],[12,12],[12,-13],[0,-13]];
+  if(capture)return [[0,-50],[0,-13]];
+  const route=ROUTES[stage];return [route[0],route[route.length-1]];
+ }
+ if(level===2&&defense)return [[-4,-3],[-30,-3],[-30,25],[30,25],[30,-13],[0,-13]];
+ if(level===2&&capture)return [[0,-50],[30,-50],[30,-30],[-30,-30],[-30,-13],[0,-13]];
+ return ROUTES[stage];
+}
 export function routeLength(points:Point[]){return points.slice(1).reduce((n,p,i)=>n+distance(points[i],p),0);}
 export function routeSample(points:Point[],meters:number){
  for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],d=distance(a,b);if(meters<=d||i===points.length-1){const t=clamp(meters/d,0,1);return {x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t,dx:(b.x-a.x)/d,dz:(b.z-a.z)/d};}meters-=d;}
@@ -55,7 +66,7 @@ export function overlapsReservation(layout:Pick<StageLayout,'reserved'|'corridor
 export function stageLayout(stage:number,level=0,kind='assault',difficulty='normal'):StageLayout{
  const mirror=level===1&&![10,13].includes(stage)?-1:1;
  const pattern=routePattern(stage,level),shape=pattern?.shape??'winding';
- const points=pattern?.points??ROUTES[stage].map(([x,z])=>({x:x*mirror,z})),length=routeLength(points),rng=random(9127+stage*7919+level*104729);
+ const points=pattern?.points??approach(stage,level).map(([x,z])=>({x:x*mirror,z})),length=routeLength(points),rng=random(9127+stage*7919+level*104729);
  const corridors=points.slice(1).map((p,i)=>({a:points[i],b:p,width:10})),heading=Math.atan2(points[1].x-points[0].x,points[1].z-points[0].z);
  const spawn=kind==='defense'?{x:-4,z:-3}:{x:points[0].x-Math.cos(heading)*4,z:points[0].z+Math.sin(heading)*4};
  const count=mode(difficulty).supplies,pool:SupplyKind[]=count===2?['repair',(['laser','arc','shield','health'] as SupplyKind[])[stage%4]]:['repair'];
@@ -80,15 +91,17 @@ export function stageLayout(stage:number,level=0,kind='assault',difficulty='norm
  const reserved=[...access,{x:spawn.x,z:spawn.z,w:10,d:10},{x:0,z:-13,w:17,d:17},...encounters.map(p=>({x:p.x,z:p.z,w:23,d:23})),...supplies.map(s=>({x:s.x,z:s.z,w:9,d:9}))];
  if(kind==='defense')reserved.push({x:0,z:0,w:16,d:128});
  const reservation={reserved,corridors};
- const landforms:Landform[]=[];
+ const landforms:Landform[]=[],breaches:Box[][]=[],breachFootprints:Box[]=[];let terrainSlot=0;
  // City routes use buildings as their enclosing terrain, preserving dense urban blocks.
  for(const p of stage===13?[]:landformCandidates(shape)){
   const box={x:p.x+(shape==='O'&&stage===10?20:0),z:p.z,w:shape==='O'?12:14,d:shape==='O'?9:10};
   if(overlapsReservation(reservation,box)||stage===10&&distance(box,{x:-28,z:-38})<28)continue;
-  landforms.push({...box,kind:[4,5,10,14].includes(stage)?'volcanic-rock':'hill'});
+  // Preserve a few landmarks; most former ridges become breachable shortcuts.
+  if(terrainSlot++%9===0&&landforms.length<2)landforms.push({...box,kind:[4,5,10,14].includes(stage)?'volcanic-rock':'hill'});
+  else {breachFootprints.push(box);breaches.push((level===2?[-3,0,3]:[-2.2,2.2]).map(offset=>({x:box.x,z:box.z+offset,w:box.w,d:1.8})));}
  }
  // Landforms reserve scenery space but may meet one another to form a solid ridge.
- reserved.push(...landforms);
+ reserved.push(...landforms,...breachFootprints);
  const barriers:Box[]=[];
  if(kind!=='defense')for(let i=1;i<points.length&&barriers.length<8;i++){
   const a=points[i-1],b=points[i],vertical=a.x===b.x,offset=vertical?a.x:a.z;
@@ -109,11 +122,12 @@ export function stageLayout(stage:number,level=0,kind='assault',difficulty='norm
    }
   }
  }
+ barriers.push(...breaches.flat());
  for(let i=0;i<6;i++)for(let attempt=0;attempt<500;attempt++){
   const p={x:(rng()-.5)*124,z:(rng()-.5)*100};
-  if(roadDistance(points,p)>10&&distance(p,spawn)>15&&supplies.every(s=>distance(s,p)>10)&&!overlapsReservation(reservation,{...p,w:4,d:4})&&!barriers.some(b=>segmentBox(p,p,b,4)!==null)&&!(stage===10&&distance(p,{x:-28,z:-38})<22)){supplies.push({kind:'mine',...p});reserved.push({x:p.x,z:p.z,w:5,d:5});break;}
+  if(roadDistance(points,p)>10&&distance(p,spawn)>15&&supplies.every(s=>distance(s,p)>10)&&!overlapsReservation(reservation,{...p,w:6,d:6})&&!barriers.some(b=>segmentBox(p,p,b,4)!==null)&&!(stage===10&&distance(p,{x:-28,z:-38})<22)){supplies.push({kind:'mine',...p});reserved.push({x:p.x,z:p.z,w:7,d:7});break;}
  }
  const start=points[0],end=points.at(-1)!,dx=end.x-start.x,dz=end.z-start.z;
  const direction=shape==='O'?'around the loop':Math.abs(dx)>Math.abs(dz)*2?(dx>0?'east':'west'):Math.abs(dz)>Math.abs(dx)*2?(dz>0?'south':'north'):(dz>0?'south':'north')+(dx>0?'east':'west');
- return {shape,closed:shape==='O',rotation:pattern?.rotation??0,corridors,landforms,points,length,spawn,heading,barriers,supplies,reserved,encounters,southbound:start.z<end.z,direction};
+ return {shape,closed:shape==='O',rotation:pattern?.rotation??0,corridors,landforms,points,length,spawn,heading,barriers,breaches,supplies,reserved,encounters,southbound:start.z<end.z,direction};
 }

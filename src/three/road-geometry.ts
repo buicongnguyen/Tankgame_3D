@@ -3,6 +3,8 @@ import type {Point} from './rules';
 // Build a single non-overlapping surface in the route's orthogonal local frame,
 // then rotate it into the arena. Keeping turns coplanar avoids snow flicker.
 export function roadVertices(points:Point[],rotation=0,width=8):number[]{
+ // A direct introductory route can run at any angle, including non-45-degree diagonals.
+ if(points.length===2)rotation=Math.atan2(points[1].z-points[0].z,points[1].x-points[0].x);
  const local=points.map(p=>{const q=rotatePoint(p,-rotation);return {x:Math.round(q.x*1e8)/1e8,z:Math.round(q.z*1e8)/1e8};});
  const half=width/2,rectangles=local.slice(1).map((p,i)=>{const a=local[i];return {left:Math.min(a.x,p.x)-half,right:Math.max(a.x,p.x)+half,top:Math.min(a.z,p.z)-half,bottom:Math.max(a.z,p.z)+half};});
  const xs=[...new Set(rectangles.flatMap(r=>[r.left,r.right]))].sort((a,b)=>a-b),zs=[...new Set(rectangles.flatMap(r=>[r.top,r.bottom]))].sort((a,b)=>a-b),vertices:number[]=[];

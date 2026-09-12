@@ -18,7 +18,7 @@ import { CombatEffects } from './effects';
 import { BOUNDS, buildActivities } from './activities';
 import type { Activity } from './activities';
 export interface TankVisual { root: T.Group; hull: T.Object3D; turret: T.Object3D; muzzle: T.Object3D; bar: T.Mesh; beam: T.Mesh; }
-export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; natural?:boolean; section?: {parts:T.InstancedMesh[];index:number}; }
+export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; natural?:boolean; section?: {parts:T.InstancedMesh[];index:number;wall:object}; }
 interface Effect { mesh: T.Mesh; life: number; max: number; velocity: T.Vector3; }
 const scratch = new T.Vector3();
 export class World {
@@ -226,7 +226,7 @@ export class World {
     }
     for(const [x,z] of [[-20,9],[24,-8],[-41,-32],[39,22]]){if(overlapsReservation(this.layout,{x,z,w:2.2,d:1.55})||this.layout.supplies.some(p=>Math.hypot(x-p.x,z-p.z)<9))continue;const mesh=this.clone('fuelcrate');mesh.position.set(x,0,z);this.arena.add(mesh);this.covers.push({x,z,w:2.2,d:1.55,kind:'fuelcrate',hp:35,mesh});}
     this.naturalBarriers();
-    for(const barrier of this.layout.barriers)this.concreteBarrier(barrier);
+    this.concreteBarriers(this.layout.barriers);
     if(GROUND_COLORS[BIOMES[index]]!==undefined)frontierBoundary(this,BIOMES[index]);
     else {
     for(let i=0;i<60;i++){
@@ -260,23 +260,27 @@ export class World {
       for(const p of forms){const mesh=new T.Group();mesh.name='NaturalCover';mesh.position.set(p.x,0,p.z);this.arena.add(mesh);this.covers.push({...p,hp:Infinity,mesh,natural:true});}
     }
   }
-  private concreteBarrier(box:Box){
-    const vertical=box.d>box.w,length=vertical?box.d:box.w,count=Math.ceil(length/6.4),width=length/count;
+  concreteBarrier(box:Box){this.concreteBarriers([box]);}
+  private concreteBarriers(boxes:Box[]){
+    const panels=boxes.flatMap(box=>{
+      const vertical=box.d>box.w,length=vertical?box.d:box.w,count=Math.ceil(length/6.4),width=length/count,wall={};
+      return Array.from({length:count},(_,i)=>{const offset=-length/2+width*(i+.5);return {x:box.x+(vertical?0:offset),z:box.z+(vertical?offset:0),vertical,width,wall};});
+    });
+    if(!panels.length)return;
     const root=new T.Group();root.name='RouteConcrete';this.arena.add(root);
     const template=this.templates.get('barricade')!;template.updateMatrixWorld(true);const parts:T.InstancedMesh[]=[];
     template.traverse(o=>{if(!(o instanceof T.Mesh))return;
-      const instances=new T.InstancedMesh(o.geometry,o.material,count);instances.userData={...o.userData};instances.castShadow=true;instances.receiveShadow=true;
-      for(let i=0;i<count;i++){
-        const offset=-length/2+width*(i+.5),position=new T.Vector3(box.x+(vertical?0:offset),0,box.z+(vertical?offset:0));
-        const matrix=new T.Matrix4().compose(position,new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),vertical?Math.PI/2:0),new T.Vector3(width/3.2,1.3,1.5)).multiply(o.matrixWorld);
+      const instances=new T.InstancedMesh(o.geometry,o.material,panels.length);instances.userData={...o.userData};instances.castShadow=true;instances.receiveShadow=true;
+      panels.forEach(({x,z,vertical,width},i)=>{
+        const matrix=new T.Matrix4().compose(new T.Vector3(x,0,z),new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),vertical?Math.PI/2:0),new T.Vector3(width/3.2,1.3,1.5)).multiply(o.matrixWorld);
         instances.setMatrixAt(i,matrix);instances.setColorAt(i,new T.Color(0xffffff));
-      }
+      });
       instances.computeBoundingSphere();root.add(instances);parts.push(instances);
     });
-    for(let i=0;i<count;i++){
-      const offset=-length/2+width*(i+.5),x=box.x+(vertical?0:offset),z=box.z+(vertical?offset:0),mesh=new T.Group();mesh.position.set(x,0,z);mesh.name='ConcreteSection';this.arena.add(mesh);
-      this.covers.push({x,z,w:vertical?1.8:width,d:vertical?width:1.8,kind:'barricade',hp:176,mesh,section:{parts,index:i}});
-    }
+    panels.forEach(({x,z,vertical,width,wall},index)=>{
+      const mesh=new T.Group();mesh.position.set(x,0,z);mesh.name='ConcreteSection';this.arena.add(mesh);
+      this.covers.push({x,z,w:vertical?1.8:width,d:vertical?width:1.8,kind:'barricade',hp:176,mesh,section:{parts,index,wall}});
+    });
   }
   updateConcrete(cover:Cover){
     if(!cover.section)return;const {parts,index}=cover.section;

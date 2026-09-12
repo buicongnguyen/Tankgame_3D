@@ -1,14 +1,15 @@
 import * as T from 'three';
+import {MINE_TRIGGER_RADIUS} from './combat-ranges';
 import type {SupplyKind,SupplyPosition} from './stage-layout';
 import type { Point } from './rules';
 export const BOUNDS={x:72,z:60};
 export type ActivityKind=SupplyKind;
-export interface Activity extends Point {kind:ActivityKind;mesh:T.Group;spent:boolean;remaining:number;amount:number;}
+export interface Activity extends Point {kind:ActivityKind;mesh:T.Group;spent:boolean;remaining:number;amount:number;airborne?:boolean;}
 export function buildActivities(parent:T.Group,layout:SupplyPosition[]){return layout.map(({kind,x,z})=>createActivity(parent,kind,x,z));}
 export function createActivity(parent:T.Group,kind:ActivityKind,x:number,z:number,amount=kind==='health'?60:kind==='shield'?6:kind==='laser'?12:kind==='arc'?6:kind==='repair'?160:1):Activity{
   const mesh=new T.Group();mesh.position.set(x,0,z);parent.add(mesh);
   const color=kind==='repair'||kind==='health'?0x75ffbd:kind==='shield'?0x55aaff:kind==='supply'?0x70d9ff:kind==='laser'?0x8bffff:kind==='arc'?0xc392ff:0xff7055;
-  const marker=new T.Mesh(new T.RingGeometry(kind==='mine'?.6:2.7,kind==='mine'?.85:2.85,32),new T.MeshBasicMaterial({color,side:T.DoubleSide,transparent:true,opacity:.7}));marker.rotation.x=-Math.PI/2;marker.position.y=.12;marker.userData.owned=true;mesh.add(marker);
+  const marker=new T.Mesh(new T.RingGeometry(kind==='mine'?MINE_TRIGGER_RADIUS-.12:2.7,kind==='mine'?MINE_TRIGGER_RADIUS:2.85,32),new T.MeshBasicMaterial({color,side:T.DoubleSide,transparent:true,opacity:.7,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));marker.rotation.x=-Math.PI/2;marker.position.y=.12;marker.userData.owned=true;mesh.add(marker);
   const body=new T.Mesh(kind==='mine'?new T.CylinderGeometry(.6,.75,.2,12):kind==='repair'?new T.CylinderGeometry(2.8,2.8,.12,40):kind==='shield'?new T.CylinderGeometry(1,1,.65,6):new T.BoxGeometry(1.5,kind==='health'?.85:.5,1.5),new T.MeshStandardMaterial({color:kind==='mine'?0x635342:kind==='health'?0xeaf4ef:kind==='shield'?0x1949a0:0x344b46,roughness:.8}));body.position.y=kind==='mine'?.21:kind==='repair'?.19:kind==='health'?.56:kind==='shield'?.46:.38;body.userData.owned=true;mesh.add(body);
   if(kind==='repair'){for(const x of [-2.5,2.5]){const post=new T.Mesh(new T.BoxGeometry(.3,1.4,.3),new T.MeshStandardMaterial({color:0x75ffbd,emissive:0x205d40}));post.position.set(x,.7,0);post.userData.owned=true;mesh.add(post);}}
   if(kind!=='mine'){

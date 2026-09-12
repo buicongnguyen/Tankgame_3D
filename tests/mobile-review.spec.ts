@@ -31,7 +31,7 @@ test('lethal damage cannot be repaired and approaching enemies retain fire warni
 // WebKit validates the rendering engine, not physical iOS hardware.
 test('WebKit mobile startup and touch action controls',async()=>{
  const browser=await webkit.launch({args:[]});const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('http://127.0.0.1:5178/?e2e');await page.getByRole('button',{name:'DEPLOY'}).tap();await page.locator('#artillery').tap();await expect(page.locator('#artillery-label')).toContainText('s');await page.locator('#pause').tap();await expect(page.locator('body')).toHaveAttribute('data-phase','paused');await page.screenshot({path:'test-results/mobile-webkit.png'});expect(errors).toEqual([]);await browser.close();
+ await page.goto('http://127.0.0.1:5178/?e2e');await page.getByRole('button',{name:'DEPLOY'}).tap();await page.locator('#artillery').tap();await page.locator('[data-support="support-strike"]').tap();await expect(page.locator('#artillery-label')).toContainText('s');await page.locator('#pause').tap();await expect(page.locator('body')).toHaveAttribute('data-phase','paused');await page.screenshot({path:'test-results/mobile-webkit.png'});expect(errors).toEqual([]);await browser.close();
 });
 
 test('long mobile objectives leave radio space and the convoy waits for blocking tanks',async({browser})=>{

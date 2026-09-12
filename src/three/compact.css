@@ -113,3 +113,6 @@ body[data-graphics="low"] #overlay{backdrop-filter:none}
 body[data-graphics="low"] .vignette{box-shadow:none}
 
 @media(min-width:1000px){.route-list{grid-template-columns:repeat(7,minmax(0,1fr))}}
+
+/* Compact radio choices reuse the existing touch-safe weapon panel. */
+.weapon-picker.support-picker{grid-template-columns:repeat(2,minmax(0,1fr));width:min(340px,calc(100vw - 20px))}

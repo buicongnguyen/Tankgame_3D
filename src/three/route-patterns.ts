@@ -10,9 +10,9 @@ const SHAPES:Record<Exclude<RouteShape,'winding'|'S-45'>,number[][]>={
 };
 // Keep introductory, relay and defense routes; later levels introduce new geography.
 const SELECTION:Record<number,(Exclude<RouteShape,'winding'>|null)[]>={
- 0:[null,'U','S'],2:[null,'O','S-45'],4:['O','S-45','S'],
- 5:['O','U','S-45'],6:[null,'O','flipped-S'],7:[null,'S-45','flipped-S'],
- 10:[null,'O','U'],11:[null,'U','S-45'],13:['O','S-45','S'],14:['O','S-45','flipped-S'],15:[null,'U','S-45'],
+ 0:[null,'U','S'],2:[null,'O','S-45'],4:[null,'S-45','S'],
+ 5:[null,'U','S-45'],6:[null,'O','flipped-S'],7:[null,'S-45','flipped-S'],
+ 10:[null,'O','U'],11:[null,'U','S-45'],13:[null,'S-45','S'],14:[null,'S-45','flipped-S'],15:[null,'U','S-45'],
 };
 export function routePattern(stage:number,level:number){
  const shape=SELECTION[stage]?.[level];if(!shape)return null;

@@ -15,7 +15,7 @@ Lead Kestrel through sixteen stages, each with three levels (48 levels in total)
 - Earthquakes warn before stopping ground tanks for 1.6 seconds, with rising dust; guns, infantry and airborne helicopters remain active.
 - Marsh water holes slow and visually sink tanks; periodic traction recovery lets them escape. Bridge and road routes preserve speed.
 - Destructible cover, supply crates, explosive fuel drums and gasoline crates.
-- S, mirrored S, diagonal S, U and open O loops on 26 levels. Traveling stages progress from shorter to longer routes. O loops allow either direction during play; indestructible Blender hills and basalt outcrops shape the lanes. See [O loops and boss reinforcements](docs/O_LOOPS_AND_BOSS_REINFORCEMENTS.md).
+- S, mirrored S, diagonal S, U and open O loops on 22 later levels. Every background starts with a direct route or short relay circuit, then uses progressively longer routes. O loops allow either direction during play. Most interior ridges become two or three rows of destructible concrete, with a few indestructible Blender hills and basalt landmarks remaining. See [O loops and boss reinforcements](docs/O_LOOPS_AND_BOSS_REINFORCEMENTS.md).
 - Cannon, unlockable autocannon and siege rockets, plus collectible pulse laser and arc rockets.
 - Nine boss types: Rail Titan, Tempest Carrier, Iron Sovereign, helicopter, climbing spider, laser tank, Iron Vanguard four-gun robot, Siege Marshal rocket/gun robot and Atlas Launcher missile truck. Each has attack warnings and exposed-core windows. Helicopters land behind cover; spiders climb it and rest; laser bursts stop at solid cover.
 - Blender riflemen and rocketeers watch from trees; tanks guard buildings and fuel containers. Solid cover blocks detection and aimed fire. Nearby squadmates react to sightings or hits; ordinary enemies investigate the last sighting for six seconds. See [enemy guard posts and sight](docs/ENEMY_GUARD_POSTS_AND_SIGHT.md).
@@ -59,11 +59,12 @@ The browser tests use controlled integration fixtures for mission edge cases, al
 | Drive | WASD or arrow keys | Left stick |
 | Aim/fire | Mouse or I/J/K/L aim; hold click, Space or F to fire | Right stick |
 | Switch weapon | C opens selector; 1 / 2 / 3 / 4 / 5 selects directly | Tap Switch Gun, then choose a gun |
+| Air support | R opens selector; then 1 barrage / 2 supply drop | Air Support button, then choose |
 | Protective shield | Q | Shield button |
 | Find repair center | E | Find Repair button |
 | Pause | Escape | Pause button |
 
-Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within 12 meters of the convoy to move it. Capture progress requires occupying the amber ring without enemies inside it. The default shield lasts three seconds (4.5 seconds with Azure Guardian) and recharges in fourteen seconds. White medical cases restore up to 60 HP. Repair centers provide sustained healing; blue shield cases activate a 6-second field and ready Q. Settings and campaign checkpoints save in this browser; clearing site data resets them.
+Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within 12 meters of the convoy to move it. Capture progress requires occupying the amber ring without enemies inside it. The default shield lasts three seconds (4.5 seconds with Azure Guardian) and recharges in fourteen seconds. White medical cases restore up to 60 HP. Repair centers provide sustained healing; blue shield cases activate a field for the indicated duration without resetting Q. Settings and campaign checkpoints save in this browser; clearing site data resets them.
 
 ## Mobile graphics
 
@@ -107,7 +108,7 @@ Game models and narrative are authored for this project. Barlow and Barlow Conde
 
 ## Battlefield update
 
-Explore a 144 × 120 m combat zone with flank cover, a green repair stop, combat loot and proximity mines. **R / STRIKE** calls five artillery shells at your aim point; stay clear of the marked circles. Destroyed tanks can leave medical, shield, laser or arc-rocket crates beside their wrecks.
+Explore a 144 × 120 m combat zone with flank cover, a green repair stop, combat loot and proximity mines. **R / AIR SUPPORT** offers a five-shell barrage at your aim point or a nearby parachute supply drop. Stay clear of amber barrage circles. Hard capture/defense missions allow one supply drop; Crazy allows two. Both choices share a 28-second cooldown. Drops provide a small health, special-ammo or shield refill based on current needs, and can only be collected after landing. Red mine circles show the enlarged 2.7 m trigger radius. Destroyed tanks can leave medical, shield, laser or arc-rocket crates beside their wrecks.
 
 Shell tracers, rocket exhaust, muzzle flashes, debris, shock rings, smoke, dust and persistent scorched wrecks replace the original simple hit/death effects. Escorts follow their stage-specific route through every bend. Effects are capped and reduced in low graphics mode.
 
@@ -129,7 +130,7 @@ Every level completion, including the chapter and campaign endings, offers **Sho
 
 Shop upgrades have shield, damage and reload icons. Tank salvage becomes rarer with difficulty: every 2 / 4 / 12 / 32 tank kills on Easy / Normal / Hard / Crazy, capped at 4 / 2 / 1 / 1 drops per stage. Boxes alternate 12 laser shots and 6 arc rockets and are placed on the clear nearby road; drive over one to collect. These field drops last for the sortie and do not purchase permanent ownership. Infantry do not trigger tank drops, and no health pickups are dropped.
 
-All defense missions start Kestrel near the uplink. Initial opposition starts in staggered perimeter waves, including finale bosses; reinforcements also spawn at map corners and approach the center; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, strike with R, shield with Q and locate a repair center with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
+All defense missions start Kestrel near the uplink. Initial opposition starts in staggered perimeter waves, including finale bosses; reinforcements also spawn at map corners and approach the center; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, open Air Support with R (1 barrage / 2 supply), shield with Q and locate a repair center with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
 
 Repair centers are large green circular service pads, marked with a green cross on the minimap. Drive within 3 m to restore up to 32 HP per second; starting capacity is 160 / 100 / 80 / 60 HP on Easy / Normal / Hard / Crazy, falling by 20 HP per sublevel to a minimum of 40. Medical cases dropped by tanks can also heal; houses and weapon boxes do not. E / Find Repair reports the nearest available center and never restores health remotely.
 
@@ -206,3 +207,7 @@ O loops replace L routes. Circle either way or turn back during play; ambushes w
 Meet Iron Vanguard in **Glass Road 3**, Siege Marshal in **Cinderfall 3**, and Atlas Launcher in **Citadel Dawn 3**. Old bosses have an additional Blender light gun. Auxiliary fire pauses during heavy attack warnings and core recovery; the Marshal alternates both hand guns. New launchers fire paired, overlapping warned missile zones with visible arcing rockets and exhaust smoke. Later Hard/Crazy finales can mix the new bosses while retaining the existing boss-count limits.
 
 See the [infantry, jeep, patrol and loot balance plan](docs/INFANTRY_JEEPS_PATROLS_AND_LOOT.md) for the current encounter and recovery rules.
+
+## Air support and route progression
+
+See [Air support, threat ranges and breachable routes](docs/AIR_SUPPORT_AND_BREACHABLE_ROUTES.md) for the design and verification plan. Enemy sight reaches 34 m for infantry, 44 m for ordinary vehicles and 48 m for bosses; solid cover still blocks detection. Concrete rows share batched rendering but keep independent wall and section damage. A base cannon breaks one section in four hits; laser passes through the first row without damaging it and stops at the second.

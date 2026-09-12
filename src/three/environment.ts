@@ -24,7 +24,7 @@ export class Environment{
   for(const [x,z] of [[-14,41],[15,43],[-36,-37],[39,-24]])add('house',x,z,6,5,220);
   for(const [x,z] of [[-27,23],[29,23],[-38,-45],[37,-43]])add('stonewall',x,z,6,1.4,180);
   for(const [x,z] of [[-22,-32],[22,-34]])add('steelwall',x,z,6,1.1,Infinity);
-  for(const [x,z] of [[-61,33],[61,-35],[-61,-38],[60,36]])add('hill',x,z,14,10,Infinity);
+  for(const [x,z] of [[-61,33],[61,-35]])add('hill',x,z,14,10,Infinity);
   for(const [x,z] of [[-11,17],[10,23],[-12,-28],[12,-37]])add('pine',x,z,2.6,2.6,65);
   const forest=this.biome==='industrial'?10:26;
   for(let i=0;i<forest;i++){

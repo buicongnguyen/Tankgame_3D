@@ -1,3 +1,4 @@
+import {ENEMY_SIGHT} from './combat-ranges';
 import type {Game,Unit} from './game';
 import type {Point} from './rules';
 import {distance,segmentBox} from './rules';
@@ -9,7 +10,7 @@ export function clearSight(g:Game,from:Point,to:Point){
  return !g.world.covers.some(c=>c.hp>0&&segmentBox(from,to,c,.08)!==null);
 }
 export function seesTarget(g:Game,unit:Unit,target:Point){
- return distance(unit.visual.root.position,target)<(g.isInfantry(unit)?26:unit.role==='boss'?36:32)&&clearSight(g,unit.visual.root.position,target);
+ return distance(unit.visual.root.position,target)<(g.isInfantry(unit)?ENEMY_SIGHT.infantry:unit.role==='boss'?ENEMY_SIGHT.boss:ENEMY_SIGHT.vehicle)&&clearSight(g,unit.visual.root.position,target);
 }
 export class RouteEncounters {
  progress=0;scanAt=0;view?:Point;convoyView?:Point;revision=-1;
