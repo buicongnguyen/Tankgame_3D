@@ -66,7 +66,7 @@ test('all difficulties spawn consistent HP, keep player hull, and restore damage
    g.start(15,2);rows.push({difficulty,counts,health,independent,barMatches,hull:g.player.max,retried:g.enemies.every((e:any)=>e.hp===e.max&&!e.dead)});g.save.upgrades.armor=0;
   }return rows;
  });
- for(const r of rows){const c=encounterSize(15,2,r.difficulty as any);expect(r.counts.rifleman).toBe(c.riflemen);expect(r.counts.rocketeer).toBe(c.rocketeers);expect(r.counts.jeep).toBe(c.jeeps);expect(r.counts.boss).toBe(c.bosses);expect(r.counts.raider+r.counts.sentry+r.counts.heavy).toBe(c.armor);expect(r.health).toMatchObject({rifleman:35,rocketeer:55,jeep:75,raider:160,sentry:220,heavy:355});expect(r.hull).toBe(565*(r.difficulty==='easy'?1.5:1));expect(r.independent&&r.barMatches&&r.retried).toBe(true);}
+ for(const r of rows){const c=encounterSize(15,2,r.difficulty as any);expect(r.counts.rifleman).toBe(c.riflemen);expect(r.counts.rocketeer).toBe(c.rocketeers);expect(r.counts.jeep).toBe(c.jeeps);expect(r.counts.boss).toBe(c.bosses);expect(r.counts.raider+r.counts.sentry+r.counts.heavy).toBe(c.armor);expect(r.health).toMatchObject({rifleman:35,rocketeer:55,jeep:75,raider:160,sentry:220,heavy:355});expect(r.hull).toBe(565*(r.difficulty==='easy'?3:1));expect(r.independent&&r.barMatches&&r.retried).toBe(true);}
 });
 
 test('all nine bosses retain individual HP and meaningful exposed cores',async({page})=>{

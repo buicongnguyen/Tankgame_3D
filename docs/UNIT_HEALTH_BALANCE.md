@@ -4,7 +4,7 @@
 
 Ordinary enemy tanks died too easily. A raider had 65 HP, compared with a rocketeer's 55 HP; a single unupgraded cannon rear hit deals 66 damage. A jeep also had 55 HP. Regular enemy health stayed fixed throughout all 48 campaign levels despite permanent player weapon upgrades.
 
-Strengthen regular armor, separate jeeps from infantry, and retain the usefulness of flanking and anti-tank weapons. Preserve player health, difficulty population multipliers, enemy firepower, boss attack cycles, recovery and loot limits.
+Strengthen regular armor, separate jeeps from infantry, and retain the usefulness of flanking and anti-tank weapons. Preserve Normal/Hard/Crazy player health, difficulty population multipliers, enemy firepower, boss attack cycles, recovery and loot limits.
 
 ## Health targets
 
@@ -50,7 +50,7 @@ All values are shots to destroy; misses, falloff and movement change real fights
 ## Implementation and review plan
 
 1. Centralize regular enemy HP in `src/three/unit-health.ts` and use it for both current and maximum HP at spawn.
-2. Keep player hull at `(240 + 65 * armorUpgrade) * difficultyHealth`; Easy remains 1.5x and the other difficulties 1x.
+2. Keep player hull at `(240 + 65 * armorUpgrade) * difficultyHealth`; Easy is now 3x (+200%) after the [flamethrower/Easy update](FLAMETHROWER_AND_EASY_MODE.md); the other difficulties are 1x.
 3. Verify actual cannon hits by unit and facing, missile/laser effectiveness, boss protected/exposed damage, and campaign progression with real runtime units.
 4. Check that enemy HP does not change with difficulty or player purchases, health bars match HP, retries restore health, and defeating a tougher last enemy still reaches the results screen.
 5. Run combat and progression regressions, build, then the release verification workflow before publishing.
@@ -62,5 +62,5 @@ No save migration or new render assets are required. Health is calculated at mis
 - Six new health regressions passed: campaign ordering/cap, real cannon hits by unit and facing, actual missile/laser/arc damage, mode and loadout independence, all nine boss cores, and delayed results after the last tougher tank.
 - All 72 existing selected combat, infantry, jeep, patrol, wave, progression, difficulty, mobile, weapon and rule tests passed. The exact upgraded-weapon table was also checked again after adding explicit numerical assertions.
 - Production TypeScript/Vite build passed. All 33 Blender model pairs passed the existing asset checks; this update adds no geometry, textures or per-frame work.
-- Code and logic review confirmed current/max HP use the same spawn value, health bars normalize against that maximum, retries reconstruct healthy units, and player hull, save data, loot probabilities, enemy firepower, concrete damage and boss armor remain unchanged.
+- Code and logic review confirmed current/max HP use the same spawn value, health bars normalize against that maximum, retries reconstruct healthy units, and Normal/Hard/Crazy player hull, save data, loot probabilities, enemy firepower, concrete damage and boss armor remain unchanged.
 - The GitHub Pages workflow runs the complete browser suite before its build and deployment jobs.

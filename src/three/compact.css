@@ -121,10 +121,14 @@ body[data-graphics="low"] .vignette{box-shadow:none}
 @media(pointer:coarse) and (orientation:portrait){.weapon-picker:not(.support-picker){grid-template-columns:repeat(3,minmax(0,1fr))}}
 
 /* One compact row makes desktop weapon shortcuts discoverable. Touch retains the large gun picker. */
-#weapon-shortcuts{position:absolute;bottom:calc(100% + 6px);left:0;display:grid;grid-template-columns:repeat(8,1fr);gap:4px;width:388px;max-width:100%;pointer-events:auto}
+#weapon-shortcuts{position:absolute;bottom:calc(100% + 6px);left:0;display:grid;grid-template-columns:repeat(9,1fr);gap:4px;width:388px;max-width:100%;pointer-events:auto}
 #weapon-shortcuts button{height:32px;padding:4px;background:#14262bef;font-size:12px}
 #weapon-shortcuts button[aria-pressed=true]{background:var(--mint);color:#16332d;border-color:var(--mint)}
 @media(pointer:coarse){#weapon-shortcuts{display:none}}
 @media(pointer:fine){.weapon-picker{bottom:128px}.desktop-hint{bottom:120px}}
 
 .skin-stars{color:#ffe588;font-size:13px;letter-spacing:.16em}
+
+/* Nine weapons fit in two rows on wide screens, three rows on portrait touch. */
+.weapon-picker:not(.support-picker){grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(pointer:coarse) and (orientation:portrait){.weapon-picker:not(.support-picker){grid-template-columns:repeat(3,minmax(0,1fr))}}

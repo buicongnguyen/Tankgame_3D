@@ -37,7 +37,7 @@ test('empty special ammo steps left, skips unusable slots, keeps cooldown and pr
 
 test('desktop weapon buttons, top-row keys and number pad select the same slots',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.save.weapons=[1,2,3,4,5,6,7];g.specialAmmo=[12,6,3];g.updateHud();});
- await expect(page.locator('#weapon-shortcuts button')).toHaveCount(8);
+ await expect(page.locator('#weapon-shortcuts button')).toHaveCount(9);
  for(let i=1;i<=8;i++){await page.keyboard.press(`Digit${i}`);expect(await page.evaluate(()=>(window as any).__steel.weapon)).toBe(i-1);}
  for(let i=8;i>=1;i--){await page.keyboard.press(`Numpad${i}`);await expect(page.locator(`[data-quick-weapon="${i}"]`)).toHaveAttribute('aria-pressed','true');}
  await page.locator('[data-quick-weapon="7"]').click();await expect(page.locator('#weapon-label')).toContainText('Micro missiles');

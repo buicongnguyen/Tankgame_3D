@@ -14,7 +14,7 @@ export class Input {
       if(!this.active)return;
       if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
       this.keys.add(e.code);
-      if(!e.repeat){if(e.code==='KeyC')this.onAction('switch');if(e.code==='KeyR')this.onAction('artillery');if(e.code==='KeyQ')this.onAction('shield');if(e.code==='KeyE')this.onAction('repair');if(/^(Digit|Numpad)[1-8]$/.test(e.code)){e.preventDefault();this.onAction(e.code.slice(-1));}}
+      if(!e.repeat){if(e.code==='KeyC')this.onAction('switch');if(e.code==='KeyR')this.onAction('artillery');if(e.code==='KeyQ')this.onAction('shield');if(e.code==='KeyE')this.onAction('repair');if(/^(Digit|Numpad)[1-9]$/.test(e.code)){e.preventDefault();this.onAction(e.code.slice(-1));}}
     });
     window.addEventListener('keyup',e=>this.keys.delete(e.code));
     const pointer=(e:PointerEvent)=>{const r=canvas.getBoundingClientRect();this.hasTouchAim=false;this.mouse.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);this.hasMouse=true;};

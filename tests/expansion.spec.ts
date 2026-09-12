@@ -11,7 +11,7 @@ test('48 levels preserve mode counts, sequential checkpoints and one-time reward
   expect(rewardClear(save,mission,level)).toBeGreaterThan(0);const paid=save.credits;expect(rewardClear(save,mission,level)).toBe(0);expect(save.credits).toBe(paid);expect(parseSave(JSON.stringify(save))).toEqual(save);
   for(const difficulty of DIFFICULTIES){const n=encounterSize(mission,level,difficulty),base=encounterSize(mission,level,'normal');expect(n.armor).toBe(base.armor*mode(difficulty).enemies);expect(n.infantry).toBe(base.infantry*mode(difficulty).enemies);expect(n.bosses).toBe(level===2?mode(difficulty).bosses:0);}
  }
- expect(save.cleared.every(Boolean)).toBe(true);expect(mode('easy').health).toBe(1.5);expect(mode('normal').health).toBe(1);expect(mode('hard').health).toBe(1);expect(parseSave(JSON.stringify({...freshSave(),level:3}))).toEqual(freshSave());for(const difficulty of ['__proto__','constructor','unknown'])expect(parseSave(JSON.stringify({...freshSave(),difficulty}))).toEqual(freshSave());
+ expect(save.cleared.every(Boolean)).toBe(true);expect(mode('easy').health).toBe(3);expect(mode('normal').health).toBe(1);expect(mode('hard').health).toBe(1);expect(parseSave(JSON.stringify({...freshSave(),level:3}))).toEqual(freshSave());for(const difficulty of ['__proto__','constructor','unknown'])expect(parseSave(JSON.stringify({...freshSave(),difficulty}))).toEqual(freshSave());
 });
 test('historical saves retain completed stages and migrate named modes',()=>{
  for(const length of [6,9,14])for(const [old,current] of [['story','easy'],['standard','normal'],['veteran','hard']]){

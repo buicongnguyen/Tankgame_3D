@@ -26,7 +26,7 @@ Lead Kestrel through sixteen stages, each with three levels (48 levels in total)
 
 | Mode | Player hull | Regular enemies and reinforcement batches | Bosses on level 3 |
 | --- | --- | --- | --- |
-| Easy | +50% | 1× | 1 |
+| Easy | +200% | 1× | 1 |
 | Normal | Standard | 1× | 1 |
 | Hard | Standard | 2× | 2 |
 | Crazy | Standard | 4× | 4 |
@@ -58,7 +58,7 @@ The browser tests use controlled integration fixtures for mission edge cases, al
 | --- | --- | --- |
 | Drive | WASD or arrow keys | Left stick |
 | Aim/fire | Mouse or I/J/K/L aim; hold click, Space or F to fire | Right stick |
-| Switch weapon | C opens selector; 1–8 (including number pad) selects directly | Tap Switch Gun, then choose a gun |
+| Switch weapon | C opens selector; 1–9 (including number pad) selects directly | Tap Switch Gun, then choose a gun |
 | Air support | R opens selector; then 1 barrage / 2 supply drop | Air Support button, then choose |
 | Protective shield | Q | Shield button |
 | Find repair center | E | Find Repair button |
@@ -170,7 +170,7 @@ The generator writes five editable `assets/blender/skin-*.blend` files, transpar
 
 ## Purchased weapon selection
 
-The combat weapon panel always shows **Switch Gun**. Click or tap it to select a weapon, press **C** to open the same selector on PC, or use **1–8** directly. Buying a weapon sets it as the next mission's starting gun. Selecting an owned gun in combat remembers that choice for reloads, retries and later missions; temporary map pickups do not become permanent purchases. Owned lasers receive 12 shots and arc rockets 6 rounds each mission. An empty special weapon is labeled **Empty · next mission**, and its last shot selects the nearest usable weapon to its left. Collect a cache or start the next mission to replenish it.
+The combat weapon panel always shows **Switch Gun**. Click or tap it to select a weapon, press **C** to open the same selector on PC, or use **1–9** directly. Buying a weapon sets it as the next mission's starting gun. Selecting an owned gun in combat remembers that choice for reloads, retries and later missions; temporary map pickups do not become permanent purchases. Owned lasers receive 12 shots and arc rockets 6 rounds each mission. An empty special weapon is labeled **Empty · next mission**, and its last shot selects the nearest usable weapon to its left. Collect a cache or start the next mission to replenish it.
 
 ## Arc rocket range assistance
 
@@ -215,7 +215,7 @@ See [Air support, threat ranges and breachable routes](docs/AIR_SUPPORT_AND_BREA
 
 ## Level-20 armory and missile expansion
 
-All eight weapons have individual upgrades from level 0 to **20**. The shop also offers 20 levels each for armor, damage, autoloader, engine and shield. Early upgrades preserve their old benefits; higher damage/reload upgrades use diminishing returns and minimum firing intervals. Credits remain limited by first-clear rewards, so choose which systems to specialize in. Older saves keep their purchases, skins and progression, and receive level-zero defaults for the new tracks.
+All nine weapons have individual upgrades from level 0 to **20**. The shop also offers 20 levels each for armor, damage, autoloader, engine and shield. Early upgrades preserve their old benefits; higher damage/reload upgrades use diminishing returns and minimum firing intervals. Credits remain limited by first-clear rewards, so choose which systems to specialize in. Older saves keep their purchases, skins and progression, and receive level-zero defaults for the new tracks.
 
 | Key | Weapon | Purchase | Ammunition / behavior |
 | --- | --- | --- | --- |
@@ -227,6 +227,7 @@ All eight weapons have individual upgrades from level 0 to **20**. The shop also
 | 6 | Machine gun | 280 CR | Two simultaneous rounds; four at weapon level 10; unlimited |
 | 7 | Micro missiles | 340 CR | Smaller, faster missiles; 60 base direct damage, 3.5 m splash; unlimited |
 | 8 | Triple arc launcher | 720 CR | Three rockets per trigger; **3 volleys per mission**; 180 base damage per rocket, 5.5 m blast each |
+| 9 | Flamethrower | 480 CR | Unlimited fuel; 12 m, 70° cone; 24 base burst damage and a 2-second burn |
 
 Missile blasts hit nearby destructible cover using the object's footprint, so building edges and individual concrete panels take damage. Fuel can chain-react. Hills and other indestructible terrain remain intact. Blast damage still affects both sides. Triple-arc landing circles show the three impact areas; ordinary arc-ammo crates do not refill this special launcher. It refills on the next mission or retry. The existing Blender rocket model supplies fins, nose, exhaust and smoke for all missile sizes, with capped effects in Low detail.
 
@@ -240,7 +241,7 @@ Each map keeps six mines, with one to three placed on alternating sides of the r
 
 Five new Blender skins add vivid stripes and one through five stars: Rally Comet, Neon Sentinel, Solar Talon, Royal Nova and Prism Ace. Their shop cards state the price and actual speed, weapon damage and shield bonuses. Shared paint geometry adds only one mesh to the player and remains visible in Low detail.
 
-Desktop has a compact **1–8 weapon bar**, with both top-row and number-pad shortcuts. Touch keeps the larger gun picker. Empty advanced weapons switch to the nearest usable weapon on their left, skipping empty/unowned slots, while preserving the preferred loadout for the next mission.
+Desktop has a compact **1–9 weapon bar**, with both top-row and number-pad shortcuts. Touch keeps the larger gun picker. Empty advanced weapons switch to the nearest usable weapon on their left, skipping empty/unowned slots, while preserving the preferred loadout for the next mission.
 
 Design and checks: [Tactical supplies, skins and boundaries](docs/TACTICAL_SUPPLIES_SKINS_AND_BOUNDARIES.md).
 
@@ -254,4 +255,10 @@ Broad painted roads are replaced by amber direction signs, narrow traversable pa
 
 ## Enemy durability
 
-Regular enemy tanks now have distinct health tiers: raiders 110 HP, sentries 150 HP, and heavies 240 HP at the opening campaign level. Armored tank HP grows gently with campaign progress, reaching 160 / 220 / 355 HP in the last level. Scout jeeps have 75 HP; riflemen, rocketeers, bosses and the player retain their existing health. Flanking still deals more damage, and anti-tank weapons remain effective. See the [health balance review and combat targets](docs/UNIT_HEALTH_BALANCE.md).
+Regular enemy tanks now have distinct health tiers: raiders 110 HP, sentries 150 HP, and heavies 240 HP at the opening campaign level. Armored tank HP grows gently with campaign progress, reaching 160 / 220 / 355 HP in the last level. Scout jeeps have 75 HP; riflemen, rocketeers and bosses retain their existing health. Flanking still deals more damage, and anti-tank weapons remain effective. See the [health balance review and combat targets](docs/UNIT_HEALTH_BALANCE.md).
+
+## Flamethrower and Easy hull
+
+The ninth weapon is a close-range flamethrower with a broad 70° cone reaching 12 m. Buy it for 480 CR, upgrade it through level 20, and select **9 / Numpad 9** or **Switch Gun**. Flames damage multiple exposed enemies and leave a short burn. Trees and fuel can ignite; solid cover blocks fire. The effect uses Blender-authored flame tongues with bounded instancing in both graphics tiers.
+
+Easy now gives **+200% player hull**, or **720 HP** before armor upgrades. Normal, Hard and Crazy keep their existing player hull and enemy counts. See [the design and validation notes](docs/FLAMETHROWER_AND_EASY_MODE.md).
