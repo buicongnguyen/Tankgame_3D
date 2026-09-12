@@ -26,7 +26,7 @@ test('sand has exact quarter speed and ice preserves then releases momentum',()=
 test('all campaign spawns, frontier objectives and service routes remain reachable',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
  const issues=await page.evaluate(async()=>{
-  const g=(window as any).__steel;g.frame=()=>{};const {circleBox}=await import('/src/three/rules.ts');const issues:any[]=[];
+  const g=(window as any).__steel;g.frame=()=>{};const {circleBox,segmentBox}=await import('/src/three/rules.ts');const issues:any[]=[];
   for(let mission=0;mission<16;mission++){
    g.prepare(mission);const covers=g.world.covers.filter((c:any)=>c.hp>0);
    for(const u of [g.player,...g.enemies])if(covers.some((c:any)=>circleBox(u.visual.root.position,g.unitRadius(u),c)))issues.push({mission,overlap:u.role});
@@ -36,7 +36,8 @@ test('all campaign spawns, frontier objectives and service routes remain reachab
    const p=g.player.visual.root.position,start=Math.round((p.z+58)/2)*nx+Math.round((p.x+70)/2),queue=[start];seen[start]=1;
    for(let head=0;head<queue.length;head++){const id=queue[head],x=id%nx,z=Math.floor(id/nx);for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){const xx=x+dx,zz=z+dz,next=zz*nx+xx;if(xx>=0&&xx<nx&&zz>=0&&zz<nz&&free[next]&&!seen[next]){seen[next]=1;queue.push(next);}}}
    const targets=[{x:0,z:-13,kind:'relay'},{...g.world.layout.points.at(-1),kind:'exit'},...g.world.activities.filter((a:any)=>a.kind!=='mine'),...g.enemies.map((u:any)=>({...u.visual.root.position,kind:u.role}))];
-   for(const t of targets)if(!queue.some(id=>{const p=at(id);return Math.hypot(p.x-t.x,p.z-t.z)<3;}))issues.push({mission,unreachable:t.kind,x:t.x,z:t.z});
+   // Preserve the 3 m interaction distance. Beyond it, require a clear tank-sized link to the actual target; grid proximity alone misses narrow exits.
+   for(const t of targets)if(!queue.some(id=>{const p=at(id);const distance=Math.hypot(p.x-t.x,p.z-t.z);return distance<3||distance<6&&!covers.some((c:any)=>segmentBox(p,t,c,1.25)!==null);}))issues.push({mission,unreachable:t.kind,x:t.x,z:t.z});
    if(g.convoy)for(let i=1;i<g.world.layout.points.length;i++){const a=g.world.layout.points[i-1],b=g.world.layout.points[i],d=Math.hypot(b.x-a.x,b.z-a.z);for(let step=0;step<=d;step++){const p={x:a.x+(b.x-a.x)*step/d,z:a.z+(b.z-a.z)*step/d};if(covers.some((c:any)=>circleBox(p,2.3,c)))issues.push({mission,convoyBlock:p});}}
   }return issues;
  });expect(issues).toEqual([]);
@@ -100,4 +101,11 @@ test('jungle attackers leave the corners and approach the relay',async({page})=>
 
 for(const mission of [10,13])test(`desktop frontier overview ${mission+1}`,async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();await page.evaluate(i=>{const g=(window as any).__steel;g.start(i);g.frame=()=>{};g.hud.hidden=true;g.radio.classList.remove('visible');g.world.scene.fog=null;g.world.camera.position.set(65,115,120);g.world.camera.lookAt(0,0,0);if(i===10){g.hazards.clock=999;g.hazards.warn(g,{x:-10,z:-17});g.hazards.update(g,1.4);}g.world.renderer.render(g.world.scene,g.world.camera);},mission);await page.screenshot({path:`test-results/frontier-${mission+1}-desktop-overview.png`});
+});
+
+
+test('Mire Crossing escort guard can drive out between its house and crate to reach the player',async({page})=>{
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};g.start(15,0);const {circleBox}=await import('/src/three/rules.ts');const guard=g.enemies.find((u:any)=>Math.abs(u.visual.root.position.x+8.3)<.1&&Math.abs(u.visual.root.position.z-23)<.1);if(!guard)return {found:false,arrived:false,clear:false};const target=g.player.visual.root.position.clone();g.enemies=[guard];let clear=true;
+ for(let i=0;i<1000;i++){const p=guard.visual.root.position;if(Math.hypot(p.x-target.x,p.z-target.z)<5)break;const next=g.navigation.next(g.world,p,target);if(!next)break;const dx=next.x-p.x,dz=next.z-p.z,d=Math.hypot(dx,dz);g.moveUnit(guard,dx/d*.15,dz/d*.15,.05);if(g.world.covers.some((c:any)=>c.hp>0&&circleBox(p,g.unitRadius(guard),c)))clear=false;}
+ return {found:true,arrived:Math.hypot(guard.visual.root.position.x-target.x,guard.visual.root.position.z-target.z)<5,clear};});expect(r).toEqual({found:true,arrived:true,clear:true});
 });
