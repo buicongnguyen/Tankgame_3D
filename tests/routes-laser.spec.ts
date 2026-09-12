@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-import {stageLayout,roadDistance} from '../src/three/stage-layout';
+import {stageLayout,roadDistance,isWeaponSupply} from '../src/three/stage-layout';
 import {MISSIONS,levelMission} from '../src/three/campaign';
 
 test('every level has reproducible, separated supplies and varied routes',()=>{
@@ -8,7 +8,7 @@ test('every level has reproducible, separated supplies and varied routes',()=>{
   const layout=stageLayout(stage,level,levelMission(stage,level).kind);expect(layout).toEqual(stageLayout(stage,level,levelMission(stage,level).kind));
   expect(layout.supplies).toHaveLength(14);for(const kind of ['health','shield'])expect(layout.supplies.filter(s=>s.kind===kind)).toHaveLength(2);expect(layout.supplies.filter(s=>s.kind==='repair')).toHaveLength(1);
   expect(layout.supplies.filter(s=>['laser','arc','supply'].includes(s.kind))).toHaveLength(3);expect(layout.supplies[0].kind).toBe('laser');
-  for(const [i,s] of layout.supplies.entries()){expect(Math.abs(s.x)).toBeLessThan(69);expect(Math.abs(s.z)).toBeLessThan(57);for(const t of layout.supplies.slice(i+1))expect(Math.hypot(s.x-t.x,s.z-t.z)).toBeGreaterThan(6.5);if(s.kind!=='mine'){expect(roadDistance(layout.points,s)).toBeGreaterThan(7.2);expect(roadDistance(layout.points,s)).toBeLessThan(9.31);}}
+  for(const [i,s] of layout.supplies.entries()){expect(Math.abs(s.x)).toBeLessThan(69);expect(Math.abs(s.z)).toBeLessThan(57);for(const t of layout.supplies.slice(i+1))expect(Math.hypot(s.x-t.x,s.z-t.z)).toBeGreaterThan(6.5);if(isWeaponSupply(s.kind)){expect(roadDistance(layout.points,s)).toBeLessThanOrEqual(1.1);}else if(s.kind!=='mine'){expect(roadDistance(layout.points,s)).toBeGreaterThan(7.2);expect(roadDistance(layout.points,s)).toBeLessThan(9.31);}}
   fingerprints.add(JSON.stringify(layout.supplies));if(layout.southbound)south++;
  }
  expect(fingerprints.size).toBe(48);expect(south).toBeGreaterThan(10);

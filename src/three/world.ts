@@ -1,4 +1,5 @@
-import {stageLayout,overlapsReservation,roadDistance} from './stage-layout';
+import {roadVertices} from './road-geometry';
+import {stageLayout,overlapsReservation,roadDistance,projectRoute,routeSample} from './stage-layout';
 import {terrainAt,terrainSpeed} from './terrain';
 import {groundTexture,frontierBoundary} from './frontier-surfaces';
 import {GROUND_COLORS} from './frontier-environment';
@@ -280,13 +281,7 @@ export class World {
     }
   }
   private buildRoad(kind:string){
-    const rectangles=this.layout.points.slice(1).map((p,i)=>{const a=this.layout.points[i];return {left:Math.min(a.x,p.x)-4,right:Math.max(a.x,p.x)+4,top:Math.min(a.z,p.z)-4,bottom:Math.max(a.z,p.z)+4};});
-    // A union of flat cells avoids overlapping snow/road faces at every turn.
-    const xs=[...new Set(rectangles.flatMap(r=>[r.left,r.right]))].sort((a,b)=>a-b),zs=[...new Set(rectangles.flatMap(r=>[r.top,r.bottom]))].sort((a,b)=>a-b),vertices:number[]=[];
-    for(let i=1;i<xs.length;i++)for(let j=1;j<zs.length;j++){
-      const l=xs[i-1],r=xs[i],t=zs[j-1],b=zs[j],x=(l+r)/2,z=(t+b)/2;
-      if(rectangles.some(a=>x>a.left&&x<a.right&&z>a.top&&z<a.bottom))vertices.push(l,.105,t,l,.105,b,r,.105,t,r,.105,t,l,.105,b,r,.105,b);
-    }
+    const vertices=roadVertices(this.layout.points,this.layout.rotation);
     const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();
     const color=this.environment.biome==='city'?0x465358:['snow','glacier'].includes(this.environment.biome)?0x90a6aa:this.environment.biome==='desert'?0xbea176:0x777762;
     const road=new T.Mesh(geometry,new T.MeshStandardMaterial({color,roughness:.97}));road.userData.owned=true;road.receiveShadow=true;road.name='StageRoad';this.arena.add(road);
@@ -318,10 +313,14 @@ export class World {
     this.wrecks.push({root,scorch,age:0,emit:0});if(this.wrecks.length>14){const old=this.wrecks.shift()!;old.root.removeFromParent();old.scorch.removeFromParent();}
     const p=root.position.clone();p.y=1;this.fx.impact(p,true);
   }
-  cameraOffset(){const a=this.layout.points[0],b=this.layout.points.at(-1)!,d=Math.max(1,Math.hypot(b.x-a.x,b.z-a.z));return {x:(b.x-a.x)/d*8,z:(this.camera.aspect<1?16:0)+(b.z-a.z)/d*8};}
+  cameraOffset(focus=this.layout.spawn){
+    const meters=projectRoute(this.layout.points,focus).progress,a=routeSample(this.layout.points,meters),b=routeSample(this.layout.points,Math.min(this.layout.length,meters+12)),d=Math.hypot(b.x-a.x,b.z-a.z);
+    // Preview the approaching bend; the camera target still eases smoothly each frame.
+    return {x:(d>1e-6?(b.x-a.x)/d:b.dx)*8,z:(this.camera.aspect<1?16:0)+(d>1e-6?(b.z-a.z)/d:b.dz)*8};
+  }
   cameraLead(){return this.cameraOffset().z;}
   update(dt:number,focus:T.Vector3,menu=false){
-    const offset=this.cameraOffset(),desired=menu?scratch.copy(focus):scratch.set(T.MathUtils.clamp(focus.x+offset.x,-BOUNDS.x,BOUNDS.x),0,focus.z+offset.z);
+    const offset=this.cameraOffset(focus),desired=menu?scratch.copy(focus):scratch.set(T.MathUtils.clamp(focus.x+offset.x,-BOUNDS.x,BOUNDS.x),0,focus.z+offset.z);
     this.target.lerp(desired,1-Math.exp(-dt*3));
     const portrait=this.camera.aspect<1;
     this.camera.position.set(this.target.x+(menu?16:0),menu?18:portrait?62:54,this.target.z+(menu?24:portrait?51:43));

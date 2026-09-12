@@ -1,15 +1,15 @@
 import {test,expect} from '@playwright/test';
-import {stageLayout,roadDistance,alongRoute} from '../src/three/stage-layout';
+import {stageLayout,roadDistance,alongRoute,isWeaponSupply} from '../src/three/stage-layout';
 import {levelMission} from '../src/three/campaign';
 import {DIFFICULTIES,mode} from '../src/three/difficulty';
 import {circleBox,segmentBox} from '../src/three/rules';
 
-for(const difficulty of DIFFICULTIES)test(`${difficulty} layouts keep supplies scarce, off-road and accessible`,()=>{
+for(const difficulty of DIFFICULTIES)test(`${difficulty} layouts keep road weapons contested and recovery off-road`,()=>{
  for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++){
   const layout=stageLayout(stage,level,levelMission(stage,level).kind,difficulty),useful=layout.supplies.filter(s=>s.kind!=='mine');
   expect(useful.length,`${stage}/${level}`).toBe(mode(difficulty).supplies);expect(layout.supplies.filter(s=>s.kind==='mine')).toHaveLength(6);expect(layout).toEqual(stageLayout(stage,level,levelMission(stage,level).kind,difficulty));
   for(const kind of ['health','shield','repair'])expect(useful.some(s=>s.kind===kind)).toBe(true);expect(useful.some(s=>s.kind==='laser'||s.kind==='arc')).toBe(true);
-  for(const supply of useful){expect(roadDistance(layout.points,supply)).toBeGreaterThan(7.2);expect(roadDistance(layout.points,supply)).toBeLessThan(9.31);expect(layout.barriers.some(b=>circleBox(supply,2.85,b))).toBe(false);}
+  for(const supply of useful){if(isWeaponSupply(supply.kind)){expect(roadDistance(layout.points,supply)).toBeLessThanOrEqual(1.1);const anchor=layout.encounters[supply.guardGroup!];expect(Math.hypot(supply.x-anchor.x,supply.z-anchor.z)).toBeLessThan(14);}else{expect(supply.guardGroup).toBeUndefined();expect(roadDistance(layout.points,supply)).toBeGreaterThan(7.2);expect(roadDistance(layout.points,supply)).toBeLessThan(9.31);}expect(layout.barriers.some(b=>circleBox(supply,2.85,b))).toBe(false);}
   for(let i=1;i<layout.points.length;i++)expect(layout.barriers.some(b=>segmentBox(layout.points[i-1],layout.points[i],b,2.3)!==null)).toBe(false);
  }
 });
@@ -44,6 +44,6 @@ test('actual cannon opens one concrete section after four hits and the laser lea
 });
 
 
-test('salvage is limited by difficulty and placed on a clear road shoulder',async({page})=>{
- await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const rows=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};const {roadDistance,alongRoute}=await import('/src/three/stage-layout.ts');const {circleBox}=await import('/src/three/rules.ts');return ['easy','normal','hard','crazy'].map(difficulty=>{g.save.difficulty=difficulty;g.start(4);const before=g.world.activities.length;for(let kills=1;kills<=128;kills++){g.kills=kills;g.dropSalvage(alongRoute(g.world.layout.points,g.world.layout.length*((kills%7+1)/8)));}const drops=g.world.activities.slice(before);return {difficulty,count:drops.length,shoulder:drops.every((p:any)=>roadDistance(g.world.layout.points,p)>7.2),clear:drops.every((p:any)=>!g.world.covers.some((c:any)=>c.hp>0&&circleBox(p,2.85,c)))};});});expect(rows.map((r:any)=>r.count)).toEqual([4,2,1,1]);expect(rows.every((r:any)=>r.shoulder&&r.clear)).toBe(true);
+test('salvage is limited by difficulty and placed on the clear road',async({page})=>{
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const rows=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};const {roadDistance,alongRoute}=await import('/src/three/stage-layout.ts');const {circleBox}=await import('/src/three/rules.ts');return ['easy','normal','hard','crazy'].map(difficulty=>{g.save.difficulty=difficulty;g.start(4);const before=g.world.activities.length;for(let kills=1;kills<=128;kills++){g.kills=kills;g.dropSalvage(alongRoute(g.world.layout.points,g.world.layout.length*((kills%7+1)/8)));}const drops=g.world.activities.slice(before);return {difficulty,count:drops.length,onRoad:drops.every((p:any)=>roadDistance(g.world.layout.points,p)<=1.01),clear:drops.every((p:any)=>!g.world.covers.some((c:any)=>c.hp>0&&circleBox(p,2.85,c)))};});});expect(rows.map((r:any)=>r.count)).toEqual([4,2,1,1]);expect(rows.every((r:any)=>r.onRoad&&r.clear)).toBe(true);
 });

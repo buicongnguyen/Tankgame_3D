@@ -1,5 +1,7 @@
 # Route encounters, supply scarcity and local concrete damage
 
+Update: [Diagonal routes and weapon caches](DIAGONAL_ROUTES_AND_WEAPON_CACHES.md) revises the distribution below: seven levels use 45° S routes, and weapons now sit on the road near ambushes. Recovery pickups retain side detours. The original plan and review below describe the earlier release.
+
 ## Intended play
 
 A stage should remain a journey: patrols and ambushes occupy its beginning, middle and final approach. The player follows different route directions, chooses short detours for supplies, and can shoot a local opening in concrete.

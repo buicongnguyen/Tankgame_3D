@@ -1,5 +1,7 @@
 # Map sweeps and indestructible terrain
 
+Update: [Diagonal routes and weapon caches](DIAGONAL_ROUTES_AND_WEAPON_CACHES.md) revises the distribution below: seven levels use 45° S routes, and weapons now sit on the road near ambushes. Recovery pickups retain side detours. The original plan and review below describe the earlier release.
+
 ## Plan
 
 Expand selected existing levels across the arena without changing campaign checkpoints or enemy counts. Keep introductory, relay and defense layouts; use S, mirrored S, L and U patterns on 23 of the 48 levels.
