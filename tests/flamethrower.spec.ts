@@ -77,7 +77,7 @@ test('a burning last enemy finishes the stage once after the effects delay',asyn
 });
 
 test('iPhone WebKit renders the Blender flame shader in both detail tiers without graphics errors',async()=>{
- const browser=await webkit.launch();try{
+ const browser=await webkit.launch({args:[]});try{
   const ctx=await browser.newContext({viewport:{width:375,height:667},isMobile:true,hasTouch:true}),page=await ctx.newPage(),errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});await arena(page);
   for(const low of [false,true]){const r=await page.evaluate(async low=>{const g=(window as any).__steel;if(g.world.low!==low){g.pause();await g.changeQuality();g.resume();}g.flame.clear();g.shoot(g.player,true);g.flame.render(g,.08);g.world.target.copy(g.player.visual.root.position);g.world.update(0,g.player.visual.root.position);const gl=g.world.renderer.getContext();return {count:g.flame.mesh.count,error:gl.getError(),lost:gl.isContextLost()};},low);expect(r.count).toBeGreaterThan(0);expect(r.error).toBe(0);expect(r.lost).toBe(false);}
   expect(errors).toEqual([]);
