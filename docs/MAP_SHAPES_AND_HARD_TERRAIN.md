@@ -44,3 +44,7 @@ Check all 192 difficulty layouts, all built route/spawn/service clearances, and 
 - `npm run build`, `npm run test:assets` and `git diff --check` passed. Publication is gated on the complete 176-test CI suite, followed by live desktop/mobile smoke checks. Browser checks do not measure physical-phone frame rates.
 
 The final two interaction checks also passed: all 23 shaped Crazy layouts keep units and pickup connections clear, and actual driving in Low detail stops at natural cover while an open flank remains drivable.
+
+The first complete CI run exposed an old helicopter/convoy fixture that assumed Mire Crossing always starts at (0, -50) heading south. The fixture now places the helicopter one meter along the actual first route segment and checks convoy distance and its complete start position, so it also validates the new westbound mirrored-S start.
+
+All eight extreme-boss regression tests passed after the convoy fixture correction, including helicopter landing, flight collision, spider traversal, laser bursts and mobile detail swaps.
