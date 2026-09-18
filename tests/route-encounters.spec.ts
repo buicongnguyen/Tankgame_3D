@@ -32,7 +32,7 @@ test('defense groups enter in staggered waves and reset with the stage',async({p
 });
 
 test('assault offers extraction after armor kills and finishes in place when all hostiles fall',async({page})=>{
- await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};for(const u of g.enemies)if(!g.isInfantry(u))g.damageUnit(u,999999,g.player.visual.root.position,true);g.step(.01);g.updateHud();const waits=g.phase==='playing'&&g.objectiveProgress()<1,exitCue=g.el('objective').textContent.includes('REACH EXIT');for(const u of g.enemies)if(!u.dead)g.damageUnit(u,999999,g.player.visual.root.position,true);g.step(.01);const delay=g.phase==='finishing';g.step(.8);return {waits,exitCue,delay,result:g.phase==='depot'};});expect(r).toEqual({waits:true,exitCue:true,delay:true,result:true});
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};for(const u of g.enemies)if(!g.isInfantry(u))g.damageUnit(u,999999,g.player.visual.root.position,true);g.step(.01);g.updateHud();const waits=g.phase==='playing'&&g.objectiveProgress()<1,exitCue=g.el('objective').textContent.includes('REACH EXIT');for(const u of g.enemies)if(!u.dead)g.damageUnit(u,999999,g.player.visual.root.position,true);g.step(.01);const delay=g.phase==='finishing';g.step(g.finishDelay);return {waits,exitCue,delay,result:g.phase==='depot'};});expect(r).toEqual({waits:true,exitCue:true,delay:true,result:true});
 });
 
 test('actual cannon opens one concrete section after four hits and the laser leaves it intact',async({page})=>{

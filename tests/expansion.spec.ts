@@ -34,7 +34,7 @@ for(const mission of [0,9,10,11,12,13,14,15])test(`Crazy finale ${mission+1} has
 test('each level checkpoints and the finale waits for all four bosses',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
  const result=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};const checkpoints=[];
-  for(let level=0;level<2;level++){g.start(0,level);for(const e of g.enemies)g.damageUnit(e,999999,g.player.visual.root.position,true);g.player.visual.root.position.copy(g.world.ring.position);g.step(.02);g.step(.8);checkpoints.push([g.save.mission,g.save.level,g.save.cleared[0],g.phase]);}
+  for(let level=0;level<2;level++){g.start(0,level);for(const e of g.enemies)g.damageUnit(e,999999,g.player.visual.root.position,true);g.player.visual.root.position.copy(g.world.ring.position);g.step(.02);g.step(g.finishDelay);checkpoints.push([g.save.mission,g.save.level,g.save.cleared[0],g.phase]);}
   g.save.difficulty='crazy';g.start(0,2);const bosses=g.enemies.filter((e:any)=>e.role==='boss');for(const e of g.enemies)if(!bosses.includes(e))g.damageUnit(e,999999,g.player.visual.root.position,true);for(const e of bosses.slice(0,3))g.damageUnit(e,999999,g.player.visual.root.position,true);g.step(.02);const waits=g.phase==='playing';g.damageUnit(bosses[3],999999,g.player.visual.root.position,true);g.player.visual.root.position.copy(g.world.ring.position);g.step(.02);const delay=g.phase==='finishing';g.step(.79);const still=g.phase==='finishing';g.step(.02);checkpoints.push([g.save.mission,g.save.level,g.save.cleared[0],g.phase]);return {checkpoints,waits,delay,still};
  });expect(result).toEqual({checkpoints:[[0,1,false,'depot'],[0,2,false,'depot'],[1,0,true,'depot']],waits:true,delay:true,still:true});
 });
@@ -46,7 +46,7 @@ test('mud slows and sinks tanks but traction recovery allows escape',async({page
 });
 for(const width of [390,844])test(`four modes and three levels fit mobile ${width}`,async({browser})=>{
  const context=await browser.newContext({viewport:{width,height:width===390?844:390},isMobile:true,hasTouch:true});const page=await context.newPage();await page.goto('http://127.0.0.1:5178/?e2e');
- for(const difficulty of DIFFICULTIES){await page.locator(`[data-action="difficulty"][data-value="${difficulty}"]`).tap();await expect(page.locator(`[data-action="difficulty"][data-value="${difficulty}"]`)).toHaveAttribute('aria-pressed','true');}
+ await page.locator('.mission-setup>summary').click();for(const difficulty of DIFFICULTIES){await page.locator(`[data-action="difficulty"][data-value="${difficulty}"]`).tap();await expect(page.locator(`[data-action="difficulty"][data-value="${difficulty}"]`)).toHaveAttribute('aria-pressed','true');}
  await expect(page.locator('[data-action="level"]')).toHaveCount(3);await expect(page.locator('[data-action="level"][data-value="1"]')).toBeDisabled();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/expansion-menu-${width}.png`,fullPage:true});await context.close();
 });
 

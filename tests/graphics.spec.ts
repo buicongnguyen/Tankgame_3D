@@ -4,12 +4,12 @@ import {test,expect,webkit} from '@playwright/test';
 for(const viewport of [{width:390,height:844},{width:844,height:390}])test(`mobile detail selection reduces geometry and survives reload ${viewport.width}`,async({browser})=>{
  const context=await browser.newContext({viewport,isMobile:true,hasTouch:true,deviceScaleFactor:3});const page=await context.newPage();
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('/?e2e');const graphics=page.locator('[data-action="quality"]');await expect(graphics).toHaveText('GRAPHICS DETAILED');
+ await page.goto('/?e2e');await page.locator('.menu-settings>summary').click();const graphics=page.locator('[data-action="quality"]');await expect(graphics).toHaveText('GRAPHICS DETAILED');
  const sample=()=>page.evaluate(()=>{const g=(window as any).__steel,w=g.world;let triangles=0;g.player.visual.root.traverse((o:any)=>{if(o.isMesh)triangles+=(o.geometry.index?.count??o.geometry.attributes.position.count)/3;});return {triangles,ratio:w.renderer.getPixelRatio(),shadow:w.renderer.shadowMap.enabled,reflection:!!w.scene.environment,width:document.documentElement.scrollWidth,phase:g.phase};});
  const high=await sample();await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','true');const low=await sample();
  expect(low.triangles).toBeLessThan(high.triangles*.4);expect(low.ratio).toBeLessThanOrEqual(.8);expect(low.shadow||low.reflection).toBe(false);expect(low.width).toBeLessThanOrEqual(viewport.width);expect(low.phase).toBe('menu');
  await graphics.scrollIntoViewIfNeeded();await page.screenshot({path:`test-results/mobile-graphics-${viewport.width}.png`});
- const requests:string[]=[];page.on('request',r=>{if(r.url().endsWith('.glb'))requests.push(r.url());});await page.reload();await expect(graphics).toHaveAttribute('aria-pressed','true');
+ const requests:string[]=[];page.on('request',r=>{if(r.url().endsWith('.glb'))requests.push(r.url());});await page.reload();await page.locator('.menu-settings>summary').click();await expect(graphics).toHaveAttribute('aria-pressed','true');
  expect(requests).toHaveLength(MODEL_NAMES.length);expect(requests.every(url=>url.includes('/models/low/'))).toBe(true);expect((await sample()).triangles).toBe(low.triangles);
  // Switching back from a cold low-detail start must also restore every surface.
  await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','false');expect((await sample()).triangles).toBe(high.triangles);
@@ -32,7 +32,7 @@ test('pause switches all models without changing battle state or rig references'
 });
 
 test('failed detail download keeps current graphics and allows retry',async({page})=>{
- await page.goto('/?e2e');const graphics=page.locator('[data-action="quality"]');await expect(graphics).toBeVisible();
+ await page.goto('/?e2e');await page.locator('.menu-settings>summary').click();const graphics=page.locator('[data-action="quality"]');await expect(graphics).toBeVisible();
  await page.route('**/models/low/*.glb',route=>route.abort());await graphics.click();await expect(page.locator('#graphics-help')).toContainText('Tap to retry');await expect(graphics).toHaveAttribute('aria-pressed','false');
  expect(await page.evaluate(()=>{const g=(window as any).__steel;return g.save.low||g.world.low||g.qualityChanging;})).toBe(false);
  await page.unroute('**/models/low/*.glb');await graphics.click();await expect(graphics).toHaveAttribute('aria-pressed','true');
