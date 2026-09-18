@@ -73,7 +73,7 @@ for(const viewport of [{width:1440,height:900},{width:390,height:844},{width:844
 
 
 test('a burning last enemy finishes the stage once after the effects delay',async({page})=>{
- await arena(page);const r=await page.evaluate(()=>{const g=(window as any).__steel,e=g.makeUnit(0,4,'rifleman');e.visual.root.position.set(0,0,4);e.hp=e.max=25;e.cooldown=1e6;g.enemies=[e];g.shoot(g.player,true);const alive=!e.dead;g.weapon=0;for(let i=0;i<120&&g.phase==='playing';i++)g.step(1/60);const finishing=g.phase==='finishing',credit=g.save.credits;g.step(.79);const delay=g.phase==='finishing';g.step(.02);const results=g.phase==='depot';g.complete();return {alive,finishing,delay,results,once:g.save.credits===credit&&g.infantryKills===1};});expect(Object.values(r).every(Boolean),JSON.stringify(r)).toBe(true);
+ await arena(page);const r=await page.evaluate(()=>{const g=(window as any).__steel,e=g.makeUnit(0,4,'rifleman');e.visual.root.position.set(0,0,4);e.hp=e.max=25;e.cooldown=1e6;g.enemies=[e];g.shoot(g.player,true);const alive=!e.dead;g.weapon=0;for(let i=0;i<120&&g.phase==='playing';i++)g.step(1/60);const finishing=g.phase==='finishing',credit=g.save.credits;g.step(1.49);const delay=g.phase==='finishing';g.step(.02);const results=g.phase==='depot';g.complete();return {alive,finishing,delay,results,once:g.save.credits===credit&&g.infantryKills===1};});expect(Object.values(r).every(Boolean),JSON.stringify(r)).toBe(true);
 });
 
 test('iPhone WebKit renders the Blender flame shader in both detail tiers without graphics errors',async()=>{

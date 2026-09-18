@@ -84,6 +84,6 @@ test('a tougher final tank reaches delayed results and awards the stage once',as
  await arena(page);const r=await page.evaluate(()=>{
   const g=(window as any).__steel;g.player.visual.root.position.set(0,0,20);g.player.aim=Math.PI;g.syncVisual(g.player);const e=g.makeUnit(0,0,'raider');e.visual.root.position.set(0,0,0);e.heading=0;e.cooldown=1e6;g.enemies=[e];
   for(let shot=0;shot<3;shot++){g.shoot(g.player,true);for(let i=0;i<50;i++)g.updateShots(1/60);}g.step(.001);const survived=g.phase==='playing'&&!e.dead;
-  const credits=g.save.credits;g.shoot(g.player,true);for(let i=0;i<50;i++)g.updateShots(1/60);g.step(.001);const finishing=g.phase==='finishing';g.step(.79);const delay=g.phase==='finishing';g.step(.02);const results=g.phase==='depot',award=g.save.credits;g.complete();return {survived,finishing,delay,results,reward:award>credits,once:g.save.credits===award,kills:g.kills};
+  const credits=g.save.credits;g.shoot(g.player,true);for(let i=0;i<50;i++)g.updateShots(1/60);g.step(.001);const finishing=g.phase==='finishing';g.step(1.49);const delay=g.phase==='finishing';g.step(.02);const results=g.phase==='depot',award=g.save.credits;g.complete();return {survived,finishing,delay,results,reward:award>credits,once:g.save.credits===award,kills:g.kills};
  });expect(r).toEqual({survived:true,finishing:true,delay:true,results:true,reward:true,once:true,kills:1});
 });
