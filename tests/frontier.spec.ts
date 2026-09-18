@@ -12,7 +12,7 @@ test('historical campaigns extend without losing purchases or progress',()=>{
  }
  const corrupt={...freshSave(),mission:8,cleared:[true,false,...Array(7).fill(true)]};expect(parseSave(JSON.stringify(corrupt))).toEqual(freshSave());
  const save={...freshSave(),mission:9,cleared:[...Array(9).fill(true),...Array(7).fill(false)]};
- for(let stage=9;stage<16;stage++)for(let level=0;level<3;level++){const r=awardStage(save,stage,30,200,240,level);expect(r.target).toBe(levelMission(stage,level).parTime);expect(r.total).toBeGreaterThan(0);expect(awardStage(save,stage,1,240,240,level).total).toBe(0);}
+ for(let stage=9;stage<16;stage++)for(let level=0;level<3;level++){const r=awardStage(save,stage,30,200,240,level);expect(r.target).toBe(levelMission(stage,level).parTime);expect(r.total).toBeGreaterThan(0);const replay=awardStage(save,stage,1,240,240,level);expect(replay.replay).toBe(true);expect(replay.base).toBe(Math.round(r.base*.5));expect(replay.total).toBeGreaterThan(0);}
  expect(parseSave(JSON.stringify(save))).toEqual(save);
 });
 
