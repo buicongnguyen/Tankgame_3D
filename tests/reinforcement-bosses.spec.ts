@@ -14,7 +14,7 @@ test('all bosses aim their light gun from its muzzle and sustain fire during hea
 test('secondary rounds respect cover and new bosses appear in campaign finales at every difficulty',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};const counts:any[]=[];for(const difficulty of ['easy','normal','hard','crazy'])for(const stage of [4,10,13]){g.save.difficulty=difficulty;g.start(stage,2);counts.push({difficulty,stage,kind:g.enemies.find((u:any)=>u.role==='boss').bossKind,count:g.enemies.filter((u:any)=>u.role==='boss').length});}
   g.start(0);g.enemies=[];g.world.covers=[];const b=g.makeUnit(0,0,'boss','rail');g.enemies=[b];g.player.visual.root.position.set(0,0,30);const mesh=g.world.clone('steelwall');g.world.covers=[{x:0,z:15,w:10,d:2,hp:Infinity,kind:'steelwall',mesh}];g.bosses.update(g,b,.01);const s=g.bosses.states.get(b);s.time=100;s.auxTime=0;g.bosses.update(g,b,.1);return {counts,cover:g.shots.length===0};
- });expect(r.cover).toBe(true);for(const c of r.counts){expect(c.kind).toBe(({4:'quad-mech',10:'siege-mech',13:'missile-truck'} as any)[c.stage]);expect(c.count).toBe(({easy:1,normal:1,hard:2,crazy:4} as any)[c.difficulty]);}
+ });expect(r.cover).toBe(true);for(const c of r.counts){expect(c.kind).toBe(({4:'quad-mech',10:'jet',13:'missile-truck'} as any)[c.stage]);expect(c.count).toBe(({easy:1,normal:1,hard:2,crazy:4} as any)[c.difficulty]);}
 });
 
 for(const mobile of [false,true])test(`new Blender bosses animate and retain rigs in Low detail on ${mobile?'mobile':'desktop'}`,async({browser})=>{

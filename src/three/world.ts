@@ -304,6 +304,11 @@ export class World {
       }
     }
 
+    for(const color of [0x101b24,0xffdf38]){
+      const pieces:T.BufferGeometry[]=[];const material=new T.MeshBasicMaterial({color,toneMapped:false,fog:false});
+      for(const o of [...this.arena.children])if(o instanceof T.Mesh&&o.name==='RouteDirectionMarker'&&(o.material as T.MeshBasicMaterial).color.getHex()===color){o.updateMatrix();pieces.push(o.geometry.clone().applyMatrix4(o.matrix));o.geometry.dispose();(o.material as T.Material).dispose();o.removeFromParent();}
+      if(pieces.length){const geometry=mergeGeometries(pieces);pieces.forEach(p=>p.dispose());if(geometry){const markers=new T.Mesh(geometry,material);markers.name='RouteDirectionBatch';markers.userData.owned=true;this.arena.add(markers);}else material.dispose();}else material.dispose();
+    }
   }
   settings(low:boolean){this.scene.environment=low?null:this.studioEnvironment;this.low=low;this.fx.low=low;this.renderer.shadowMap.enabled=!low;document.body.dataset.graphics=low?'low':'detailed';this.resize();}
   resize(){const w=window.innerWidth,h=window.innerHeight;this.renderer.setPixelRatio(this.low?Math.min(devicePixelRatio,.8,960/Math.max(w,h)):Math.min(devicePixelRatio,1.6));this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}
