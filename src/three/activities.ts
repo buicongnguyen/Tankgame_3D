@@ -1,10 +1,13 @@
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import * as T from 'three';
 import {MINE_TRIGGER_RADIUS} from './combat-ranges';
 import type {SupplyKind,SupplyPosition} from './stage-layout';
 import type { Point } from './rules';
+const pickupModels=new Map<string,T.Group>();
+export async function loadPickupModels(){if(pickupModels.size===6)return;const loader=new GLTFLoader();await Promise.all(['health','shield','supply','laser','arc','repair'].map(async kind=>{const model=await loader.loadAsync(`${import.meta.env.BASE_URL}models/pickup-${kind}.glb`);pickupModels.set(kind,model.scene);}));}
 export const BOUNDS={x:72,z:60};
 export type ActivityKind=SupplyKind;
-export interface Activity extends Point {kind:ActivityKind;mesh:T.Group;spent:boolean;remaining:number;amount:number;airborne?:boolean;}
+export interface Activity extends Point {kind:ActivityKind;mesh:T.Group;spent:boolean;remaining:number;amount:number;airborne?:boolean;hover?:number;hoverTime?:number;}
 export function buildActivities(parent:T.Group,layout:SupplyPosition[]){return layout.map(({kind,x,z})=>createActivity(parent,kind,x,z));}
 export function createActivity(parent:T.Group,kind:ActivityKind,x:number,z:number,amount=kind==='health'?60:kind==='shield'?6:kind==='laser'?12:kind==='arc'?6:kind==='repair'?160:1):Activity{
   const mesh=new T.Group();mesh.position.set(x,0,z);parent.add(mesh);
@@ -19,5 +22,7 @@ export function createActivity(parent:T.Group,kind:ActivityKind,x:number,z:numbe
    const canvas=document.createElement('canvas');canvas.width=256;canvas.height=64;const ctx=canvas.getContext('2d')!;ctx.font='bold 28px sans-serif';ctx.textAlign='center';ctx.fillStyle=kind==='repair'?'#95ffcc':'#8de6ff';const text=kind==='repair'?'REPAIR CENTER':kind==='health'?`HEALTH +${amount}`:kind==='shield'?`SHIELD ${amount}s`:kind==='laser'?'LASER':kind==='arc'?'ARC ROCKET':'SUPPLY';ctx.strokeStyle='#183030';ctx.lineWidth=4;ctx.strokeText(text,128,42);ctx.fillText(text,128,42);
    const texture=new T.CanvasTexture(canvas);const label=new T.Sprite(new T.SpriteMaterial({map:texture,depthTest:false}));label.position.y=2;label.scale.set(5,1.25,1);label.userData.activityLabel=true;mesh.add(label);
   }
+  const model=pickupModels.get(kind);
+  if(model){for(const child of [...mesh.children])if(child!==marker&&!child.userData.activityLabel){mesh.remove(child);if(child instanceof T.Mesh){child.geometry.dispose();const materials=Array.isArray(child.material)?child.material:[child.material];materials.forEach(m=>m.dispose());}}mesh.add(model.clone(true));const label=mesh.children.find(c=>c.userData.activityLabel);if(label)label.position.y=kind==='repair'?4.4:2.2;}
   return {kind,x,z,mesh,spent:false,remaining:kind==='repair'?amount:1,amount};
 }

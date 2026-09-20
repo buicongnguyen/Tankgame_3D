@@ -5,36 +5,38 @@ import type {Game,Unit} from './game';
 import {distance,segmentBox,segmentCircle,turnToward,clamp,circleBox} from './rules';
 import type {Point} from './rules';
 import {BOUNDS} from './activities';
-export type BossKind='rail'|'missile'|'walker'|'helicopter'|'spider'|'laser'|'quad-mech'|'siege-mech'|'missile-truck'|'quadcopter';
+export type BossKind='rail'|'missile'|'walker'|'helicopter'|'spider'|'laser'|'quad-mech'|'siege-mech'|'missile-truck'|'quadcopter'|'jet';
 export const bossKind=(mission:number):BossKind=>MISSIONS[mission]?.boss??(['rail','laser','helicopter','spider','quad-mech','rail','missile','helicopter','walker','laser','spider','helicopter','spider','laser','spider','helicopter'] as BossKind[])[mission%16];
 export const BOSS={
- quadcopter:{name:'Storm Kite',health:900,radius:3.2,charge:2,tracking:3,recovery:3.5,blastRadius:4.5,targetSpread:7},
- rail:{name:'Rail Titan',health:800,radius:2.5,charge:1.4,tracking:2.2,recovery:2.4,beamRadius:.8},
- missile:{name:'Tempest Carrier',health:850,radius:2.5,charge:1.8,tracking:2.2,recovery:2.4,blastRadius:6.5,targetSpread:8},
- walker:{name:'Iron Sovereign',health:1050,radius:3.4,charge:.75,tracking:1.1,recovery:1.6},
- helicopter:{name:'Sky Wraith',health:680,radius:3,charge:2,tracking:3.6,recovery:4,blastRadius:6.5,targetSpread:8},
- spider:{name:'Rift Stalker',health:920,radius:3.8,charge:.9,tracking:1.1,recovery:2.8},
- laser:{name:'Prism Reaper',health:780,radius:2.5,charge:1.5,tracking:2.2,recovery:2.8,pulseInterval:.14,beamRadius:.2},
- 'quad-mech':{name:'Iron Vanguard',health:1000,radius:3.1,charge:.8,tracking:1.2,recovery:2.2},
- 'siege-mech':{name:'Siege Marshal',health:1100,radius:3.1,charge:1.8,tracking:2.5,recovery:3,blastRadius:5.5,targetSpread:4},
- 'missile-truck':{name:'Atlas Launcher',health:1200,radius:3.4,charge:2.2,tracking:2.8,recovery:3.6,blastRadius:7,targetSpread:5.5}
+ jet:{name:'Ash Falcon',health:912,radius:3,charge:2,tracking:3,recovery:4},
+ quadcopter:{name:'Storm Kite',health:1080,radius:3.2,charge:2,tracking:3,recovery:3.5,blastRadius:4.5,targetSpread:7},
+ rail:{name:'Rail Titan',health:960,radius:2.5,charge:1.4,tracking:2.2,recovery:2.4,beamRadius:.8},
+ missile:{name:'Tempest Carrier',health:1020,radius:2.5,charge:1.8,tracking:2.2,recovery:2.4,blastRadius:6.5,targetSpread:8},
+ walker:{name:'Iron Sovereign',health:1260,radius:3.4,charge:.75,tracking:1.1,recovery:1.6},
+ helicopter:{name:'Sky Wraith',health:816,radius:3,charge:2,tracking:3.6,recovery:4,blastRadius:6.5,targetSpread:8},
+ spider:{name:'Rift Stalker',health:1104,radius:3.8,charge:.9,tracking:1.1,recovery:2.8},
+ laser:{name:'Prism Reaper',health:936,radius:2.5,charge:1.5,tracking:2.2,recovery:2.8,pulseInterval:.14,beamRadius:.2},
+ 'quad-mech':{name:'Iron Vanguard',health:1200,radius:3.1,charge:.8,tracking:1.2,recovery:2.2},
+ 'siege-mech':{name:'Siege Marshal',health:1320,radius:3.1,charge:1.8,tracking:2.5,recovery:3,blastRadius:5.5,targetSpread:4},
+ 'missile-truck':{name:'Atlas Launcher',health:1440,radius:3.4,charge:2.2,tracking:2.8,recovery:3.6,blastRadius:7,targetSpread:5.5}
 };
 type MissileBoss='missile'|'helicopter'|'siege-mech'|'missile-truck'|'quadcopter';
 const isMissile=(kind:BossKind):kind is MissileBoss=>['missile','helicopter','siege-mech','missile-truck','quadcopter'].includes(kind);
-export const flyingBoss=(kind:BossKind|undefined)=>kind==='helicopter'||kind==='quadcopter';
+export const flyingBoss=(kind:BossKind|undefined)=>kind==='helicopter'||kind==='quadcopter'||kind==='jet';
 const isMech=(kind:BossKind)=>kind==='quad-mech'||kind==='siege-mech';
-interface State{auxTime:number;auxRound?:number;rounds?:number;launches?:T.Vector3[];phase:'tracking'|'charging'|'exposed'|'landing'|'firing';time:number;burst?:number;landing?:Point;heading:number;targets:Point[];markers:T.Mesh[];rockets:T.Mesh[];}
+interface State{jetEnd?:Point;jetStart?:Point;jetShot?:number;auxTime:number;auxRound?:number;rounds?:number;launches?:T.Vector3[];phase:'tracking'|'charging'|'exposed'|'landing'|'firing';time:number;burst?:number;landing?:Point;heading:number;targets:Point[];markers:T.Mesh[];rockets:T.Mesh[];}
 export class BossCombat{
  navigation=new Map<number,GroundNavigation>();
  states=new Map<Unit,State>();
  cancel(unit:Unit){const state=this.states.get(unit);if(state)for(const r of state.rockets)r.removeFromParent();if(state)for(const m of state.markers){m.removeFromParent();m.geometry.dispose();(m.material as T.Material).dispose();}unit.visual.beam.visible=false;this.states.delete(unit);}
  clear(){for(const u of [...this.states.keys()])this.cancel(u);this.navigation.clear();}
  multiplier(unit:Unit){return this.states.get(unit)?.phase==='exposed'?1.75:.65;}
- status(unit:Unit){const phase=this.states.get(unit)?.phase;if(flyingBoss(unit.bossKind)&&unit.visual.root.position.y>2)return phase==='landing'?'LANDING':phase==='charging'?'ROCKETS INBOUND':'AIRBORNE · LASER / ARC';return phase==='firing'?(unit.bossKind==='quad-mech'?'FOUR-GUN BURST':'LASER BURST'):phase==='charging'?'ATTACK INBOUND':phase==='exposed'?'CORE EXPOSED':'ARMORED';}
+ status(unit:Unit){if(unit.bossKind==='jet'){const state=this.states.get(unit);return state?.phase==='charging'?'FLIGHT PATH LOCKED · DODGE':state?.phase==='exposed'?'LOW RETURN · FIRE NOW':'STRAFING RUN';}const phase=this.states.get(unit)?.phase;if(flyingBoss(unit.bossKind)&&unit.visual.root.position.y>2)return phase==='landing'?'LANDING':phase==='charging'?'ROCKETS INBOUND':'AIRBORNE · LASER / ARC';return phase==='firing'?(unit.bossKind==='quad-mech'?'FOUR-GUN BURST':'LASER BURST'):phase==='charging'?'ATTACK INBOUND':phase==='exposed'?'CORE EXPOSED':'ARMORED';}
  update(g:Game,u:Unit,dt:number){
   if(u.dead||dt<=0||g.phase!=='playing')return;
   const kind=u.bossKind??bossKind(g.mission),cfg=BOSS[kind],p=u.visual.root.position,target=g.player.visual.root.position;
   let s=this.states.get(u);if(!s){s={auxTime:.7,phase:'tracking',time:2.2+g.enemies.indexOf(u)%4*.55,heading:u.aim,targets:[],markers:[],rockets:[]};this.states.set(u,s);}
+  if(kind==='jet'){this.jet(g,u,s,dt);return;}
   const core=u.visual.root.getObjectByName('Core');if(core)core.visible=s.phase==='exposed';u.visual.beam.visible=false;u.visual.root.userData.walking=false;
   if(kind==='quadcopter')for(let i=0;i<4;i++){const rotor=u.visual.root.getObjectByName('Rotor'+i);if(rotor)rotor.rotation.y+=dt*(i%2?-1:1)*(s.phase==='exposed'?8:32);}
   if(flyingBoss(kind)){const rotor=u.visual.root.getObjectByName('Rotor'),tail=u.visual.root.getObjectByName('TailRotor');if(rotor)rotor.rotation.y+=dt*(s.phase==='exposed'?5:28);if(tail)tail.rotation.x+=dt*35;}
@@ -97,6 +99,32 @@ export class BossCombat{
   for(const name of ['LauncherL','LauncherR']){const launcher=u.visual.root.getObjectByName(name);if(launcher)launcher.rotation.x=-.28-(s.phase==='charging'?.14:0);}
   if(core)core.visible=s.phase==='exposed';g.syncVisual(u);this.secondary(g,u,s,dt);
 
+ }
+ jet(g:Game,u:Unit,s:State,dt:number){
+  const p=u.visual.root.position;
+  if(!s.jetStart){
+   const t=g.player.visual.root.position,angle=Math.atan2(t.x-p.x,t.z-p.z),dx=Math.sin(angle)*25,dz=Math.cos(angle)*25;
+   const center={x:clamp(t.x,-40,40),z:clamp(t.z,-28,28)};
+   s.jetStart={x:center.x-dx,z:center.z-dz};s.jetEnd={x:center.x+dx,z:center.z+dz};s.heading=angle;s.phase='charging';s.time=2;s.jetShot=0;
+   p.set(s.jetStart.x,6,s.jetStart.z);
+   for(let i=0;i<13;i++){const marker=new T.Mesh(new T.BoxGeometry(.6,.025,2.2),new T.MeshBasicMaterial({color:0xffad32,transparent:true,opacity:.65,depthWrite:false}));marker.position.set(s.jetStart.x+dx*2*i/12,.23,s.jetStart.z+dz*2*i/12);marker.rotation.y=angle;g.world.entities.add(marker);s.markers.push(marker);}
+   const shadow=new T.Mesh(new T.CircleGeometry(2.8,16),new T.MeshBasicMaterial({color:0x14202a,transparent:true,opacity:.4,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.set(p.x,.24,p.z);g.world.entities.add(shadow);s.markers.push(shadow);
+  }
+  s.time-=dt;
+  const end=s.phase==='exposed'?s.jetStart:s.jetEnd!,d=distance(p,end),speed=s.phase==='exposed'?8:24;
+  if(s.phase!=='charging'){
+   if(d>.05){const step=Math.min(d,speed*dt);p.x+=(end.x-p.x)/d*step;p.z+=(end.z-p.z)/d*step;u.heading=Math.atan2(end.x-p.x,end.z-p.z);}
+   p.y=s.phase==='exposed'?1.4:6;
+   if(s.phase!=='exposed'){
+    s.jetShot=(s.jetShot??0)-dt;if(s.jetShot<=0){s.jetShot=.3;g.world.fx.impact(new T.Vector3(p.x,.3,p.z),false);g.explode({x:p.x,z:p.z},2.4,18);}
+   }
+   if(d<=speed*dt+.05){
+    if(s.phase==='exposed'){for(const m of s.markers){m.removeFromParent();m.geometry.dispose();(m.material as T.Material).dispose();}s.markers=[];s.jetStart=undefined;}
+    else{s.phase='exposed';s.time=7;for(const m of s.markers.slice(0,-1))m.visible=false;}
+   }
+  }else if(s.time<=0){s.phase='firing';u.heading=s.heading;}
+  if(s.markers.length)s.markers[s.markers.length-1].position.set(p.x,.24,p.z);
+  const core=u.visual.root.getObjectByName('Core');if(core)core.visible=s.phase==='exposed';u.aim=u.heading;u.visual.beam.visible=false;g.syncVisual(u);this.secondary(g,u,s,dt);
  }
  secondary(g:Game,u:Unit,s:State,dt:number){
   const gun=u.visual.root.getObjectByName('LightGun');if(!gun)return;

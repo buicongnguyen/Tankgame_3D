@@ -17,7 +17,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Box } from './rules';
 import { BIOMES, Environment } from './environment';
 import { CombatEffects } from './effects';
-import { BOUNDS, buildActivities } from './activities';
+import { BOUNDS, buildActivities, loadPickupModels } from './activities';
 import type { Activity } from './activities';
 export interface TankVisual { root: T.Group; hull: T.Object3D; turret: T.Object3D; muzzle: T.Object3D; bar: T.Mesh; beam: T.Mesh; }
 export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; natural?:boolean; boundary?:boolean; scenery?:{parts:T.InstancedMesh[];index:number;maxHP:number}; section?: {parts:T.InstancedMesh[];index:number;wall:object}; }
@@ -83,6 +83,7 @@ export class World {
     window.addEventListener('resize',()=>this.resize()); this.resize();
   }
   async load(low=false) {
+    await loadPickupModels();
     let templates=this.modelPacks.get(low);
     if(!templates){
       templates=new Map<string,T.Group>();
@@ -291,7 +292,15 @@ export class World {
       const a=this.layout.points[i-1],b=this.layout.points[i],length=Math.hypot(b.x-a.x,b.z-a.z),angle=Math.atan2(b.x-a.x,b.z-a.z);
       if(kind==='escort')for(const side of [-1,1]){const trace=this.box(.22,.008,length,0x9f9d82,(a.x+b.x)/2+Math.cos(angle)*side*.7,.105,(a.z+b.z)/2-Math.sin(angle)*side*.7);trace.name='ConvoyWheelTrace';trace.rotation.y=angle;trace.castShadow=false;}
       for(let d=6;d<length-2;d+=12){const x=a.x+(b.x-a.x)*d/length,z=a.z+(b.z-a.z)*d/length;
-        if(this.layout.closed){const mark=this.box(.14,.012,1.15,0xd6c395,x,.12,z);mark.rotation.y=angle;mark.castShadow=false;}else for(const side of [-1,1]){const mark=this.box(.12,.012,.95,0xd6c395,x+Math.cos(angle)*side*.28,.12,z-Math.sin(angle)*side*.28);mark.rotation.y=angle-side*.65;mark.castShadow=false;}
+        const stroke=(px:number,pz:number,rotation:number,width:number,length:number)=>{
+          // Dark border stays visible on snow/sand; bright inset reads on forest and lava.
+          for(const [w,l,y,color] of [[width+.22,length+.22,.16,0x101b24],[width,length,.185,0xffdf38]]){
+            const mark=this.box(w,.012,l,color,px,y,pz);mark.name='RouteDirectionMarker';mark.rotation.y=rotation;mark.castShadow=false;mark.receiveShadow=false;
+            (mark.material as T.Material).dispose();(mark as T.Mesh).material=new T.MeshBasicMaterial({color,toneMapped:false,fog:false});
+          }
+        };
+        if(this.layout.closed)stroke(x,z,angle,.24,1.4);
+        else for(const side of [-1,1])stroke(x+Math.cos(angle)*side*.36,z-Math.sin(angle)*side*.36,angle-side*.65,.22,1.2);
       }
     }
 
@@ -332,6 +341,7 @@ export class World {
     for(let i=this.effects.length-1;i>=0;i--){const e=this.effects[i];e.life-=dt;if(e.life<=0){e.mesh.removeFromParent();(e.mesh.material as T.Material).dispose();this.effects.splice(i,1);continue;}e.mesh.position.addScaledVector(e.velocity,dt);e.velocity.y-=dt*9;(e.mesh.material as T.MeshBasicMaterial).opacity=e.life/e.max;}
     this.sun.position.set(focus.x-28,48,focus.z+20);this.sun.target.position.set(focus.x,0,focus.z);
     for(const wreck of this.wrecks){wreck.age+=dt;wreck.root.position.y=Math.max(0,wreck.root.position.y-dt*(4+wreck.age*12));wreck.emit-=dt;if(wreck.age<12&&wreck.emit<=0){wreck.emit=this.low?.4:.18;const p=wreck.root.position.clone();p.y+=1.3;this.fx.smoke(p,1.8);if(wreck.age<4)this.fx.emit(p,'flash',0xff6b23,1.4,.35);}}
+    for(const a of this.activities)if(a.hover!==undefined&&!a.spent&&!a.airborne){a.hoverTime=(a.hoverTime??0)+dt;a.mesh.position.y=a.hover+Math.sin(a.hoverTime*2)*.2;}
     this.environment.update(dt,this.low);this.fx.update(dt,this.camera);
     this.renderer.render(this.scene,this.camera);
   }

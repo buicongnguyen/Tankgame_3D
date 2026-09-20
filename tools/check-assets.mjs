@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 const names=JSON.parse(fs.readFileSync('src/three/model-catalog.json','utf8'));
-let quadcopterBytes=0,flameBytes=0,total=0,lowTotal=0,highTriangles=0,lowTriangles=0;
+let jetBytes=0,quadcopterBytes=0,flameBytes=0,total=0,lowTotal=0,highTriangles=0,lowTriangles=0;
 for(const name of names){
   const b=fs.readFileSync(`public/models/${name}.glb`);total+=b.length;
   assert.equal(b.readUInt32LE(0),0x46546c67);assert.equal(b.readUInt32LE(4),2);assert.equal(b.readUInt32LE(8),b.length);
@@ -13,6 +13,7 @@ for(const name of names){
     for(const img of json.images??[]){const v=json.bufferViews[img.bufferView],start=28+b.readUInt32LE(12)+(v.byteOffset??0),data=b.subarray(start,start+v.byteLength);assert.equal(img.mimeType,'image/png');assert.ok(data.readUInt32BE(16)<=128&&data.readUInt32BE(20)<=128,`${name} texture exceeded its mobile budget`);}
   }
 
+  if(name==='boss-jet'){jetBytes=b.length;assert.ok(jetBytes<60_000,'Jet budget: 60 KB');}
   if(name==='boss-quadcopter'){quadcopterBytes=b.length;assert.ok(b.length<180_000);for(const node of ['Rotor0','Rotor1','Rotor2','Rotor3','LaunchMuzzle0','LaunchMuzzle1','LaunchMuzzle2'])assert.ok(json.nodes.some(n=>n.name===node),`Missing quadcopter ${node}`);}
   if(name==='flame'){flameBytes=b.length;assert.ok(b.length<16_000);assert.ok(json.meshes.every(m=>m.primitives.every(p=>p.attributes.COLOR_0!==undefined)));}
   let triangles=0;
@@ -42,7 +43,7 @@ for(const name of names){
   console.log(`${name}: ${triangles} detailed / ${simpler} low triangles, valid Blender GLBs`);
 }
 // Reserve 180 KB for the four-rotor rig; retain the existing scene and flame budgets.
-assert.ok(total-flameBytes-quadcopterBytes<4_000_000);assert.ok(total<4_196_000);console.log(`Total runtime GLBs: ${total} bytes`);
+assert.ok(total-flameBytes-quadcopterBytes-jetBytes<4_000_000);assert.ok(total<4_256_000);console.log(`Total runtime GLBs: ${total} bytes`);
 
 assert.ok(lowTotal<2_000_000);assert.ok(lowTriangles<highTriangles*.4);
 console.log(`Low tier: ${lowTotal} bytes; ${lowTriangles} / ${highTriangles} triangles (${Math.round((1-lowTriangles/highTriangles)*100)}% fewer)`);

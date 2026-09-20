@@ -50,8 +50,8 @@ test('supply payloads stay small and failed landing requests do not spend the al
 
 test('mine ring matches the enlarged trigger boundary and ignores airborne tanks',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};g.enemies=[];g.world.covers=[];g.world.activities=[];g.player.visual.root.position.set(40,0,40);g.world.navigationRevision++;
-  const {createActivity}=await import('/src/three/activities.ts'),{MINE_TRIGGER_RADIUS:r}=await import('/src/three/combat-ranges.ts');const a=createActivity(g.world.arena,'mine',0,0);g.world.activities=[a];const tank=g.makeUnit(10,0,'heavy');g.enemies=[tank];tank.visual.root.position.set(r+.01,0,0);g.updateActivities(.01);const outside=!a.spent;
-  tank.visual.root.position.set(r-.01,3,0);g.updateActivities(.01);const flying=!a.spent;tank.visual.root.position.y=0;const hp=tank.hp;g.updateActivities(.01);const inside=a.spent&&tank.hp<hp;const after=tank.hp;g.updateActivities(.01);
+  const {createActivity}=await import('/src/three/activities.ts'),{MINE_TRIGGER_RADIUS:r}=await import('/src/three/combat-ranges.ts');const a=createActivity(g.world.arena,'mine',0,0);g.world.activities=[a];const tank=g.makeUnit(10,0,'heavy');g.enemies=[tank];tank.visual.root.position.set(r+g.unitRadius(tank)+.01,0,0);g.updateActivities(.01);const outside=!a.spent;
+  tank.visual.root.position.set(r+g.unitRadius(tank),3,0);g.updateActivities(.01);const flying=!a.spent;tank.visual.root.position.y=0;const hp=tank.hp;g.updateActivities(.01);const inside=a.spent&&tank.hp<hp;const after=tank.hp;g.updateActivities(.01);
   return {radius:a.mesh.children[0].geometry.parameters.outerRadius,outside,flying,inside,once:tank.hp===after,depthWrite:a.mesh.children[0].material.depthWrite};
  });expect(r).toEqual({radius:2.7,outside:true,flying:true,inside:true,once:true,depthWrite:false});
 });

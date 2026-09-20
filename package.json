@@ -11,12 +11,14 @@
     "android:open": "cap open android",
     "preview": "vite preview",
     "test": "playwright test",
-    "test:assets": "node tools/check-assets.mjs"
+    "test:assets": "node tools/check-assets.mjs",
+    "covers:resize": "node tools/resize-covers.mjs"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.3.3",
     "@playwright/test": "^1.63.0",
     "@types/three": "^0.185.4",
+    "sharp": "^0.35.4",
     "typescript": "~6.0.2",
     "vite": "^8.0.10"
   },

@@ -18,6 +18,12 @@
     "bytes": 48532
   },
   {
+    "asset": "boss-jet",
+    "detailedTriangles": 660,
+    "lowTriangles": 197,
+    "bytes": 29068
+  },
+  {
     "asset": "boss-laser",
     "detailedTriangles": 1900,
     "lowTriangles": 566,
