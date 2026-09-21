@@ -12,6 +12,7 @@ import {GROUND_COLORS} from './frontier-environment';
 import MODEL_NAMES from './model-catalog.json';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import {SkinMarkings} from './skin-markings';
+import {StableShadow} from './stable-shadow';
 import { skinPalette } from './skins';
 import * as T from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -50,6 +51,7 @@ export class World {
   cursor: T.Mesh;
   shield: T.Mesh;
   sun: T.DirectionalLight;
+  private stableShadow: StableShadow;
   effectGeometry = new T.IcosahedronGeometry(1, 0);
   effectMaterials = [0xffba66,0xf67845,0x696657,0x75f5cf].map(color => new T.MeshBasicMaterial({ color, transparent: true }));
   low = false;
@@ -79,6 +81,7 @@ export class World {
     this.sun.shadow.mapSize.set(2048,2048);
     Object.assign(this.sun.shadow.camera,{ left:-50,right:50,top:45,bottom:-45,near:1,far:120 });
     this.sun.shadow.normalBias = .035; this.scene.add(this.sun,this.sun.target);
+    this.stableShadow = new StableShadow(this.sun);
     this.scene.add(this.arena,this.entities);
     this.ring = new T.Mesh(new T.RingGeometry(6.6,6.9,64),new T.MeshBasicMaterial({color:0xffc272,side:T.DoubleSide,transparent:true,opacity:.85}));
     this.ring.rotation.x=-Math.PI/2; this.ring.position.set(0,.05,-13); this.scene.add(this.ring);
@@ -361,14 +364,23 @@ export class World {
   }
   cameraLead(){return this.cameraOffset().z;}
   update(dt:number,focus:T.Vector3,menu=false){
-    const raw=this.cameraOffset(focus);if(!this.leadReady||dt===0){this.smoothLead.set(raw.x,0,raw.z);this.leadReady=true;}else this.smoothLead.lerp(scratch.set(raw.x,0,raw.z),1-Math.exp(-dt*6));
+    const raw=this.cameraOffset(focus);
+    if(!this.leadReady){this.smoothLead.set(raw.x,0,raw.z);this.leadReady=true;}
+    else if(dt>0){
+      // Nearest route segments / O-loop direction can flip the lead by 16 m.
+      // Bound its travel speed as well as easing it; paused frames never reset it.
+      scratch.set(raw.x,0,raw.z).sub(this.smoothLead);
+      const distance=scratch.length();
+      if(distance>0)this.smoothLead.addScaledVector(scratch,Math.min(1-Math.exp(-dt*6),8*dt/distance));
+    }
     const offset=this.smoothLead,desired=menu?scratch.copy(focus):scratch.set(T.MathUtils.clamp(focus.x+offset.x,-this.bounds.x,this.bounds.x),0,T.MathUtils.clamp(focus.z+offset.z,-this.bounds.z,this.bounds.z));
     this.target.lerp(desired,1-Math.exp(-dt*3));
     const portrait=this.camera.aspect<1;
     this.camera.position.set(this.target.x+(menu?16:0),menu?18:(portrait?62:54)*(this.bounds.x<40?.78:1),this.target.z+(menu?24:(portrait?51:43)*(this.bounds.x<40?.78:1)));
     this.camera.lookAt(this.target.x,0,this.target.z-(menu?0:3));
     for(let i=this.effects.length-1;i>=0;i--){const e=this.effects[i];e.life-=dt;if(e.life<=0){e.mesh.removeFromParent();(e.mesh.material as T.Material).dispose();this.effects.splice(i,1);continue;}e.mesh.position.addScaledVector(e.velocity,dt);e.velocity.y-=dt*9;(e.mesh.material as T.MeshBasicMaterial).opacity=e.life/e.max;}
-    this.sun.position.set(focus.x-28,48,focus.z+20);this.sun.target.position.set(focus.x,0,focus.z);
+    // Track the ground, not the tank's vertical bob/sinking animation.
+    this.stableShadow.update(scratch.set(focus.x,0,focus.z));
     while(this.wrecks.length>(this.low?6:14)){const old=this.wrecks.shift()!;old.root.removeFromParent();old.scorch.removeFromParent();}
     for(let i=this.wrecks.length-1;i>=0;i--){const wreck=this.wrecks[i];wreck.age+=dt;if(wreck.age>(this.low?20:60)){wreck.root.removeFromParent();wreck.scorch.removeFromParent();this.wrecks.splice(i,1);continue;}wreck.root.position.y=Math.max(0,wreck.root.position.y-dt*(4+wreck.age*12));wreck.emit-=dt;if(wreck.age<(this.low?5:12)&&wreck.emit<=0){wreck.emit=this.low?.4:.18;const p=wreck.root.position.clone();p.y+=1.3;this.fx.smoke(p,1.8);if(wreck.age<4)this.fx.emit(p,'flash',0xff6b23,1.4,.35);}}
     for(const a of this.activities)if(a.hover!==undefined&&!a.spent&&!a.airborne){a.hoverTime=(a.hoverTime??0)+dt;a.mesh.position.y=a.hover+Math.sin(a.hoverTime*2)*.2;}

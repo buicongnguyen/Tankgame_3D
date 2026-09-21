@@ -7,7 +7,10 @@ export class RenderPacer {
     // Reset after a pause or backwards/stale RAF clock; never accumulate a backlog.
     if (now < this.last || now - this.last > 250) this.next = now;
     this.last = now;
-    if (now + .5 < this.next) return false;
+    // RAF timestamps wobble around the refresh deadline. A half-millisecond
+    // tolerance rejected alternate 60 Hz frames with only 0.7 ms of jitter.
+    // Keep the deadline (and frame cap), but accept slightly early refreshes.
+    if (now + Math.min(2, interval * .12) < this.next) return false;
     this.next += Math.max(1, Math.floor((now - this.next) / interval) + 1) * interval;
     return true;
   }
