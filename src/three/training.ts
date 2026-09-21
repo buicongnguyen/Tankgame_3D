@@ -19,7 +19,7 @@ export class TrainingSession {
  get definition(){return TRAINING[this.id];}
  mission():Mission{return {name:this.definition.name,sector:'KESTREL TRAINING',kind:this.id===2?'defense':'assault',biome:'grove',parTime:0,briefing:'A short training exercise. Follow one hint at a time.',radio:'IVO / We will take this one step at a time.',debrief:'Lesson complete.',objective:'Follow the training hint',count:this.definition.tanks,duration:0,reward:this.definition.reward};}
  canFire(){return this.id!==2||this.shielded&&this.struck;}
- action(g:Game,a:string){if(a==='shield'&&g.shieldTime>0)this.shielded=true;if(this.id===1&&this.collected&&a==='4'&&g.weapon===3)this.switched=true;}
+ action(g:Game,a:string){if(a==='shield'&&g.shieldTime>0)this.shielded=true;if(this.id===1&&a==='4'&&g.weapon===3&&g.world.activities.some(a=>a.kind==='laser'&&a.spent))this.collected=this.switched=true;}
  update(g:Game){
   this.moved ||= distance(g.player.visual.root.position,g.world.layout.spawn)>3;
   this.collected ||= g.world.activities.some(a=>a.kind==='laser'&&a.spent);

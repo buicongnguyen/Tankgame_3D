@@ -37,6 +37,7 @@ export class RouteEncounters {
    if(g.mission===0&&g.level===0&&g.save.difficulty==='easy'&&order.group>0&&(this.progress<layout.length*.35||g.enemies.some(e=>!e.dead&&e.encounter?.group===0)))continue;
    if(seesTarget(g,u,player))this.alert(g,u,player);
    else if(g.convoy&&seesTarget(g,u,g.convoy.position))this.alert(g,u,g.convoy.position);
+   else {const ally=g.allies.active.find(a=>!a.dead&&seesTarget(g,u,a.visual.root.position));if(ally)this.alert(g,u,ally.visual.root.position);}
   }
  }
 }
