@@ -207,7 +207,7 @@ export class Game {
       const fallback={x:p.x+p.dz*lateral+p.dx*forward,z:p.z-p.dx*lateral+p.dz*forward},post=boss||m.kind==='defense'||!!this.training||this.world.bounds.x<40?fallback:guardPost(this,p,fallback,role,i,group);
       const unit=m.kind==='defense'&&!this.training?this.defenseSpawn(i+(boss?count+encounter.infantry:role==='rifleman'||role==='rocketeer'?count:0),role,kind):this.makeUnit(post.x,post.z,role,kind);
       const facing=m.kind==='defense'?{x:-unit.visual.root.position.x,z:-13-unit.visual.root.position.z}:{x:-p.dx,z:-p.dz};unit.heading=unit.aim=Math.atan2(facing.x,facing.z);
-      unit.encounter={group,anchor:{x:p.x,z:p.z},meters,active:false,...(m.kind==='defense'?{wakeAt:Infinity}:{})};unit.pending=m.kind==='defense'&&!this.training;this.enemies.push(unit);
+      unit.encounter={group,anchor:{x:p.x,z:p.z},meters,active:false,...(m.kind==='defense'?{wakeAt:Infinity}:{})};unit.pending=this.training?group>0:m.kind==='defense';this.enemies.push(unit);
     };
     for(let i=0;i<count;i++)deploy(i,count,index>=4&&i%2===0?'heavy':i%3===1?'sentry':'raider');
     const primary=bossKind(index),reinforcements:BossKind[]=index>=10?['quadcopter','quad-mech','siege-mech','missile-truck','helicopter','spider','laser']:['helicopter','spider','laser'];const kinds:BossKind[]=[primary,...(index>=10?reinforcements.filter(kind=>kind!==primary):reinforcements)];for(let i=0;i<bosses;i++)deploy(i,bosses,'boss',kinds[i]);

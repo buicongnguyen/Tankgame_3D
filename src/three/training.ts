@@ -25,7 +25,11 @@ export class TrainingSession {
   this.collected ||= g.world.activities.some(a=>a.kind==='laser'&&a.spent);
   const ready=this.id===0?this.moved:this.id===1?this.moved:this.shielded&&this.struck;
   const firstClear=g.enemies.filter(e=>e.encounter?.group===0).every(e=>e.dead);
-  for(const e of g.enemies)if(e.encounter)e.encounter.active=ready&&(e.encounter.group===0||firstClear&&(this.id!==1||this.switched));
+  for(const e of g.enemies)if(e.encounter){
+   e.encounter.active=ready&&(e.encounter.group===0||firstClear&&(this.id!==1||this.switched));
+   const pending=e.encounter.group>0&&!e.encounter.active;
+   if(e.pending!==pending){e.pending=pending;g.syncVisual(e);}
+  }
  }
  ready(g:Game){return this.moved&&(this.id!==0||g.shotsFired>0)&&(this.id!==1||this.switched)&&(this.id!==2||this.shielded&&this.struck)&&g.enemies.every(e=>e.dead)&&(this.id===2||distance(g.player.visual.root.position,g.world.layout.points.at(-1)!)<5);}
  hint(g:Game):{text:string;target:string}{

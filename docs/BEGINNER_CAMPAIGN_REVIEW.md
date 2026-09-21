@@ -71,3 +71,18 @@ results are recorded below when the release finishes.
 
 Browser/software-renderer checks cannot establish thermal stability on every phone.
 Physical Android/iPhone testing and beginner timing playtests remain recommended.
+
+### Release validation (21 September 2026)
+
+- 66 affected campaign, desktop, touch, WebKit and endurance checks passed together
+  against unchanged release code. The preceding 12 new tutorial/ally integration
+  checks also passed; an additional training-reserve regression was then added.
+- Three-minute mobile-sized Crazy battle: 179.7 simulated seconds, 5,430 rendered
+  frames, no context loss or page errors. GPU geometries stabilized at 473 (initial
+  sample 463), textures remained 11, shader programs remained 17, and active/pooled
+  effect particles stayed within 48. This is a browser test, not a physical phone.
+- In-game screenshots checked the relay, both transport attachments and guarded
+  rescue tanks. Portrait and landscape tutorial hints fit outside the controls.
+- Final logic pass: training reserves are hidden and excluded from Strike until
+  their encounter is released, so the support lesson cannot skip its second wave.
+- GitHub Pages deployment is gated by all eight full-suite verification jobs.
