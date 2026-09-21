@@ -17,3 +17,44 @@ body[data-phase=menu] #overlay{background:radial-gradient(ellipse at 35% 45%,#16
 @media(max-width:600px) and (orientation:portrait){.command-screen{gap:12px;padding-top:max(12px,env(safe-area-inset-top));padding-bottom:max(12px,env(safe-area-inset-bottom))}.command-screen .brand{padding-bottom:9px}.command-screen .brand small,.command-screen .build-label{display:none}.command-screen .hero{height:155px}.command-screen .hero h1{font-size:40px;margin-top:3px}.command-screen .hero h1>span{font-size:9px;letter-spacing:.4em;margin-top:8px}.tank-showcase{height:133px;max-width:225px;margin-top:-18px}.showcase-caption{display:none}.command-screen .briefing{padding:13px}.command-screen .briefing h2{font-size:27px}.command-screen .mission-task{padding:7px 10px;margin:8px 0}.command-screen .mission-setup{margin:4px 0 10px}.command-screen .hangar-button{margin-top:8px}.command-screen summary{min-height:36px}.command-screen .briefing details{margin-top:4px}.command-screen footer>button[data-action=shop]{min-width:130px}.depot-panel .shop-tabs{gap:4px}.depot-panel .shop-tabs button{font-size:12px;padding:8px 3px}.stage-rating{padding:7px 0 11px}.stage-rating>span{font-size:34px}.stage-rating small{font-size:9px}}
 @media(max-width:360px) and (orientation:portrait){.command-screen .hero{height:120px}.command-screen .hero h1{font-size:34px}.tank-showcase{height:105px;max-width:175px;margin-top:-20px}.command-screen .brand{font-size:8px}.command-screen .brand-mark{font-size:21px}.command-screen{gap:9px}.command-screen .briefing h2{font-size:24px}.command-screen .mission-task strong{font-size:11px}.command-screen .hangar-button small{font-size:9px}}
 .mobile-fullscreen{display:none}.fullscreen-notice{position:fixed;z-index:100;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(420px,calc(100% - 32px));padding:14px 18px;background:#0c1c2af5;border:1px solid #e7bc7a88;border-radius:6px;font-size:12px;line-height:1.5;color:#edf3f4;pointer-events:none}.settings .fullscreen-button{min-height:44px}html:fullscreen,html:fullscreen body,html:fullscreen #app{width:100%;height:100%;background:#101b20}@media(pointer:coarse){.mobile-fullscreen{display:block}.command-screen footer{flex-wrap:wrap}.command-screen .mobile-fullscreen button{min-height:44px;padding:10px;font-size:10px;background:#a6c6d00c;border-color:#aac4d333}.command-screen footer>.menu-settings{margin-left:auto}}@media(pointer:coarse) and (orientation:landscape){.command-screen{padding-left:max(24px,env(safe-area-inset-left));padding-right:max(24px,env(safe-area-inset-right))}}
+
+/* Readable mission introductions on mouse/keyboard screens. */
+@media (pointer:fine) and (min-width:761px){
+ .command-screen .brand{font-size:12px}
+ .command-screen .brand small,
+ .command-screen .build-label,
+ .command-screen .hero>.eyebrow,
+ .command-screen .showcase-caption .eyebrow,
+ .command-screen .panel-top .eyebrow,
+ .command-screen .route-item small,
+ .command-screen .setup-label{font-size:12px;line-height:1.5}
+ .command-screen .menu-tagline,
+ .command-screen .showcase-caption>span:last-child,
+ .command-screen .mode-hint,
+ .command-screen .hangar-button,
+ .command-screen .briefing>small,
+ .command-screen summary,
+ .command-screen .mission-setup summary,
+ .command-screen .campaign-route>summary,
+ .command-screen .mission-setup summary span,
+ .command-screen .campaign-route>summary span,
+ .command-screen .route-item strong,
+ .command-screen .control-guide span,
+ .command-screen .control-guide kbd{font-size:14px;line-height:1.5}
+ .command-screen .mission-task strong,
+ .command-screen .briefing-copy,
+ .command-screen .manual{font-size:16px;line-height:1.6}
+ .command-screen .difficulty button,
+ .command-screen .level-select button,
+ .command-screen .settings button,
+ .command-screen .hangar-button small,
+ .command-screen .settings a,
+ .command-screen .quiet,
+ .command-screen footer>button,
+ .command-screen footer>button[data-action=shop],
+ .command-screen #graphics-help{font-size:13px;line-height:1.4;letter-spacing:.03em}
+ .command-screen .level-select button{white-space:normal}
+ .radio{font-size:15px;line-height:1.5;max-width:340px}
+ .mission-hud .eyebrow,#boss-readout{font-size:12px}
+ .mission-hud p{font-size:14px;line-height:1.4}
+}
