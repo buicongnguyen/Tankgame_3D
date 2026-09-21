@@ -27,8 +27,24 @@ test('waiting route groups patrol locally, wake near their zone and counterattac
  });expect(r).toEqual({quiet:true,noShots:true,middle:true,bossWaiting:true,provoked:true,final:true,counts:true});
 });
 
-test('defense groups enter in staggered waves and reset with the stage',async({page})=>{
- await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.start(3);g.updateEnemies(.01);const first=g.enemies.filter((e:any)=>e.encounter.active).length,waiting=g.enemies.filter((e:any)=>!e.encounter.active).length;g.elapsed=15;g.updateEnemies(.01);const next=g.enemies.filter((e:any)=>e.encounter.active).length;g.elapsed=22;g.updateEnemies(.01);const all=g.enemies.every((e:any)=>e.encounter.active);g.start(3);return {first,waiting,next,all,reset:g.enemies.every((e:any)=>!e.encounter.active)&&g.encounters.progress===0};});expect(r.first).toBeGreaterThan(0);expect(r.waiting).toBeGreaterThan(0);expect(r.next).toBeGreaterThan(r.first);expect(r.all&&r.reset).toBe(true);
+test('defense groups wait for preparation and combat gates, then reset with the stage',async({page})=>{
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
+ const r=await page.evaluate(()=>{
+  const g=(window as any).__steel;g.frame=()=>{};g.start(3);g.elapsed=6.99;g.updateEnemies(.01);
+  const preparation=g.enemies.every((e:any)=>e.pending&&!e.encounter.active);
+  g.elapsed=7;g.updateEnemies(.01);const first=g.enemies.filter((e:any)=>!e.pending).length,waiting=g.enemies.filter((e:any)=>e.pending).length;
+  g.elapsed=22;g.updateEnemies(.01);const combatGate=g.waves.wave===0&&g.enemies.filter((e:any)=>!e.pending).length===first;
+  const releases=[];
+  for(let wave=1;wave<4;wave++){
+   for(const e of g.enemies)if(!e.pending)e.dead=true;
+   g.waves.update(g);const deadline=g.waves.nextAt,warning=deadline===g.elapsed+9;
+   g.elapsed=deadline-.01;g.waves.update(g);const held=g.waves.wave===wave-1;
+   g.elapsed=deadline;g.waves.update(g);releases.push(warning&&held&&g.waves.wave===wave&&g.enemies.some((e:any)=>!e.dead&&!e.pending));
+  }
+  const all=g.enemies.every((e:any)=>!e.pending&&e.encounter.active);
+  g.start(3);return {preparation,first,waiting,combatGate,releases,all,reset:g.waves.wave===-1&&g.waves.nextAt===7&&g.enemies.every((e:any)=>e.pending&&!e.encounter.active)&&g.encounters.progress===0};
+ });
+ expect(r.first).toBeGreaterThan(0);expect(r.waiting).toBeGreaterThan(0);expect(r.preparation&&r.combatGate&&r.all&&r.reset).toBe(true);expect(r.releases).toEqual([true,true,true]);
 });
 
 test('assault offers extraction after armor kills and finishes in place when all hostiles fall',async({page})=>{

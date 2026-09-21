@@ -86,3 +86,7 @@ Physical Android/iPhone testing and beginner timing playtests remain recommended
 - Final logic pass: training reserves are hidden and excluded from Strike until
   their encounter is released, so the support lesson cannot skip its second wave.
 - GitHub Pages deployment is gated by all eight full-suite verification jobs.
+
+- Full CI review found an obsolete defense regression expecting immediate timed
+  releases. It now checks the 7-second preparation, combat gate, 9-second warning,
+  all four releases and retry reset. The independent tutorial/defense checks remain.
