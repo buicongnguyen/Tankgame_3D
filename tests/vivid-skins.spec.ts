@@ -1,6 +1,8 @@
 import {test,expect} from '@playwright/test';
 import {freshSave,parseSave} from '../src/three/campaign';
 import {SKINS,buySkin} from '../src/three/skins';
+import {Color} from 'three';
+import {SKIN_PALETTES} from '../src/three/skin-palettes';
 import {TANK_FLAGS} from '../src/three/tank-flags';
 import MARKINGS from '../src/three/skin-markings.json' with {type:'json'};
 
@@ -21,6 +23,10 @@ test('new vivid skins keep existing price and combat tiers with matching authore
   const save=freshSave();save.credits=skin.price;expect(buySkin(save,id)).toBe(true);expect(buySkin(save,id)).toBe(false);
   expect(parseSave(JSON.stringify(save))).toMatchObject({skin:id,credits:0});
   const paint=MARKINGS[id as keyof typeof MARKINGS];expect(paint.stars).toBe((skin as any).stars);
+  const star=new Color((skin as any).starColor),fender=new Color('#'+SKIN_PALETTES[id as keyof typeof SKIN_PALETTES].Trim);
+  const luminance=(c:Color)=>c.r*.2126+c.g*.7152+c.b*.0722;
+  expect((Math.max(luminance(star),luminance(fender))+.05)/(Math.min(luminance(star),luminance(fender))+.05)).toBeGreaterThan(3);
+  expect(paint.colors.some((_,i)=>i%3===0&&[star.r,star.g,star.b].every((v,j)=>Math.abs(v-paint.colors[i+j])<.00001))).toBe(true);
   expect(paint.positions.length).toBe(paint.colors.length);expect(paint.positions.length/9).toBeLessThanOrEqual(112);
  }
  expect(MARKINGS.classic.stars).toBe(1);

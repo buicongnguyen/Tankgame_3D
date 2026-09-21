@@ -29,6 +29,8 @@ palettes.update({
 'acid':{'Armor':'aaff19','Trim':'7529d5','Gunmetal':'36485c','Signal':'ff51ce','Tracks':'26363c'},
 'aurora':{'Armor':'8838ff','Trim':'19efd0','Gunmetal':'463a72','Signal':'69ffdf','Tracks':'292940'}})
 ratings={'classic':1,'coral':2,'tropical':3,'acid':4,'aurora':5,'comet':1,'sentinel':2,'talon':3,'nova':4,'prism':5,'bastion':3,'sprint':3,'lance':3,'quartermaster':3}
+# Stars contrast with the fender paint independently of the headlamp color.
+star_colors={'coral':'e12457','tropical':'1553c4','acid':'ff9eec','aurora':'7932df'}
 marking_data={}
 # Build all paint data but optionally render only named variants.
 selected=next((arg.split('=',1)[1].split(',') for arg in sys.argv if arg.startswith('--only=')),None)
@@ -44,7 +46,7 @@ def markings(name,palette):
  def star(cx,cy,r):
   # A center fan preserves the concave five-point outline without crossing triangles.
   rim=[(cx+math.sin(i*math.pi/5)*r*(1 if i%2==0 else .43),cy+math.cos(i*math.pi/5)*r*(1 if i%2==0 else .43),1.045) for i in range(10)]
-  for i in range(10):polygon([(cx,cy,1.045),rim[(i+1)%10],rim[i]],palette['Signal'])
+  for i in range(10):polygon([(cx,cy,1.045),rim[(i+1)%10],rim[i]],star_colors.get(name,palette['Signal']))
  for side in (-1,1):
   count=ratings[name]
   for i in range(count):star(side*1.1,(i-(count-1)/2)*.43,.18)
