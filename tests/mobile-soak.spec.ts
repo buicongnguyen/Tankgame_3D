@@ -1,8 +1,10 @@
 import {test,expect} from '@playwright/test';
+import {freshSave,SAVE_KEY} from '../src/three/campaign';
 
-test('three-minute mobile battle keeps graphics resources bounded',async({browser},testInfo)=>{
+for(const low of [false,true])test(`three-minute mobile ${low?'Low':'High'} Detail battle keeps graphics resources bounded`,async({browser},testInfo)=>{
  test.setTimeout(240000);
  const context=await browser.newContext({viewport:{width:844,height:390},isMobile:true,hasTouch:true,deviceScaleFactor:3});
+ if(low)await context.addInitScript(({key,save})=>localStorage.setItem(key,JSON.stringify(save)),{key:SAVE_KEY,save:{...freshSave(),low:true,graphicsChosen:true}});
  const page=await context.newPage(),errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  try{
   await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).tap();
@@ -20,7 +22,7 @@ test('three-minute mobile battle keeps graphics resources bounded',async({browse
   }
   console.log('MOBILE_SOAK_RESOURCES',JSON.stringify(samples));
   await testInfo.attach('mobile-soak-resources',{body:JSON.stringify(samples,null,2),contentType:'application/json'});
-  for(const s of samples){expect(s.phase).toBe('playing');expect(s.low).toBe(true);expect(s.lost).toBe(false);expect(s.particles+s.pooled).toBeLessThanOrEqual(48);expect(s.wrecks).toBeLessThanOrEqual(6);expect(s.geometries).toBeLessThanOrEqual(samples[0].geometries+80);expect(s.textures).toBeLessThanOrEqual(samples[0].textures+2);expect(s.programs).toBeLessThanOrEqual(samples[0].programs+8);}
+  for(const s of samples){expect(s.phase).toBe('playing');expect(s.low).toBe(low);expect(s.lost).toBe(false);expect(s.particles+s.pooled).toBeLessThanOrEqual(low?48:230);expect(s.wrecks).toBeLessThanOrEqual(low?6:14);expect(s.geometries).toBeLessThanOrEqual(samples[0].geometries+80);expect(s.textures).toBeLessThanOrEqual(samples[0].textures+2);expect(s.programs).toBeLessThanOrEqual(samples[0].programs+8);}
   expect(samples.at(-1).frames-samples[0].frames).toBeGreaterThan(300);expect(samples.at(-1).elapsed).toBeGreaterThan(60);expect(errors).toEqual([]);
  }finally{await context.close();}
 });
