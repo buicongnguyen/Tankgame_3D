@@ -1,3 +1,5 @@
+import {compactLayout,TRAINING} from './training';
+import {EnemyBatches} from './enemy-batches';
 import {mode} from './difficulty';
 import {crewMaterial,packCrewSurfaces} from './crew-material';
 import {buildRouteScenery} from './route-scenery';
@@ -24,7 +26,9 @@ export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'p
 interface Effect { mesh: T.Mesh; life: number; max: number; velocity: T.Vector3; }
 const scratch = new T.Vector3();
 export class World {
+  bounds={...BOUNDS};
   scene = new T.Scene();
+  enemyBatches=new EnemyBatches(this.scene);
   environment=new Environment();
   fx=new CombatEffects(this.scene); activities:Activity[]=[]; wrecks:{root:T.Group;scorch:T.Mesh;age:number;emit:number}[]=[];
   burnt=new T.MeshStandardMaterial({color:0x292b28,roughness:.96});
@@ -52,8 +56,10 @@ export class World {
   crewMaterial=crewMaterial();
   studioEnvironment:T.Texture;
   target = new T.Vector3();
-  constructor(container: HTMLElement) {
-    this.renderer = new T.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  private smoothLead=new T.Vector3();private leadReady=false;
+  constructor(container: HTMLElement,low=false) {
+    this.low=low;
+    this.renderer = new T.WebGLRenderer({ antialias: !low, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = T.PCFShadowMap;
@@ -80,7 +86,8 @@ export class World {
     this.cursor.renderOrder=4;this.cursor.rotation.x=-Math.PI/2; this.cursor.position.y=.08; this.scene.add(this.cursor);
     this.shield = new T.Mesh(new T.SphereGeometry(2.6,20,12),new T.MeshBasicMaterial({color:0x76ffe0,transparent:true,opacity:.12,wireframe:true}));
     this.scene.add(this.shield); this.shield.visible=false;
-    window.addEventListener('resize',()=>this.resize()); this.resize();
+    this.scene.onBeforeRender=(_renderer,_scene,camera)=>this.enemyBatches.update(camera);
+    window.addEventListener('resize',()=>this.resize()); this.settings(low);
   }
   async load(low=false) {
     await loadPickupModels();
@@ -160,6 +167,7 @@ export class World {
     const beam=new T.Mesh(new T.BoxGeometry(.08,.02,1),new T.MeshBasicMaterial({color:0xff5849,transparent:true,opacity:.55}));
     beam.userData.owned=true;beam.visible=false;this.entities.add(beam);
     this.entities.add(root);
+    if(enemy&&!boss)this.enemyBatches.add(root);
     return {root,hull:root.getObjectByName('Hull')!,turret:root.getObjectByName('Turret')!,muzzle:root.getObjectByName('Muzzle')!,bar,beam};
   }
   rocketGeometry=new T.BufferGeometry();rocketMaterial=new T.MeshBasicMaterial({color:0xff9538});
@@ -179,7 +187,7 @@ export class World {
     });this.skinMarkings.apply(root,id);root.userData.skin=id;
   }
   enemyMaterials=new Map<string,T.MeshStandardMaterial>();
-  clear() { this.environment.clear();this.fx.clear();this.wrecks=[];this.activities=[];
+  clear() { this.leadReady=false;this.enemyBatches.clear();this.environment.clear();this.fx.clear();this.wrecks=[];this.activities=[];
     for(const effect of this.effects){effect.mesh.removeFromParent();(effect.mesh.material as T.Material).dispose();}
     this.effects=[];
     // Only dispose runtime-created resources; GLB geometry/materials are shared templates.
@@ -211,7 +219,7 @@ export class World {
     }
   }
   build(index:number,kind:string,level=0,difficulty='normal') {
-    this.clear();this.missionKind=kind;this.navigationRevision++;this.layout=stageLayout(index,level,kind,difficulty);
+    this.bounds={...BOUNDS};this.clear();this.missionKind=kind;this.navigationRevision++;this.layout=stageLayout(index,level,kind,difficulty);
     const frontier=GROUND_COLORS[BIOMES[index]]!==undefined;
     const ground=this.box(frontier?184:164,.7,frontier?164:144,GROUND_COLORS[BIOMES[index]]??(BIOMES[index]==='snow'?0xc6d5d5:index===3?0x74776c:0xa69c78),0,-.4,0);ground.castShadow=false;if(GROUND_COLORS[BIOMES[index]]!==undefined)(ground.material as T.MeshStandardMaterial).map=groundTexture(BIOMES[index]);
     // Winter snow replaces dirt detail; nearly coplanar patches underneath can shimmer.
@@ -244,6 +252,16 @@ export class World {
     for(const side of [-4,4]){const x=exit.x+Math.cos(angle)*side,z=exit.z-Math.sin(angle)*side;this.box(.45,3.2,.45,0x3e5751,x,1.6,z);this.box(.65,.2,.65,0x98f3bf,x,3.3,z);}
     this.environment.build(this,index);buildRouteScenery(this);buildGuardLandmarks(this,kind);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
     this.target.set(0,0,0);
+  }
+  buildCompact(id:number){
+    this.clear();this.navigationRevision++;this.layout=compactLayout(id);this.bounds=id===3?{x:36,z:32}:{...TRAINING[id].bounds};this.missionKind=id===2?'defense':'assault';this.environment.biome='grove';
+    this.scene.background=new T.Color(0xa7b5a2);this.scene.fog=new T.Fog(0xa7b5a2,85,160);this.sun.color.setHex(0xffe4b4);
+    this.box(this.bounds.x*2+16,.7,this.bounds.z*2+16,0x83946a,0,-.4,0);
+    this.concreteBarriers(this.layout.barriers);buildRockBoundary(this,'grove');
+    for(const side of [-1,1]){const x=side*(this.bounds.x-5),z=id===1?8:4,mesh=this.clone('pine');mesh.position.set(x,0,z);this.arena.add(mesh);this.covers.push({x,z,w:2.6,d:2.6,kind:'pine',hp:65,mesh});}
+    const exit=this.layout.points.at(-1)!;this.ring.visible=true;this.ring.position.set(exit.x,.12,exit.z);this.ring.scale.setScalar(.7);
+    if(id===2){const relay=this.clone('relay');relay.position.set(0,0,-13);this.arena.add(relay);}
+    this.buildRoad(this.missionKind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);this.target.set(0,0,0);
   }
   private naturalBarriers(){
     for(const kind of ['hill','volcanic-rock'] as const){
@@ -313,12 +331,17 @@ export class World {
   settings(low:boolean){this.scene.environment=low?null:this.studioEnvironment;this.low=low;this.fx.low=low;this.renderer.shadowMap.enabled=!low;document.body.dataset.graphics=low?'low':'detailed';this.resize();}
   resize(){const w=window.innerWidth,h=window.innerHeight;this.renderer.setPixelRatio(this.low?Math.min(devicePixelRatio,.8,960/Math.max(w,h)):Math.min(devicePixelRatio,1.6));this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}
   burst(position:T.Vector3,color=0,amount=12){
-    for(let i=0;i<(this.low?Math.ceil(amount/2):amount)&&this.effects.length<100;i++){
+    for(let i=0;i<(this.low?Math.ceil(amount/2):amount)&&this.effects.length<(this.low?24:100);i++){
       const material=this.effectMaterials[color].clone();
       const mesh=new T.Mesh(this.effectGeometry,material);mesh.position.copy(position);mesh.position.y+=.8;mesh.scale.setScalar(.25+Math.random()*.5);this.scene.add(mesh);
       const life=.35+Math.random()*.5;
       this.effects.push({mesh,life,max:life,velocity:new T.Vector3((Math.random()-.5)*9,Math.random()*6,(Math.random()-.5)*9)});
     }
+  }
+  retireTank(visual:TankVisual){
+    this.enemyBatches.remove(visual.root);visual.root.removeFromParent();visual.beam.removeFromParent();
+    // Only the per-unit health bar and aim beam are owned here; model surfaces are shared.
+    for(const mesh of [visual.bar,visual.beam]){mesh.removeFromParent();mesh.geometry.dispose();(mesh.material as T.Material).dispose();}
   }
   destroyTank(visual:TankVisual){
     const root=this.clone(visual.root.userData.model||'tank');root.position.copy(visual.root.position);root.position.y=Math.max(0,root.position.y);root.scale.copy(visual.root.scale);
@@ -327,7 +350,7 @@ export class World {
     root.traverse(o=>{if(o instanceof T.Mesh){o.material=this.burnt;o.receiveShadow=false;}});const core=root.getObjectByName('Core');if(core)core.visible=false;this.entities.add(root);
     // World-space ground mark: ice/snow and boss rig scaling must not bury it.
     const scorch=new T.Mesh(this.scorchGeometry,this.scorchMaterial);scorch.name='WreckScorch';scorch.rotation.x=-Math.PI/2;scorch.position.set(root.position.x,.14,root.position.z);scorch.renderOrder=-1;this.entities.add(scorch);
-    this.wrecks.push({root,scorch,age:0,emit:0});if(this.wrecks.length>14){const old=this.wrecks.shift()!;old.root.removeFromParent();old.scorch.removeFromParent();}
+    this.wrecks.push({root,scorch,age:0,emit:0});if(this.wrecks.length>(this.low?6:14)){const old=this.wrecks.shift()!;old.root.removeFromParent();old.scorch.removeFromParent();}
     const p=root.position.clone();p.y=1;this.fx.impact(p,true);
   }
   cameraOffset(focus=this.layout.spawn){
@@ -338,14 +361,16 @@ export class World {
   }
   cameraLead(){return this.cameraOffset().z;}
   update(dt:number,focus:T.Vector3,menu=false){
-    const offset=this.cameraOffset(focus),desired=menu?scratch.copy(focus):scratch.set(T.MathUtils.clamp(focus.x+offset.x,-BOUNDS.x,BOUNDS.x),0,focus.z+offset.z);
+    const raw=this.cameraOffset(focus);if(!this.leadReady||dt===0){this.smoothLead.set(raw.x,0,raw.z);this.leadReady=true;}else this.smoothLead.lerp(scratch.set(raw.x,0,raw.z),1-Math.exp(-dt*6));
+    const offset=this.smoothLead,desired=menu?scratch.copy(focus):scratch.set(T.MathUtils.clamp(focus.x+offset.x,-this.bounds.x,this.bounds.x),0,T.MathUtils.clamp(focus.z+offset.z,-this.bounds.z,this.bounds.z));
     this.target.lerp(desired,1-Math.exp(-dt*3));
     const portrait=this.camera.aspect<1;
-    this.camera.position.set(this.target.x+(menu?16:0),menu?18:portrait?62:54,this.target.z+(menu?24:portrait?51:43));
+    this.camera.position.set(this.target.x+(menu?16:0),menu?18:(portrait?62:54)*(this.bounds.x<40?.78:1),this.target.z+(menu?24:(portrait?51:43)*(this.bounds.x<40?.78:1)));
     this.camera.lookAt(this.target.x,0,this.target.z-(menu?0:3));
     for(let i=this.effects.length-1;i>=0;i--){const e=this.effects[i];e.life-=dt;if(e.life<=0){e.mesh.removeFromParent();(e.mesh.material as T.Material).dispose();this.effects.splice(i,1);continue;}e.mesh.position.addScaledVector(e.velocity,dt);e.velocity.y-=dt*9;(e.mesh.material as T.MeshBasicMaterial).opacity=e.life/e.max;}
     this.sun.position.set(focus.x-28,48,focus.z+20);this.sun.target.position.set(focus.x,0,focus.z);
-    for(const wreck of this.wrecks){wreck.age+=dt;wreck.root.position.y=Math.max(0,wreck.root.position.y-dt*(4+wreck.age*12));wreck.emit-=dt;if(wreck.age<12&&wreck.emit<=0){wreck.emit=this.low?.4:.18;const p=wreck.root.position.clone();p.y+=1.3;this.fx.smoke(p,1.8);if(wreck.age<4)this.fx.emit(p,'flash',0xff6b23,1.4,.35);}}
+    while(this.wrecks.length>(this.low?6:14)){const old=this.wrecks.shift()!;old.root.removeFromParent();old.scorch.removeFromParent();}
+    for(let i=this.wrecks.length-1;i>=0;i--){const wreck=this.wrecks[i];wreck.age+=dt;if(wreck.age>(this.low?20:60)){wreck.root.removeFromParent();wreck.scorch.removeFromParent();this.wrecks.splice(i,1);continue;}wreck.root.position.y=Math.max(0,wreck.root.position.y-dt*(4+wreck.age*12));wreck.emit-=dt;if(wreck.age<(this.low?5:12)&&wreck.emit<=0){wreck.emit=this.low?.4:.18;const p=wreck.root.position.clone();p.y+=1.3;this.fx.smoke(p,1.8);if(wreck.age<4)this.fx.emit(p,'flash',0xff6b23,1.4,.35);}}
     for(const a of this.activities)if(a.hover!==undefined&&!a.spent&&!a.airborne){a.hoverTime=(a.hoverTime??0)+dt;a.mesh.position.y=a.hover+Math.sin(a.hoverTime*2)*.2;}
     this.environment.update(dt,this.low);this.fx.update(dt,this.camera);
     this.renderer.render(this.scene,this.camera);

@@ -24,7 +24,7 @@ export class AirSupport {
   let site:{x:number;z:number}|undefined;
   for(const radius of [7,10,13])for(let i=0;i<16&&!site;i++){
    const angle=g.player.heading+i*Math.PI/8,p={x:player.x+Math.sin(angle)*radius,z:player.z+Math.cos(angle)*radius};
-   if(Math.abs(p.x)>67||Math.abs(p.z)>55||g.world.covers.some(c=>c.hp>0&&segmentBox(player,p,c,3)!==null)||g.world.activities.some(a=>!a.spent&&distance(a,p)<(a.kind==='mine'?MINE_TRIGGER_RADIUS+4:6))||g.world.covers.some(c=>c.hp>0&&['barrel','fuelcrate'].includes(c.kind)&&distance(c,p)<10)||g.hazards.danger(p))continue;
+   if(Math.abs(p.x)>g.world.bounds.x-5||Math.abs(p.z)>g.world.bounds.z-5||g.world.covers.some(c=>c.hp>0&&segmentBox(player,p,c,3)!==null)||g.world.activities.some(a=>!a.spent&&distance(a,p)<(a.kind==='mine'?MINE_TRIGGER_RADIUS+4:6))||g.world.covers.some(c=>c.hp>0&&['barrel','fuelcrate'].includes(c.kind)&&distance(c,p)<10)||g.hazards.danger(p))continue;
    site=p;
   }
   if(!site){g.radioMessage('AIR SUPPORT / No clear landing site. Move into open ground.',3);return false;}

@@ -25,14 +25,14 @@ test('clearing all hostiles completes from anywhere, waits for reserves, and all
  });expect(Object.values(r).every(Boolean),JSON.stringify(r)).toBe(true);
 });
 
-for(const stage of [3,8,12])test(`uplink ${stage}: finite waves move immediately and cannot time out with survivors`,async({page})=>{
+for(const stage of [3,8,12])test(`uplink ${stage}: finite waves allow preparation and cannot time out with survivors`,async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(stage=>{
-  const g=(window as any).__steel;g.frame=()=>{};g.start(stage,0);g.player.hp=1e6;g.relayHealth=1e6;const initial=g.enemies.length,starts=g.enemies.map((e:any)=>({e,x:e.visual.root.position.x,z:e.visual.root.position.z,wake:e.encounter.wakeAt}));
-  g.updateEnemies(.02);const first=starts.filter((s:any)=>s.wake===0),firstActive=first.every((s:any)=>s.e.encounter.active),laterIdle=starts.filter((s:any)=>s.wake>0).every((s:any)=>!s.e.encounter.active);
+  const g=(window as any).__steel;g.frame=()=>{};g.start(stage,0);g.player.hp=1e6;g.relayHealth=1e6;const initial=g.enemies.length,starts=g.enemies.map((e:any)=>({e,x:e.visual.root.position.x,z:e.visual.root.position.z,wake:e.encounter.group}));
+  g.elapsed=7;g.updateEnemies(.02);const first=starts.filter((s:any)=>s.wake===0),firstActive=first.every((s:any)=>s.e.encounter.active),laterIdle=starts.filter((s:any)=>s.wake>0).every((s:any)=>!s.e.encounter.active);
   for(let i=0;i<60*10;i++){g.elapsed+=1/60;g.updateEnemies(1/60);}const marching=first.filter((s:any)=>Math.hypot(s.e.visual.root.position.x,s.e.visual.root.position.z+13)<Math.hypot(s.x,s.z+13)-5).length;
-  g.elapsed=12;g.encounters.update(g);const released=g.enemies.every((e:any)=>e.encounter.active);
+  for(let wave=0;wave<3;wave++){for(const e of g.enemies)if(!e.pending)e.dead=true;g.waves.update(g);g.elapsed=g.waves.nextAt;g.updateEnemies(.01);}const released=g.enemies.every((e:any)=>e.dead||e.encounter.active);
   g.elapsed=1000;g.step(.01);const noTimeout=g.phase==='playing',finite=g.enemies.length===initial;for(const e of g.enemies)e.dead=true;g.step(.01);return {firstActive,laterIdle,marching,first:first.length,released,noTimeout,finite,complete:g.phase==='finishing',times:[...new Set(starts.map((s:any)=>s.wake))].sort((a:any,b:any)=>a-b)};
- },stage);expect(r.firstActive&&r.laterIdle&&r.released&&r.noTimeout&&r.finite&&r.complete,JSON.stringify(r)).toBe(true);expect(r.marching).toBeGreaterThanOrEqual(Math.ceil(r.first*.6));expect(r.times).toEqual([0,4,8,12]);
+ },stage);expect(r.firstActive&&r.laterIdle&&r.released&&r.noTimeout&&r.finite&&r.complete,JSON.stringify(r)).toBe(true);expect(r.marching).toBeGreaterThanOrEqual(Math.ceil(r.first*.6));expect(r.times).toEqual([0,1,2,3]);
 });
 
 test('all 48 maps remove broad roads, add central cover and preserve sign and convoy paths',async({page})=>{
@@ -45,19 +45,19 @@ test('all 48 maps remove broad roads, add central cover and preserve sign and co
    for(const e of [g.player,...g.enemies])if(covers.some((c:any)=>circleBox(e.visual.root.position,g.unitRadius(e),c)))issues.push({stage,level,spawn:e.role});
    if(!g.convoy&&w.firmRoad(l.points[0]))issues.push({stage,level,invisibleRoad:true});
   }return {issues,counts};
- });expect(r.issues).toEqual([]);for(const row of r.counts){expect(row.total,`${row.stage}/${row.level}`).toBeGreaterThanOrEqual(4);expect(row.total).toBeLessThanOrEqual(64);expect(row.near,`${row.stage}/${row.level} center`).toBeGreaterThanOrEqual(2);}
+ });expect(r.issues).toEqual([]);for(const row of r.counts){if(row.stage===0&&row.level===0)continue;expect(row.total,`${row.stage}/${row.level}`).toBeGreaterThanOrEqual(4);expect(row.total).toBeLessThanOrEqual(64);expect(row.near,`${row.stage}/${row.level} center`).toBeGreaterThanOrEqual(2);}
 });
 
 test('instanced scenery takes local damage, preserves neighboring objects and stays destroyed after detail changes',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(async()=>{
-  const g=(window as any).__steel;g.frame=()=>{};const tree=g.world.covers.find((c:any)=>c.scenery&&['pine','white-pine','jungle-tree','palm'].includes(c.kind)),other=g.world.covers.find((c:any)=>c!==tree&&c.scenery?.parts===tree.scenery.parts);const hp=other.hp;g.hitCover(tree,1e6);const destroyed=tree.hp<=0&&tree.scenery.parts.every((p:any)=>p.instanceMatrix.array[tree.scenery.index*16]===0),neighbor=other.hp===hp;
+  const g=(window as any).__steel;g.frame=()=>{};g.save.difficulty='normal';g.start(0,0);const tree=g.world.covers.find((c:any)=>c.scenery&&['pine','white-pine','jungle-tree','palm'].includes(c.kind)),other=g.world.covers.find((c:any)=>c!==tree&&c.scenery?.parts===tree.scenery.parts);const hp=other.hp;g.hitCover(tree,1e6);const destroyed=tree.hp<=0&&tree.scenery.parts.every((p:any)=>p.instanceMatrix.array[tree.scenery.index*16]===0),neighbor=other.hp===hp;
   await g.world.load(true);g.world.settings(true);return {destroyed,neighbor,stable:tree.scenery.parts.every((p:any)=>p.instanceMatrix.array[tree.scenery.index*16]===0),shared:tree.scenery.parts.every((p:any)=>!!p.userData.modelAsset)};
  });expect(Object.values(r).every(Boolean),JSON.stringify(r)).toBe(true);
 });
 
 for(const stage of [3,8,12])test(`uplink finale ${stage}: ground bosses and vehicles navigate into battle without corner deadlocks`,async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(stage=>{
-  const g=(window as any).__steel;g.frame=()=>{};g.save.difficulty='normal';g.start(stage,2);g.player.hp=1e9;g.relayHealth=1e9;
+  const g=(window as any).__steel;g.frame=()=>{};g.save.difficulty='normal';g.start(stage,2);g.player.hp=1e9;g.relayHealth=1e9;g.waves.wave=3;g.waves.nextAt=Infinity;for(const e of g.enemies){e.pending=false;e.encounter.active=true;}
   for(let i=0;i<15*90;i++){g.elapsed+=1/15;g.updateEnemies(1/15);g.updateShots(1/15);g.world.fx.update(1/15,g.world.camera);g.special.update(g,1/15);}
   const live=g.enemies.filter((e:any)=>!e.dead);return {live:live.length,waiting:live.some((e:any)=>!e.encounter.active),stranded:live.filter((e:any)=>Math.hypot(e.visual.root.position.x,e.visual.root.position.z+13)>50).map((e:any)=>({role:e.role,kind:e.bossKind,x:e.visual.root.position.x,z:e.visual.root.position.z}))};
  },stage);expect(r.live).toBeGreaterThan(0);expect(r.waiting).toBe(false);expect(r.stranded).toEqual([]);

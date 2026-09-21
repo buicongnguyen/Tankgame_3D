@@ -10,7 +10,7 @@ export const ENEMY_HEALTH = {
 } as const;
 export type GroundEnemyRole = keyof typeof ENEMY_HEALTH;
 
-/** All non-boss enemies scale with campaign progress; difficulty controls numbers. */
+/** Normal-mode base HP scales with campaign progress; spawning applies the difficulty HP multiplier. */
 export function enemyHealth(role:GroundEnemyRole,stage:number,level:number){
   const base=ENEMY_HEALTH[role];
   // Two percent per campaign level, capped at +100% for future stage additions.

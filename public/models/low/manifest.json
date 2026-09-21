@@ -90,6 +90,18 @@
     "bytes": 84508
   },
   {
+    "asset": "convoy-gun",
+    "detailedTriangles": 356,
+    "lowTriangles": 105,
+    "bytes": 13872
+  },
+  {
+    "asset": "convoy-missile",
+    "detailedTriangles": 448,
+    "lowTriangles": 133,
+    "bytes": 14500
+  },
+  {
     "asset": "crate",
     "detailedTriangles": 516,
     "lowTriangles": 237,
@@ -139,9 +151,9 @@
   },
   {
     "asset": "relay",
-    "detailedTriangles": 500,
-    "lowTriangles": 148,
-    "bytes": 20508
+    "detailedTriangles": 800,
+    "lowTriangles": 235,
+    "bytes": 28696
   },
   {
     "asset": "rifleman",

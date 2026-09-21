@@ -60,7 +60,7 @@ test('rockfalls warn, hit both sides once, respect shields and clean up',async({
 for(const mission of [8,9,10,11,12,13,14,15])test(`stage ${mission+1} final objective also requires all bosses`,async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const result=await page.evaluate(mission=>{
   const g=(window as any).__steel;g.frame=()=>{};g.save.cleared=Array.from({length:16},(_,i)=>i<mission);g.save.mission=mission;g.save.level=2;g.start(mission,2);
-  for(const e of g.enemies)g.damageUnit(e,999999,g.player.visual.root.position,true);
+  for(const e of g.enemies){e.pending=false;g.damageUnit(e,999999,g.player.visual.root.position,true);}
   const m=g.missionData();if(['assault','boss'].includes(m.kind))g.player.visual.root.position.copy(g.world.ring.position);if(m.kind==='capture'){g.capture=m.duration;g.player.visual.root.position.set(0,0,-13);}if(m.kind==='defense')g.elapsed=m.duration;if(g.convoy){const end=g.world.layout.points.at(-1);g.convoy.position.set(end.x,0,end.z);g.player.visual.root.position.set(end.x+4,0,end.z);g.convoyDistance=g.world.layout.length;}
   g.step(.02);g.step(g.finishDelay);return {phase:g.phase,cleared:g.save.cleared[mission],next:g.save.mission,level:g.save.level};
  },mission);expect(result).toEqual({phase:mission===8||mission===15?'victory':'depot',cleared:true,next:Math.min(15,mission+1),level:mission===15?2:0});
@@ -105,7 +105,7 @@ for(const mission of [10,13])test(`desktop frontier overview ${mission+1}`,async
 
 
 test('Mire Crossing escort guard can drive out between its house and crate to reach the player',async({page})=>{
- await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};g.start(15,0);const {circleBox}=await import('/src/three/rules.ts');const guard=g.enemies.find((u:any)=>Math.abs(u.visual.root.position.x+8.3)<.1&&Math.abs(u.visual.root.position.z-23)<.1);if(!guard)return {found:false,arrived:false,clear:false};const target=g.player.visual.root.position.clone();g.enemies=[guard];let clear=true;
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};g.save.difficulty='normal';g.start(15,0);const {circleBox}=await import('/src/three/rules.ts');const guard=g.enemies.find((u:any)=>Math.abs(u.visual.root.position.x+8.3)<.1&&Math.abs(u.visual.root.position.z-23)<.1);if(!guard)return {found:false,arrived:false,clear:false};const target=g.player.visual.root.position.clone();g.enemies=[guard];let clear=true;
  for(let i=0;i<1000;i++){const p=guard.visual.root.position;if(Math.hypot(p.x-target.x,p.z-target.z)<5)break;const next=g.navigation.next(g.world,p,target);if(!next)break;const dx=next.x-p.x,dz=next.z-p.z,d=Math.hypot(dx,dz);g.moveUnit(guard,dx/d*.15,dz/d*.15,.05);if(g.world.covers.some((c:any)=>c.hp>0&&circleBox(p,g.unitRadius(guard),c)))clear=false;}
  return {found:true,arrived:Math.hypot(guard.visual.root.position.x-target.x,guard.visual.root.position.z-target.z)<5,clear};});expect(r).toEqual({found:true,arrived:true,clear:true});
 });

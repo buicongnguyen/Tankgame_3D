@@ -51,6 +51,6 @@ export class Environment{
    const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(coords,3));this.weather=new T.Points(geo,new T.PointsMaterial({color:snow?0xffffff:0xa0dfe3,size:snow?.23:.12,transparent:true,opacity:.65,depthWrite:false}));world.arena.add(this.weather);
   }
  }
- update(dt:number,low:boolean){this.time+=dt;if(this.water)(this.water.material as T.MeshStandardMaterial).color.setHSL(.52,.42,.37+Math.sin(this.time*1.5)*.025);if(this.weather){this.weather.visible=!low;const p=this.weather.geometry.attributes.position;for(let i=0;i<p.count;i++){let y=p.getY(i)-dt*(['snow','glacier','volcanic','jungle'].includes(this.biome)?2:12);if(y<0)y=26;p.setY(i,y);}p.needsUpdate=true;}}
+ update(dt:number,low:boolean){this.time+=dt;if(this.water)(this.water.material as T.MeshStandardMaterial).color.setHSL(.52,.42,.37+Math.sin(this.time*1.5)*.025);if(this.weather){this.weather.visible=!low;if(low)return;const p=this.weather.geometry.attributes.position;for(let i=0;i<p.count;i++){let y=p.getY(i)-dt*(['snow','glacier','volcanic','jungle'].includes(this.biome)?2:12);if(y<0)y=26;p.setY(i,y);}p.needsUpdate=true;}}
  clear(){if(this.weather){this.weather.geometry.dispose();(this.weather.material as T.Material).dispose();}this.weather=null;this.water=null;}
 }

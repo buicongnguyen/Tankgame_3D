@@ -34,7 +34,7 @@ export class BossCombat{
  status(unit:Unit){if(unit.bossKind==='jet'){const state=this.states.get(unit);return state?.phase==='charging'?'FLIGHT PATH LOCKED · DODGE':state?.phase==='exposed'?'LOW RETURN · FIRE NOW':'STRAFING RUN';}const phase=this.states.get(unit)?.phase;if(flyingBoss(unit.bossKind)&&unit.visual.root.position.y>2)return phase==='landing'?'LANDING':phase==='charging'?'ROCKETS INBOUND':'AIRBORNE · LASER / ARC';return phase==='firing'?(unit.bossKind==='quad-mech'?'FOUR-GUN BURST':'LASER BURST'):phase==='charging'?'ATTACK INBOUND':phase==='exposed'?'CORE EXPOSED':'ARMORED';}
  update(g:Game,u:Unit,dt:number){
   if(u.dead||dt<=0||g.phase!=='playing')return;
-  const kind=u.bossKind??bossKind(g.mission),cfg=BOSS[kind],p=u.visual.root.position,target=g.player.visual.root.position;
+  const kind=u.bossKind??bossKind(g.mission),cfg=BOSS[kind],p=u.visual.root.position,target=g.hostileTarget(u).visual.root.position;
   let s=this.states.get(u);if(!s){s={auxTime:.7,phase:'tracking',time:2.2+g.enemies.indexOf(u)%4*.55,heading:u.aim,targets:[],markers:[],rockets:[]};this.states.set(u,s);}
   if(kind==='jet'){this.jet(g,u,s,dt);return;}
   const core=u.visual.root.getObjectByName('Core');if(core)core.visible=s.phase==='exposed';u.visual.beam.visible=false;u.visual.root.userData.walking=false;
@@ -134,7 +134,7 @@ export class BossCombat{
   if(s.auxTime<=0){s.auxTime=Math.max(0,s.auxTime)+.32;g.syncVisual(u);g.bossRound(u,aim,3,'LightMuzzle',44);s.auxRound=(s.auxRound??0)+1;if(u.bossKind==='siege-mech'&&s.auxRound%7===0)g.bossRound(u,aim,8,'GunMuzzle0');}
  }
  legs(g:Game,u:Unit,count:number){for(let i=0;i<count;i++)for(const side of ['L','R']){const leg=u.visual.root.getObjectByName('Leg'+i+side);if(leg)leg.rotation.z=u.visual.root.userData.walking?Math.sin(g.elapsed*6+i*2+(side==='L'?0:Math.PI))*.18:0;}}
- freeLanding(g:Game,u:Unit,p:Point){const r=g.unitRadius(u),reserved=[...this.states].some(([other,state])=>other!==u&&!other.dead&&state.landing&&distance(p,state.landing)<r+g.unitRadius(other)+.5);return !reserved&&Math.abs(p.x)<BOUNDS.x-r&&Math.abs(p.z)<BOUNDS.z-r&&!g.world.covers.some(c=>c.hp>0&&circleBox(p,r,c))&&[g.player,...g.enemies].every(e=>e===u||e.dead||g.airborne(e)||distance(p,e.visual.root.position)>r+g.unitRadius(e)+.5)&&(!g.convoy||distance(p,g.convoy.position)>r+2.5);}
+ freeLanding(g:Game,u:Unit,p:Point){const r=g.unitRadius(u),reserved=[...this.states].some(([other,state])=>other!==u&&!other.dead&&state.landing&&distance(p,state.landing)<r+g.unitRadius(other)+.5);return !reserved&&Math.abs(p.x)<BOUNDS.x-r&&Math.abs(p.z)<BOUNDS.z-r&&!g.world.covers.some(c=>c.hp>0&&circleBox(p,r,c))&&[g.player,...g.enemies,...g.allies.active].every(e=>e===u||e.dead||g.airborne(e)||distance(p,e.visual.root.position)>r+g.unitRadius(e)+.5)&&(!g.convoy||distance(p,g.convoy.position)>r+2.5);}
  landingPoint(g:Game,u:Unit):Point{
   const player=g.player.visual.root.position,position=u.visual.root.position;
   // The far side of a nearby obstacle hides a grounded aircraft from direct fire.
@@ -156,7 +156,7 @@ export class BossCombat{
  rail(g:Game,u:Unit,heading:number,damage=75,color=0xff694e,radius=BOSS.rail.beamRadius){
   const from=u.visual.root.position.clone().setY(1.5),to=from.clone().add(new T.Vector3(Math.sin(heading)*52,0,Math.cos(heading)*52));let first=1,hit:(()=>void)|null=null;
   for(const c of g.world.covers){if(c.hp<=0)continue;const t=segmentBox(from,to,c,radius);if(t!==null&&t<first){first=t;hit=()=>g.hitCover(c,damage*1.2);}}
-  const t=segmentCircle(from,to,g.player.visual.root.position,g.unitRadius(g.player)+radius);if(t!==null&&t<first){first=t;hit=()=>g.damageUnit(g.player,damage,from);}if(hit)hit();to.lerpVectors(from,to,first);const dir=to.clone().sub(from);
+  for(const ally of [g.player,...g.allies.active]){if(ally.dead)continue;const t=segmentCircle(from,to,ally.visual.root.position,g.unitRadius(ally)+radius);if(t!==null&&t<first){first=t;hit=()=>g.damageUnit(ally,damage,from);}}if(hit)hit();to.lerpVectors(from,to,first);const dir=to.clone().sub(from);
   const mesh=new T.Mesh(new T.CylinderGeometry(radius,radius,Math.max(.01,dir.length()),8),new T.MeshBasicMaterial({color,transparent:true,opacity:.9,blending:T.AdditiveBlending}));mesh.position.copy(from).add(to).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),dir.normalize());g.world.entities.add(mesh);g.special.beams.push({mesh,life:.18});g.world.fx.impact(to,damage>=50);g.tone(80,.15,.05);
  }
 }

@@ -1,9 +1,10 @@
 import * as T from 'three';
 import type {World} from './world';
-import {BOUNDS} from './activities';
+
 
 /** Four continuous collision walls; shared rectangular rock strata cost one draw call. */
 export function buildRockBoundary(world:World,biome:string){
+ const BOUNDS=world.bounds;
  const thickness=6,height=3.2;
  const walls=[
   {x:-BOUNDS.x-thickness/2,z:0,w:thickness,d:BOUNDS.z*2+thickness*2},

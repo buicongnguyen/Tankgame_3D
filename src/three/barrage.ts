@@ -1,6 +1,6 @@
 import * as T from 'three';
 import type {Game,Unit} from './game';
-import {BOUNDS} from './activities';
+
 import {clamp,distance} from './rules';
 import type {Point} from './rules';
 
@@ -12,7 +12,7 @@ export class GuidedBarrage {
  constructor(config:GuidanceConfig=BARRAGE,vehiclesOnly=false){this.config=config;this.vehiclesOnly=vehiclesOnly;}
  strikes:GuidedMissile[]=[];locks=new Map<Unit,number>();origin:Point={x:0,z:0};
  candidates(g:Game){
-  return g.enemies.filter(u=>!u.dead&&u.hp>0&&(!this.vehiclesOnly||!g.isInfantry(u))&&distance(this.origin,u.visual.root.position)<=this.config.range&&Math.abs(u.visual.root.position.x)<=BOUNDS.x&&Math.abs(u.visual.root.position.z)<=BOUNDS.z)
+  return g.enemies.filter(u=>!u.dead&&!u.pending&&u.hp>0&&(!this.vehiclesOnly||!g.isInfantry(u))&&distance(this.origin,u.visual.root.position)<=this.config.range&&Math.abs(u.visual.root.position.x)<=g.world.bounds.x&&Math.abs(u.visual.root.position.z)<=g.world.bounds.z)
    .sort((a,b)=>Number(!!b.encounter?.active)-Number(!!a.encounter?.active)||distance(a.visual.root.position,this.origin)-distance(b.visual.root.position,this.origin));
  }
  reserve(unit:Unit){this.locks.set(unit,(this.locks.get(unit)??0)+1);}
@@ -29,7 +29,7 @@ export class GuidedBarrage {
   for(const [i,target] of targets.entries()){
    this.reserve(target);const point=target.visual.root.position.clone();point.y=Math.max(.8,point.y+1);
    const marker=new T.Mesh(new T.RingGeometry(this.config.blast-.16,this.config.blast,32),new T.MeshBasicMaterial({color:0xffb458,side:T.DoubleSide,transparent:true,opacity:.75,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));marker.rotation.x=-Math.PI/2;marker.position.set(point.x,.15,point.z);g.world.entities.add(marker);
-   const from=new T.Vector3(clamp(this.origin.x+(i%2?18:-18),-BOUNDS.x,BOUNDS.x),34+i%3*3,clamp(this.origin.z+14,-BOUNDS.z,BOUNDS.z));
+   const from=new T.Vector3(clamp(this.origin.x+(i%2?18:-18),-g.world.bounds.x,g.world.bounds.x),34+i%3*3,clamp(this.origin.z+14,-g.world.bounds.z,g.world.bounds.z));
    if(this.vehiclesOnly)from.copy(g.player.visual.root.position).setY(2.2);
    const bomb=g.world.rocket();bomb.name='GuidedSupportMissile';bomb.scale.setScalar(.95);bomb.position.copy(from);bomb.visible=false;g.world.entities.add(bomb);
    this.strikes.push({target,point,from,age:0,delay:this.config.warning+i*this.config.stagger,marker,bomb});
@@ -41,7 +41,7 @@ export class GuidedBarrage {
  update(g:Game,dt:number){
   if(g.phase!=='playing'||g.player.dead||dt<=0)return;
   for(let i=this.strikes.length-1;i>=0;i--){const s=this.strikes[i];s.age+=dt;
-   if(s.target&&(s.target.dead||s.target.hp<=0||distance(this.origin,s.target.visual.root.position)>this.config.range||Math.abs(s.target.visual.root.position.x)>BOUNDS.x||Math.abs(s.target.visual.root.position.z)>BOUNDS.z)){
+   if(s.target&&(s.target.dead||s.target.hp<=0||distance(this.origin,s.target.visual.root.position)>this.config.range||Math.abs(s.target.visual.root.position.x)>g.world.bounds.x||Math.abs(s.target.visual.root.position.z)>g.world.bounds.z)){
     s.target=this.candidates(g).find(u=>(this.locks.get(u)??0)<this.config.maxPerTarget)??null;if(s.target)this.reserve(s.target);
    }
    if(s.target){s.point.copy(s.target.visual.root.position);s.point.y=Math.max(.8,s.point.y+1);}

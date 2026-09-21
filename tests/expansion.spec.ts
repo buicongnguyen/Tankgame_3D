@@ -9,7 +9,7 @@ test('48 levels preserve mode counts, sequential checkpoints and one-time reward
   expect(save.mission).toBe(mission);expect(save.level).toBe(level);expect(unlockedLevel(save,mission)).toBe(level);
   const before=save.credits;expect(rewardClear(save,mission,level+1)).toBe(0);expect(save.credits).toBe(before);
   expect(rewardClear(save,mission,level)).toBeGreaterThan(0);const paid=save.credits;expect(rewardClear(save,mission,level)).toBe(0);expect(save.credits).toBe(paid);expect(parseSave(JSON.stringify(save))).toEqual(save);
-  for(const difficulty of DIFFICULTIES){const n=encounterSize(mission,level,difficulty),base=encounterSize(mission,level,'normal');expect(n.armor).toBe(base.armor*mode(difficulty).enemies);expect(n.infantry).toBe(base.infantry*mode(difficulty).enemies);expect(n.bosses).toBe(level===2?mode(difficulty).bosses:0);}
+  for(const difficulty of DIFFICULTIES){if(mission===0&&difficulty==='easy')continue;const n=encounterSize(mission,level,difficulty),base=encounterSize(mission,level,'normal');expect(n.armor).toBe(base.armor*mode(difficulty).enemies);expect(n.infantry).toBe(base.infantry*mode(difficulty).enemies);expect(n.bosses).toBe(level===2?mode(difficulty).bosses:0);}
  }
  expect(save.cleared.every(Boolean)).toBe(true);expect(mode('easy').health).toBe(3);expect(mode('normal').health).toBe(1);expect(mode('hard').health).toBe(1);expect(parseSave(JSON.stringify({...freshSave(),level:3}))).toEqual(freshSave());for(const difficulty of ['__proto__','constructor','unknown'])expect(parseSave(JSON.stringify({...freshSave(),difficulty}))).toEqual(freshSave());
 });

@@ -14,20 +14,18 @@ export function segmentCircle(a: Point, b: Point, c: Point, radius: number): num
   return t >= 0 && t <= 1 ? t : null;
 }
 export function segmentBox(a: Point, b: Point, box: Box, padding = 0): number | null {
-  let near = 0, far = 1;
-  for (const [start, delta, center, half] of [[a.x, b.x - a.x, box.x, box.w / 2 + padding], [a.z, b.z - a.z, box.z, box.d / 2 + padding]]) {
-    if (Math.abs(delta) < 1e-10) { if (start < center - half || start > center + half) return null; }
-    else {
-      let t1 = (center - half - start) / delta, t2 = (center + half - start) / delta;
-      if (t1 > t2) [t1, t2] = [t2, t1];
-      near = Math.max(near, t1); far = Math.min(far, t2);
-      if (near > far) return null;
-    }
+  let near=0,far=1;
+  // Two scalar slab tests avoid three temporary arrays per sight/projectile query.
+  for(let axis=0;axis<2;axis++){
+    const start=axis===0?a.x:a.z,delta=axis===0?b.x-a.x:b.z-a.z,center=axis===0?box.x:box.z,half=(axis===0?box.w:box.d)/2+padding;
+    if(Math.abs(delta)<1e-10){if(start<center-half||start>center+half)return null;}
+    else{let t1=(center-half-start)/delta,t2=(center+half-start)/delta;if(t1>t2){const swap=t1;t1=t2;t2=swap;}near=Math.max(near,t1);far=Math.min(far,t2);if(near>far)return null;}
   }
   return near;
 }
 export function circleBox(p: Point, r: number, box: Box): boolean {
-  return Math.hypot(p.x - clamp(p.x, box.x - box.w / 2, box.x + box.w / 2), p.z - clamp(p.z, box.z - box.d / 2, box.z + box.d / 2)) < r;
+  const dx=p.x-clamp(p.x,box.x-box.w/2,box.x+box.w/2),dz=p.z-clamp(p.z,box.z-box.d/2,box.z+box.d/2);
+  return r>0&&dx*dx+dz*dz<r*r;
 }
 /** Heading 0 faces +Z. The source is the shooter's location, not the projectile direction. */
 export function armorMultiplier(target: Point, heading: number, source: Point): number {

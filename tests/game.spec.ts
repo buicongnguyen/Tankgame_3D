@@ -46,7 +46,7 @@ test('campaign escort completion and defense failure, retry and success',async({
   await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)e.dead=true;const end=g.world.layout.points.at(-1);g.convoyDistance=g.world.layout.length-.01;g.convoy.position.set(end.x,0,end.z-.01*Math.sign(end.z));g.player.visual.root.position.set(end.x+4,0,end.z);g.step(.1);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
   await page.evaluate(()=>{const g=(window as any).__steel;g.start(3);g.elapsed=44.99;g.relayHealth=0;g.step(.02);});await expect(page.getByRole('heading',{name:'We go again.'})).toBeVisible();
   await page.getByRole('button',{name:/RETRY LONG NIGHT/}).click();expect(await page.evaluate(()=>(window as any).__steel.relayHealth)).toBe(300);
-  await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies)g.damageUnit(e,999999,g.player.visual.root.position,true);g.step(.02);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
+  await page.evaluate(()=>{const g=(window as any).__steel;for(const e of g.enemies){e.pending=false;g.damageUnit(e,999999,g.player.visual.root.position,true);}g.step(.02);});await expect(page.locator('body')).toHaveAttribute('data-phase','depot');
 });
 test('campaign siege completion and first chapter ending retain cleared stages',async({page})=>{
   await deployCheckpoint(page,4,2);
@@ -72,13 +72,14 @@ test('phone layout and simultaneous captured touch sticks',async({browser})=>{
 
 test('real cannon destroys an exposed enemy; shield, repair and escort rules',async({page})=>{
  await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();
- const combat=await page.evaluate(()=>{const g=(window as any).__steel;g.start(0);g.world.covers=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,10);const e=g.enemies[0];e.visual.root.position.set(0,0,-5);e.heading=0;g.player.aim=Math.PI;g.syncVisual(g.player);for(let shot=0;shot<8;shot++){g.shoot(g.player,true);for(let i=0;i<30;i++)g.updateShots(1/60);}const killed=e.dead;const health=g.player.hp;g.action('shield');g.damageUnit(g.player,30,{x:0,z:0});const protectedHull=g.player.hp===health;g.shieldTime=0;g.damageUnit(g.player,80,{x:0,z:0});const damaged=g.player.hp;g.action('auto');return {killed,protectedHull,unchanged:g.player.hp===damaged,unarmed:g.auto.ammo===0};});
+ const combat=await page.evaluate(()=>{const g=(window as any).__steel;g.start(0);g.world.covers=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,10);const e=g.enemies[0];g.enemies=[e];e.visual.root.position.set(0,0,-5);e.heading=0;g.player.aim=Math.PI;g.syncVisual(g.player);for(let shot=0;shot<8;shot++){g.shoot(g.player,true);for(let i=0;i<30;i++)g.updateShots(1/60);}const killed=e.dead;const health=g.player.hp;g.action('shield');g.damageUnit(g.player,30,{x:0,z:0});const protectedHull=g.player.hp===health;g.shieldTime=0;g.damageUnit(g.player,80,{x:0,z:0});const damaged=g.player.hp;g.action('auto');return {killed,protectedHull,unchanged:g.player.hp===damaged,unarmed:g.auto.ammo===0};});
  expect(combat).toEqual({killed:true,protectedHull:true,unchanged:true,unarmed:true});
  const escort=await page.evaluate(()=>{const g=(window as any).__steel;g.start(2);g.player.visual.root.position.set(30,0,22);const z=g.convoy.position.z;g.step(.1);const stopped=g.convoy.position.z===z;g.player.visual.root.position.set(5,0,48);g.step(.1);return {stopped,moved:g.convoy.position.z<z};});expect(escort).toEqual({stopped:true,moved:true});
 });
 
 test('expanded terrain, field activities, artillery and wreck cleanup',async({page})=>{
  await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();await page.getByRole('button',{name:'DEPLOY'}).click();
+ await page.evaluate(()=>{const g=(window as any).__steel;g.save.difficulty='normal';g.start(0,0);});
  await addTestPickups(page,['supply']);
  const result=await page.evaluate(()=>{
   const g=(window as any).__steel;g.player.visual.root.position.set(61,0,50);g.moveUnit(g.player,4,0);const expanded=g.player.visual.root.position.x>62;

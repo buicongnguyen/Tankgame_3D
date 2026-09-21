@@ -19,7 +19,7 @@ export class RouteEncounters {
  alert(g:Game,unit:Unit,source:Point=g.player.visual.root.position){
   const order=unit.encounter;
   for(const other of order?g.enemies.filter(e=>e.encounter?.group===order.group&&distance(e.visual.root.position,unit.visual.root.position)<48):[unit]){
-   if(other.dead)continue;
+   if(other.dead||other.pending||g.training)continue;
    if(other.encounter)other.encounter.active=true;
    other.lastSeen={x:source.x,z:source.z};other.searchUntil=g.elapsed+6;
   }
@@ -29,10 +29,12 @@ export class RouteEncounters {
   if(projection.distance<13)this.progress=Math.max(this.progress,projection.progress);
   const scan=this.revision!==g.world.navigationRevision||g.elapsed>=this.scanAt||!this.view||distance(player,this.view)>1.5||!!g.convoy&&(!this.convoyView||distance(g.convoy.position,this.convoyView)>1.5);
   if(scan){this.revision=g.world.navigationRevision;this.scanAt=g.elapsed+.18;this.view={x:player.x,z:player.z};this.convoyView=g.convoy?{x:g.convoy.position.x,z:g.convoy.position.z}:undefined;}
-  for(const u of g.enemies){const order=u.encounter;if(u.dead||!order||order.active)continue;
+  for(const u of g.enemies){const order=u.encounter;if(u.dead||u.pending||!order||order.active)continue;
    // Timed defense waves still march from the perimeter, even before spotting Kestrel.
    if(order.wakeAt!==undefined){if(g.elapsed>=order.wakeAt)order.active=true;continue;}
    if(!scan||!escortReady(g,u))continue;
+   // The small Easy approach has two encounters despite its arena-wide sight range.
+   if(g.mission===0&&g.level===0&&g.save.difficulty==='easy'&&order.group>0&&(this.progress<layout.length*.35||g.enemies.some(e=>!e.dead&&e.encounter?.group===0)))continue;
    if(seesTarget(g,u,player))this.alert(g,u,player);
    else if(g.convoy&&seesTarget(g,u,g.convoy.position))this.alert(g,u,g.convoy.position);
   }

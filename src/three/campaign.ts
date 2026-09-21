@@ -7,7 +7,7 @@ export type {Difficulty} from './difficulty';
 import type {Biome} from './terrain';
 import { SKINS } from './skins';
 import type { Upgrade } from './rules';
-export type MissionKind = 'assault' | 'capture' | 'escort' | 'defense' | 'boss';
+export type MissionKind = 'assault' | 'capture' | 'escort' | 'defense' | 'boss' | 'rescue';
 export interface Mission { biome:Biome; parTime:number; commandBriefing?:string; commandRadio?:string; boss?:'rail'|'missile'|'walker'|'helicopter'|'spider'|'laser'|'quad-mech'|'siege-mech'|'missile-truck'|'quadcopter'|'jet'; name: string; sector: string; kind: MissionKind; briefing: string; radio: string; debrief: string; objective: string; count: number; duration: number; reward: number; }
 export const MISSIONS: Mission[] = [
   { biome:'grove', parTime:90, name: 'First Light', sector: 'MERIDIAN OUTSKIRTS', kind: 'assault', briefing: 'A distress signal is repeating from the valley. Your crew is the only one close enough to answer. Clear the outer patrol and find a way through.', radio: 'IVO / Use cover. Keep your front armor toward hostile guns.', debrief: 'The patrol is down. We found the broadcast: a rescue convoy is trapped beyond the relay.', objective: 'Clear the outer patrol', count: 3, duration: 0, reward: 180 },
@@ -30,12 +30,14 @@ export const MISSIONS: Mission[] = [
 ];
 export const SAVE_KEY = 'steel-front-3d-v1';
 export const LEVEL_NAMES=['Approach','Counterattack','Command battle'];
-export interface Save { version: 1; mission: number; level:number; cleared: boolean[]; credits: number; weapons: number[]; weaponLevels:number[]; equippedWeapon: number; autoPack:number; strikeCharges:number; strikeBackgrounds:boolean[]; skins: string[]; skin: string; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; }
-export const freshSave = (): Save => ({ version: 1, mission: 0, level:0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], weaponLevels: Array(WEAPONS.length).fill(0), equippedWeapon: 0, autoPack:0, strikeCharges:0, strikeBackgrounds:Array(MISSIONS.length).fill(false), skins: ['classic','sunburst'], skin:'classic', upgrades: { armor: 0, power: 0, reload: 0, engine:0, shield:0 }, difficulty: 'normal', sound: false, low: false });
+export interface Save { training?:{completed:boolean[];skipped:boolean}; version: 1; mission: number; level:number; cleared: boolean[]; credits: number; weapons: number[]; weaponLevels:number[]; equippedWeapon: number; autoPack:number; strikeCharges:number; strikeBackgrounds:boolean[]; skins: string[]; skin: string; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; graphicsChosen?: boolean; }
+const mobileGraphics = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+export const freshSave = (): Save => ({ training:{completed:[false,false,false],skipped:false}, version: 1, mission: 0, level:0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], weaponLevels: Array(WEAPONS.length).fill(0), equippedWeapon: 0, autoPack:0, strikeCharges:0, strikeBackgrounds:Array(MISSIONS.length).fill(false), skins: ['classic','sunburst'], skin:'classic', upgrades: { armor: 0, power: 0, reload: 0, engine:0, shield:0 }, difficulty: 'easy', sound: false, low: mobileGraphics(), graphicsChosen: false });
 export function parseSave(raw: string | null): Save {
   try {
     const s = JSON.parse(raw || 'null');
     if (!s || s.version !== 1 || !Number.isInteger(s.mission) || s.mission < 0 || s.mission >= s.cleared?.length || !Array.isArray(s.cleared) || ![6,9,14,MISSIONS.length].includes(s.cleared.length) || s.cleared.some((v: unknown) => typeof v !== 'boolean') || !Number.isInteger(s.credits) || s.credits < 0 || s.credits > 100000 || !normalizeDifficulty(s.difficulty)) return freshSave();
+    s.training={completed:Array.from({length:3},(_,i)=>s.training?.completed?.[i]===true),skipped:s.training?.skipped===true||s.training===undefined};
     s.difficulty=normalizeDifficulty(s.difficulty);s.level??=0;
     if(!Number.isInteger(s.level)||s.level<0||s.level>2)return freshSave();
     if(!s.upgrades)return freshSave();s.upgrades.engine??=0;s.upgrades.shield??=0;
@@ -58,7 +60,7 @@ export function parseSave(raw: string | null): Save {
     // A checkpoint cannot unlock past a gap in the campaign.
     const firstUncleared = s.cleared.indexOf(false);
     if (firstUncleared >= 0 && (s.mission > firstUncleared || s.cleared.slice(firstUncleared).some(Boolean))) return freshSave();
-    return { ...s, sound: s.sound === true, low: s.low === true };
+    return { ...s, sound: s.sound === true, low: s.graphicsChosen === true ? s.low === true : s.low === true || mobileGraphics(), graphicsChosen: s.graphicsChosen === true };
   } catch { return freshSave(); }
 }
 /** Advance only the next unfinished level; old stages stay available for replay. */
@@ -71,11 +73,12 @@ export function rewardClear(save:Save,mission:number,level:number):number {
   return reward;
 }
 export function levelMission(index:number,level:number):Mission{
+ if(index===13&&level===1)return {...MISSIONS[index],kind:'rescue',name:'Citadel Dawn · Lost Squadron',objective:'Rescue both tanks · bring at least one home',briefing:'Two allied tanks are stranded along the city route. Clear their guards and hold nearby for three seconds. Repaired allies follow and fire automatically. Rescue both; at least one must survive to extraction or until all hostiles are defeated.',radio:'MARA / Find both cyan tank beacons. Clear the guards and hold close to restore each crew.',parTime:240};
  const m=MISSIONS[index],kind=m.kind==='boss'&&level<2?'assault':m.kind,duration=Math.round(m.duration*(level===1?1.2:1));
  const objective=kind==='capture'?`Secure the relay · ${duration} seconds`:kind==='defense'?'Defend the uplink · 4 waves':m.kind==='boss'&&level<2?'Clear the command patrol':m.objective;
  const briefingSource=m.briefing+(level===2&&m.commandBriefing?' '+m.commandBriefing:'');
- const briefing=kind==='defense'?'Four waves approach from the perimeter. The first advances immediately. Protect the uplink and defeat every hostile; the operation continues until the battlefield is clear.'+(level===2&&m.commandBriefing?' '+m.commandBriefing:''):m.kind==='boss'&&level<2?'Clear the command patrol before the final boss battle. Use the streets and hard cover to flank hostile armor.':briefingSource.replaceAll(`${m.duration} seconds`,`${duration} seconds`).replaceAll(`${m.duration}s`,`${duration}s`);
- const radio=(kind==='defense'?'IVO / First wave moving. Defend the uplink and clear all four waves.'+(level===2&&m.commandRadio?' '+m.commandRadio.replace('IVO / ',''):''):m.kind==='boss'&&level<2?'IVO / Clear the command patrol. Bosses enter on level 3.':level===2?m.commandRadio??m.radio:m.radio).replaceAll(`${m.duration}s`,`${duration}s`).replaceAll(`${m.duration} seconds`,`${duration} seconds`);
+ const briefing=kind==='defense'?'Four waves approach from the perimeter. You have seven seconds to prepare beside the relay. Protect the uplink and defeat every hostile; the operation continues until the battlefield is clear.'+(level===2&&m.commandBriefing?' '+m.commandBriefing:''):m.kind==='boss'&&level<2?'Clear the command patrol before the final boss battle. Use the streets and hard cover to flank hostile armor.':briefingSource.replaceAll(`${m.duration} seconds`,`${duration} seconds`).replaceAll(`${m.duration}s`,`${duration}s`);
+ const radio=(kind==='defense'?'IVO / Prepare at the relay. Defend the uplink and clear all four waves.'+(level===2&&m.commandRadio?' '+m.commandRadio.replace('IVO / ',''):''):m.kind==='boss'&&level<2?'IVO / Clear the command patrol. Bosses enter on level 3.':level===2?m.commandRadio??m.radio:m.radio).replaceAll(`${m.duration}s`,`${duration}s`).replaceAll(`${m.duration} seconds`,`${duration} seconds`);
  const pattern=routePattern(index,level),basePar=Math.round(m.parTime*(level===2?1.6:level===1?1.2:1));
  // Longer sweeps retain a realistic travel allowance before the time bonus starts falling.
  const routePar=pattern?Math.ceil(pattern.length/(kind==='escort'?3.4:6))+(kind==='escort'?65:70)+(level===2?40:0):0;
@@ -96,6 +99,7 @@ export function upgradeWeapon(save:Save,id:number){
 }
 
 export function encounterSize(index:number,level:number,difficulty:string){
+ if(index===0&&difficulty==='easy'){const armor=[2,3,4][level],riflemen=[4,6,8][level],rocketeers=level===0?0:1,jeeps=level===0?0:1;return {armor,riflemen,rocketeers,infantry:riflemen+rocketeers,jeeps,bosses:level===2?1:0};}
  const settings=mode(difficulty),scale=settings.enemies;
  const rifles=(index<2?9:index<9?12:14)+level*2,rockets=(index<2?4:6)+(level===2?1:0),jeeps=(index<9?1:2)+(level===2?1:0);
  return {armor:(Math.max(5,MISSIONS[index].count)+level)*scale,riflemen:rifles*scale,rocketeers:rockets*scale,infantry:(rifles+rockets)*scale,jeeps:jeeps*scale,bosses:level===2?settings.bosses:0};

@@ -37,7 +37,7 @@ export class Flamethrower {
   this.mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);this.mesh.frustumCulled=false;this.mesh.count=0;g.world.entities.add(this.mesh);
  }
  add(g:Game,p:T.Vector3,heading:number,limit:number,rise=false){
-  const cap=g.world.low?36:96;if(this.tongues.length>=cap||rise&&this.tongues.filter(t=>t.rise).length>=cap/3)return;this.ensure(g);
+  const cap=g.world.low?24:96;if(this.tongues.length>=cap||rise&&this.tongues.filter(t=>t.rise).length>=cap/3)return;this.ensure(g);
   const seed=this.sequence++*.93,speed=18+(Math.sin(seed*7)+1)*3;
   this.tongues.push({p:p.clone(),heading,age:0,life:rise?.48:Math.min(.65,limit/speed),travel:0,limit,speed,size:rise?.5:.62,rise,seed});
  }
@@ -47,7 +47,7 @@ export class Flamethrower {
   // Freeze visibility before fuel chain reactions remove any of this burst's cover.
   const exposed=(p:Point,ignore?:Cover)=>!cover.some(c=>c!==ignore&&segmentBox(origin,p,c,.03)!==null);
   const hits:{victim:Victim;factor:number}[]=[];
-  for(const e of g.enemies){if(e.dead||g.airborne(e))continue;const p=e.visual.root.position,factor=flameExposure(origin,heading,p);if(factor&&exposed(p))hits.push({victim:e,factor});}
+  for(const e of g.enemies){if(e.dead||e.pending||g.airborne(e))continue;const p=e.visual.root.position,factor=flameExposure(origin,heading,p);if(factor&&exposed(p))hits.push({victim:e,factor});}
   for(const c of cover){if(!WOOD.has(c.kind))continue;
    const along=clamp((c.x-origin.x)*Math.sin(heading)+(c.z-origin.z)*Math.cos(heading),0,FLAME.range);
    const p={x:clamp(origin.x+Math.sin(heading)*along,c.x-c.w/2,c.x+c.w/2),z:clamp(origin.z+Math.cos(heading)*along,c.z-c.d/2,c.z+c.d/2)};
@@ -88,7 +88,7 @@ export class Flamethrower {
   }
  }
  render(g:Game,dt:number){
-  const cap=g.world.low?36:96;if(this.tongues.length>cap)this.tongues.length=cap;
+  const cap=g.world.low?24:96;if(this.tongues.length>cap)this.tongues.length=cap;
   for(let i=this.tongues.length-1;i>=0;i--){const t=this.tongues[i];t.age+=dt;
    if(t.age>=t.life){this.tongues.splice(i,1);continue;}
    const move=Math.min(t.limit-t.travel,dt*(t.rise?0:t.speed));t.travel+=move;t.p.x+=Math.sin(t.heading)*move;t.p.z+=Math.cos(t.heading)*move;t.p.y+=dt*(t.rise?2:1.3);

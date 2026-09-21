@@ -3,7 +3,7 @@ import type {Game,Unit} from './game';
 import type {Cover} from './world';
 export const isConcrete=(cover:Pick<Cover,'kind'>)=>cover.kind==='barricade'||cover.kind==='stonewall';
 import {clamp,segmentBox,segmentCircle} from './rules';
-import {BOUNDS} from './activities';
+
 import {WEAPONS} from './armory';
 export class SpecialWeapons{
  beams:{mesh:T.Mesh;life:number}[]=[];
@@ -17,7 +17,7 @@ export class SpecialWeapons{
    const end=start.clone().add(new T.Vector3(Math.sin(g.player.aim)*60,0,Math.cos(g.player.aim)*60));
    const intersections:{t:number;cover?:Cover;unit?:Unit}[]=[];
    for(const cover of g.world.covers){if(cover.hp<=0)continue;const t=segmentBox(start,end,cover,.05);if(t!==null)intersections.push({t,cover});}
-   for(const unit of g.enemies){if(unit.dead)continue;const t=segmentCircle(start,end,unit.visual.root.position,g.unitRadius(unit));if(t!==null)intersections.push({t,unit});}
+   for(const unit of g.enemies){if(unit.dead||unit.pending)continue;const t=segmentCircle(start,end,unit.visual.root.position,g.unitRadius(unit));if(t!==null)intersections.push({t,unit});}
    intersections.sort((a,b)=>a.t-b.t||Number(!!b.cover)-Number(!!a.cover));
    const concrete=new Set<object>();let limit=1;
    const hits:typeof intersections=[];
@@ -33,11 +33,11 @@ export class SpecialWeapons{
    const beam=new T.Mesh(new T.CylinderGeometry(.14,.14,Math.max(.01,delta.length()),8),new T.MeshBasicMaterial({color:0x8bffff,transparent:true,opacity:.95,blending:T.AdditiveBlending,depthWrite:false}));beam.position.copy(start).add(end).multiplyScalar(.5);beam.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),delta.normalize());g.world.entities.add(beam);this.beams.push({mesh:beam,life:.18});g.world.fx.impact(end);g.tone(920,.12,.04);
   }else{
    const offset=g.aimPoint.clone().sub(start);offset.y=0;if(offset.length()>45)offset.setLength(45);
-   const target=start.clone().add(offset);target.set(clamp(target.x,-BOUNDS.x,BOUNDS.x),0,clamp(target.z,-BOUNDS.z,BOUNDS.z));
+   const target=start.clone().add(offset);target.set(clamp(target.x,-g.world.bounds.x,g.world.bounds.x),0,clamp(target.z,-g.world.bounds.z,g.world.bounds.z));
    const count=w===7?3:1,lateral=new T.Vector3(Math.cos(g.player.aim),0,-Math.sin(g.player.aim));
    for(let i=0;i<count;i++){
     const side=i-(count-1)/2,from=start.clone().addScaledVector(lateral,side*.85),landing=target.clone().addScaledVector(lateral,side*3.2);
-    landing.x=clamp(landing.x,-BOUNDS.x,BOUNDS.x);landing.z=clamp(landing.z,-BOUNDS.z,BOUNDS.z);
+    landing.x=clamp(landing.x,-g.world.bounds.x,g.world.bounds.x);landing.z=clamp(landing.z,-g.world.bounds.z,g.world.bounds.z);
     const mesh=g.world.rocket();mesh.scale.setScalar(w===7?.9:1.25);mesh.position.copy(from);g.world.entities.add(mesh);
     const marker=new T.Mesh(new T.RingGeometry(info.splash-.16,info.splash,48),new T.MeshBasicMaterial({color:0xc392ff,side:T.DoubleSide,transparent:true,opacity:.65,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1}));marker.rotation.x=-Math.PI/2;marker.position.copy(landing).y=.12;g.world.entities.add(marker);
     this.arcs.push({mesh,marker,from,target:landing,age:0,duration:1.5,damage,radius:info.splash});

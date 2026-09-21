@@ -30,7 +30,7 @@ test('optional Easy road caches have nearby guards and awaken them on approach',
     g.player.visual.root.position.set(cache.x,0,cache.z);g.encounters.update(g);if(!guards.length||guards.some((u:any)=>!u.encounter.active))issues.push({stage,level,cache:cache.kind,reason:'guard asleep'});
    }
   }
-  g.start(0,0);const cache=g.world.activities.find((a:any)=>a.kind==='laser'),before=g.specialAmmo[0];g.player.visual.root.position.set(cache.x,0,cache.z);g.updateEnemies(.01);const guardsActive=g.enemies.some((u:any)=>!u.dead&&u.encounter.active&&distance(u.visual.root.position,cache)<20);g.updateActivities(.01);g.updateActivities(.01);
+  g.start(0,1);const cache=g.world.activities.find((a:any)=>a.kind==='laser'),before=g.specialAmmo[0];g.player.visual.root.position.set(cache.x,0,cache.z);g.updateEnemies(.01);const guardsActive=g.enemies.some((u:any)=>!u.dead&&u.encounter.active&&distance(u.visual.root.position,cache)<20);g.updateActivities(.01);g.updateActivities(.01);
   return {issues,checked,guardsActive,collectedOnce:cache.spent&&g.specialAmmo[0]===before+12&&g.weapon===3};
  });expect(result.issues).toEqual([]);expect(result.checked).toBeGreaterThan(10);expect(result.guardsActive&&result.collectedOnce).toBe(true);
 });

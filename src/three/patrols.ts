@@ -13,7 +13,7 @@ export function assignPatrol(g:Game,u:Unit,index:number){
  const points=[home];
  for(const p of candidates){
   if(g.convoy&&(!escortStartClear(layout,p)||segmentCircle(home,p,layout.points[0],ESCORT.startRadius)!==null||segmentCircle(home,p,layout.spawn,ESCORT.startRadius)!==null))continue;
-  if(Math.abs(p.x)>69||Math.abs(p.z)>57||distance(home,p)>radius||distance(home,p)<2||Math.abs(projectRoute(layout.points,p).progress-(u.encounter?.meters??projection.progress))>Math.max(32,layout.length*.14)||g.world.covers.some(c=>c.hp>0&&circleBox(p,g.unitRadius(u)+.15,c))||g.navigation.next(g.world,home,p)===null)continue;
+  if(Math.abs(p.x)>g.world.bounds.x-3||Math.abs(p.z)>g.world.bounds.z-3||distance(home,p)>radius||distance(home,p)<2||Math.abs(projectRoute(layout.points,p).progress-(u.encounter?.meters??projection.progress))>Math.max(32,layout.length*.14)||g.world.covers.some(c=>c.hp>0&&circleBox(p,g.unitRadius(u)+.15,c))||g.navigation.next(g.world,home,p)===null)continue;
   points.push(p);if(points.length===4)break;
  }
  if(points.length>1)u.patrol={home,radius,points,index:1,wait:.8+index%4*.3,repath:0,revision:-1,stuck:0};

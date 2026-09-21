@@ -1,6 +1,6 @@
 # Combat balance reference
 
-Snapshot: 20 September 2026, current local Three.js code (including uncommitted changes). Values are not necessarily the deployed website's values. Units: HP, damage points, seconds, and world meters. This document describes the implementation, not proposed balance changes.
+Snapshot: 21 September 2026, current local Three.js code (including uncommitted changes). Values are not necessarily the deployed website's values. Units: HP, damage points, seconds, and world meters. This document describes the implementation, not proposed balance changes.
 
 ## Player weapons — no upgrades, default skin
 
@@ -28,7 +28,7 @@ Nominal damage/sec = base damage divided by reload. It excludes armor, travel ti
 - Laser does not destroy concrete. It passes through one concrete barrier and stops at the second.
 - Airborne bosses reject ordinary ground damage. Laser/arc attacks can hit them; ordinary weapons can hit the jet during its low return pass.
 
-## Ground enemy health and weapons
+## Ground enemy health and weapons — Normal / Hard / Crazy
 
 | Enemy | Stage 1 / level 1 HP | Stage 16 / level 3 HP | Base outgoing damage | Armor |
 | --- | ---: | ---: | --- | --- |
@@ -40,9 +40,9 @@ Nominal damage/sec = base damage divided by reload. It excludes armor, travel ti
 | Heavy tank | 480 | 931 | 24 per shell | Directional |
 
 All non-boss enemy HP formula (zero-based indices): `round(baseHP × (1 + clamp(stage × 3 + level, 0, 50) × 0.02))`.
-Soldiers, jeeps, and tanks all gain 2% of base HP per campaign level, capped at +100%. Difficulty changes enemy counts, not these health values.
+Soldiers, jeeps, and tanks all gain 2% of base HP per campaign level, capped at +100%. Easy multiplies the resulting HP by **0.5**, including fractional values; Normal, Hard and Crazy use the table values. Enemy numbers still follow the difficulty count multiplier.
 
-## Bosses — after the latest +20% HP change
+## Bosses — Normal / Hard / Crazy (Easy uses half these HP values)
 
 | Boss | Type | HP | Special attack base damage / behavior |
 | --- | --- | ---: | --- |
@@ -84,12 +84,14 @@ These multiply together. A 44-damage cannon shot against a boss deals **18.59 fr
 
 Mine trigger circle: **2.7 m**. A ground unit triggers on hull contact: `center distance ≤ 2.7 + unit collision radius`. Blast damage still uses center distance and falloff. **Review concern:** a large boss can touch the trigger circle while its center remains outside the 4.5 m blast, setting off a mine without taking its damage.
 
-| Difficulty | Player health multiplier | Enemy count multiplier | Finale boss count |
-| --- | ---: | ---: | ---: |
-| Easy | ×3 | ×1 | 1 |
-| Normal | ×1 | ×1 | 1 |
-| Hard | ×1 | ×2 | 2 |
-| Crazy | ×1 | ×4 | 4 |
+| Difficulty | Player health multiplier | Enemy / boss HP multiplier | Enemy count multiplier | Finale boss count |
+| --- | ---: | ---: | ---: | ---: |
+| Easy (new campaign default) | ×3 | ×0.5 | ×1 | 1 |
+| Normal | ×1 | ×1 | ×1 | 1 |
+| Hard | ×1 | ×1 | ×2 | 2 |
+| Crazy | ×1 | ×1 | ×4 | 4 |
+
+New campaigns default to Easy. Existing saved difficulty choices are retained. For example, first-level riflemen have 35 HP on Easy versus 70 on Normal, raiders have 110 versus 220, and Rail Titan has 480 versus 960. Difficulty does not change outgoing enemy damage.
 
 Player base HP: `(240 + armorUpgradeLevel × 65) × difficultyHealthMultiplier`.
 
