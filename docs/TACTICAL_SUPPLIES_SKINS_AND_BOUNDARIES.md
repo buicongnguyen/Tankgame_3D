@@ -2,7 +2,7 @@
 
 ## Design
 - Air Support supplies are available in every mission. Easy and Crazy allow two calls; Normal and Hard allow one. Keep small need-based payloads, the shared 28-second radio cooldown, clear landing checks and collection after touchdown. Wreck drop balance stays unchanged.
-- Keep six mines per map. Place one, two or three on the road as stage level increases, alternating the occupied side and preserving the opposite dodge lane. Keep spawn, objective and supply access safe. Remaining mines stay off-road.
+- Keep six mines per full-size map, all off the route. Aim for one, two or three near alternating shoulders as stage level increases; use farther off-route positions when cover or objectives leave too little shoulder space. Leave the whole warning circle, a player hull radius and a 1 m margin outside every route segment. Keep spawns, objectives and supply access safe.
 - Add five Blender-authored vivid skin tiers with one through five stars and racing stripes. Prices and actual damage, speed and shield bonuses rise together. Existing skins and saves retain their behavior. Share the markings geometry and materials; do not duplicate complete tank models or add realtime lights.
 - Enclose all four map edges with continuous rectangular rock strata, one instanced draw call and four indestructible collision footprints. Keep existing playable bounds and all routes inside them.
 - Expose eight compact desktop weapon buttons. Support 1–8 on the top row and number pad; retain the larger touch gun picker. The Air Support chooser keeps its contextual 1/2 actions.
@@ -18,10 +18,10 @@
 | Prism Ace | 5 | 1900 | +25% | +28% | 6 s |
 
 ## Verification
-Check all 48 layouts across four difficulties for road mines and dodge clearance. Exercise support landing, consumption and retry on every difficulty. Test actual keyboard and button selection, fallback ordering and saved preference. Verify all rock edges collide and survive attacks. Review Blender previews and runtime markings at both graphics settings, including mobile layouts, material reuse and old-save compatibility. Run build, asset checks, targeted browser regressions, then the complete GitHub Pages verification workflow before checking the public build.
+Check all 48 layouts across four difficulties for off-route mines and warning-circle clearance. Exercise support landing, consumption and retry on every difficulty. Test actual keyboard and button selection, fallback ordering and saved preference. Verify all rock edges collide and survive attacks. Review Blender previews and runtime markings at both graphics settings, including mobile layouts, material reuse and old-save compatibility. Run build, asset checks, targeted browser regressions, then the complete GitHub Pages verification workflow before checking the public build.
 
 ## Implemented checks
-- All 192 generated layouts keep six mines, with the intended one/two/three road placements. Real scenery across all 48 levels leaves the dodge lane, routes, objectives and pickups clear.
+- All 192 generated layouts keep six mines outside the entire route corridor. Real scenery across all 48 levels leaves routes, mine warning circles, objectives and pickups clear.
 - Browser regressions verify leftward fallback, empty-attempt guards, next-mission preferred weapon restoration, 1–8 and Numpad selection, and the radio menu's contextual shortcuts.
 - The five new Blender paint meshes use 32–112 triangles and one shared material. The existing GLB pack remains 3,991,144 bytes; Low remains 1,763,260 bytes. Runtime screenshots confirm paint placement in both detail tiers.
 - Build and asset checks pass. Desktop 1440×900 and mobile 320×568, 390×844 and 844×390 controls and shop checks pass. Compiled production UI was also checked at desktop, portrait and landscape sizes with every difficulty, no script errors, missing assets or horizontal overflow.

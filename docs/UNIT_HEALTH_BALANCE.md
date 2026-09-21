@@ -50,7 +50,7 @@ All values are shots to destroy; misses, falloff and movement change real fights
 ## Implementation and review plan
 
 1. Centralize regular enemy HP in `src/three/unit-health.ts` and use it for both current and maximum HP at spawn.
-2. Keep player hull at `(240 + 65 * armorUpgrade) * difficultyHealth`; Easy is now 3x (+200%) after the [flamethrower/Easy update](FLAMETHROWER_AND_EASY_MODE.md); the other difficulties are 1x.
+2. Keep player hull at `(240 + 65 * armorUpgrade) * difficultyHealth`; Easy is now 6x after the [Easy hull and roadside mine update](EASY_HULL_AND_ROADSIDE_MINES.md); the other difficulties are 1x.
 3. Verify actual cannon hits by unit and facing, missile/laser effectiveness, boss protected/exposed damage, and campaign progression with real runtime units.
 4. Check that enemy HP does not change with difficulty or player purchases, health bars match HP, retries restore health, and defeating a tougher last enemy still reaches the results screen.
 5. Run combat and progression regressions, build, then the release verification workflow before publishing.

@@ -86,14 +86,16 @@ Mine trigger circle: **2.7 m**. A ground unit triggers on hull contact: `center 
 
 | Difficulty | Player health multiplier | Enemy / boss HP multiplier | Enemy count multiplier | Finale boss count |
 | --- | ---: | ---: | ---: | ---: |
-| Easy (new campaign default) | ×3 | ×0.5 | ×1 | 1 |
+| Easy (new campaign default) | ×6 | ×0.5 | ×1 | 1 |
 | Normal | ×1 | ×1 | ×1 | 1 |
 | Hard | ×1 | ×1 | ×2 | 2 |
 | Crazy | ×1 | ×1 | ×4 | 4 |
 
 New campaigns default to Easy. Existing saved difficulty choices are retained. For example, first-level riflemen have 35 HP on Easy versus 70 on Normal, raiders have 110 versus 220, and Rail Titan has 480 versus 960. Difficulty does not change outgoing enemy damage.
 
-Player base HP: `(240 + armorUpgradeLevel × 65) × difficultyHealthMultiplier`.
+Player base HP: `(240 + armorUpgradeLevel × 65) × difficultyHealthMultiplier`. Easy starts at **1,440 HP** (previously 720), or 9,240 HP with level-20 armor. Other modes start at 240 HP.
+
+All map mines sit outside the recommended route. Their warning circles plus the player collision radius and a 1 m margin stay clear of every route segment, including adjacent zigzag/loop branches. Mines still trigger and damage either side when a ground unit leaves the route and touches their circle.
 
 ## Upgrade impact when judging late-game balance
 

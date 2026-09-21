@@ -1,18 +1,21 @@
 import {test,expect} from '@playwright/test';
-import {stageLayout,projectRoute,roadDistance,routeSample} from '../src/three/stage-layout';
+import {stageLayout,roadDistance} from '../src/three/stage-layout';
 import {levelMission,freshSave,parseSave} from '../src/three/campaign';
 import {distance,segmentBox} from '../src/three/rules';
+import {MINE_TRIGGER_RADIUS} from '../src/three/combat-ranges';
 import {SKINS,buySkin} from '../src/three/skins';
 import MARKINGS from '../src/three/skin-markings.json' with {type:'json'};
 
-for(const difficulty of ['easy','normal','hard','crazy'])test(`${difficulty}: road mines occupy one lane and leave safe spawn, objectives and supplies`,()=>{
+for(const difficulty of ['easy','normal','hard','crazy'])test(`${difficulty}: mines stay beside every route with safe spawn, objectives and supplies`,()=>{
  for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++){
-  const l=stageLayout(stage,level,levelMission(stage,level).kind,difficulty),mines=l.supplies.filter(s=>s.kind==='mine'),road=mines.filter(m=>roadDistance(l.points,m)<4),label=`${stage}/${level}/${difficulty}`;
-  expect(mines,label).toHaveLength(6);expect(road,label).toHaveLength(level+1);
-  for(const mine of road){const projected=projectRoute(l.points,mine),p=routeSample(l.points,projected.progress),dx=mine.x-p.x,dz=mine.z-p.z,dodge={x:p.x-dx/1.8*3,z:p.z-dz/1.8*3};
-   expect(projected.distance,label).toBeCloseTo(1.8);expect(distance(mine,l.spawn),label).toBeGreaterThan(15);expect(distance(mine,{x:0,z:-13}),label).toBeGreaterThan(12);
-   expect(distance(mine,dodge),label).toBeGreaterThan(2.7+1.25);expect(roadDistance(l.points,dodge),label).toBeCloseTo(3);
-   expect([...l.barriers,...l.landforms].some(b=>segmentBox(p,dodge,b,1.25)!==null),label).toBe(false);
+  const l=stageLayout(stage,level,levelMission(stage,level).kind,difficulty),mines=l.supplies.filter(s=>s.kind==='mine'),label=`${stage}/${level}/${difficulty}`;
+  expect(mines,label).toHaveLength(6);
+  expect(mines.filter(m=>roadDistance(l.points,m)<10).length,label).toBeLessThanOrEqual(level+1);
+  for(const mine of mines){
+   // A tank at either edge of any route must not touch the activation circle.
+   expect(roadDistance(l.points,mine)-l.corridors[0].width/2,label).toBeGreaterThanOrEqual(MINE_TRIGGER_RADIUS+1.25+.99);
+   expect(distance(mine,l.spawn),label).toBeGreaterThan(15);expect(distance(mine,{x:0,z:-13}),label).toBeGreaterThan(12);
+   expect([...l.barriers,...l.landforms].some(b=>segmentBox(mine,mine,b,3.4)!==null),label).toBe(false);
    expect(l.supplies.filter(s=>s!==mine).every(s=>distance(s,mine)>10),label).toBe(true);
   }
  }
@@ -83,4 +86,20 @@ for(const viewport of [{width:320,height:568},{width:390,height:844},{width:844,
  await expect.poll(()=>page.locator('.skin-card img').evaluateAll(imgs=>imgs.every(i=>(i as HTMLImageElement).naturalWidth===512))).toBe(true);await page.locator('[data-value=prism]').tap();await expect(page.locator('[data-value=prism]')).toHaveText('EQUIPPED');await page.locator('[data-value=prism]').scrollIntoViewIfNeeded();await page.screenshot({path:`test-results/new-skin-shop-${viewport.width}.png`});
  expect(await page.locator('#overlay').evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);await page.locator('[data-action=shop-back]').tap();await page.locator('[data-action=deploy]').tap();await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.save.weapons=[6,7];g.specialAmmo=[0,0,1];g.weapon=7;g.save.equippedWeapon=7;g.updateHud();});
  await expect(page.locator('#weapon-shortcuts')).toBeHidden();await page.locator('#weapon').tap();await expect(page.locator('[data-weapon="7"]')).toBeEnabled();await page.locator('[data-weapon="7"]').tap();await expect(page.locator('#weapon-label')).toContainText('Micro missiles');await page.locator('#weapon').tap();await page.locator('[data-weapon="8"]').tap();await page.evaluate(()=>{const g=(window as any).__steel;g.shoot(g.player,true);});await expect(page.locator('#weapon-label')).toContainText('Micro missiles');expect(errors).toEqual([]);expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(viewport.width);await ctx.close();
+});
+
+test('driving at the route edge leaves roadside mines armed; leaving the route still triggers damage',async({page})=>{
+ await page.goto('/?e2e');await page.waitForFunction(()=>(window as any).__steel?.phase==='menu');
+ const r=await page.evaluate(async()=>{
+  const g=(window as any).__steel;g.frame=()=>{};g.save.difficulty='easy';g.start(0,1);
+  const {projectRoute,routeSample,roadDistance}=await import('/src/three/stage-layout.ts');const {MINE_TRIGGER_RADIUS}=await import('/src/three/combat-ranges.ts');
+  const route=g.world.layout,mine=g.world.activities.find((a:any)=>a.kind==='mine'&&roadDistance(route.points,a)<10);
+  if(!mine)throw new Error('Expected a roadside mine in this level');
+  g.enemies=[];g.allies.clear();g.world.activities=[mine];g.world.covers=[];g.shieldTime=0;
+  const p=g.player.visual.root.position,q=routeSample(route.points,projectRoute(route.points,mine).progress),d=Math.hypot(mine.x-q.x,mine.z-q.z),half=route.corridors[0].width/2;
+  const startHP=g.player.hp;p.set(q.x+(mine.x-q.x)/d*half,0,q.z+(mine.z-q.z)/d*half);g.updateActivities(.01);
+  const safe=!mine.spent&&g.player.hp===startHP;
+  p.set(mine.x+MINE_TRIGGER_RADIUS+g.unitRadius(g.player)-.01,0,mine.z);g.updateActivities(.01);
+  return {safe,triggered:mine.spent,damaged:g.player.hp<startHP,fullHP:startHP};
+ });expect(r).toEqual({safe:true,triggered:true,damaged:true,fullHP:1440});
 });

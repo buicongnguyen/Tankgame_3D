@@ -20,7 +20,7 @@ test('Easy halves every enemy type including bosses without changing encounter c
    for(const kind of Object.keys(BOSS)){const u=g.makeUnit(0,0,'boss',kind);health.push(u.max);}
    result.push({difficulty,counts,health,player:g.player.max});
   }return result;
- });expect(rows[1].counts).toBe(rows[0].counts);expect(rows[1].health).toEqual(rows[0].health.map(h=>h/2));expect(rows[1].player).toBe(rows[0].player*3);
+ });expect(rows[1].counts).toBe(rows[0].counts);expect(rows[1].health).toEqual(rows[0].health.map(h=>h/2));expect(rows[1].player).toBe(rows[0].player*6);
 });
 
 test('phone defaults to High, legacy progress and manual Low choice persist',async({browser})=>{

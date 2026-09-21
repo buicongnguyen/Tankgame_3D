@@ -1,5 +1,7 @@
 # Flamethrower and more forgiving Easy mode
 
+Current balance: Easy hull was subsequently doubled to 1,440 base HP (6× Normal). See [Easy hull and roadside mines](EASY_HULL_AND_ROADSIDE_MINES.md). The original implementation notes below describe the earlier 720 HP release.
+
 ## Design
 
 Add a ninth weapon: a 480 CR flamethrower, available in the shop with the same 20 upgrade levels as other weapons. Keys 9 / Numpad 9 and the mobile weapon picker select it. Existing weapon IDs, purchases and ammunition slots remain stable; older eight-weapon saves gain a level-zero upgrade slot.

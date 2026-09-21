@@ -45,7 +45,7 @@ pickups, enemies or warning markers are removed to meet a cosmetic budget.
 - New campaigns default to Easy; saved difficulty choices remain selected.
 - All enemy types, including every boss and later spawns, use exactly half their
   Normal HP. Normal progression is applied before the Easy multiplier.
-- Existing Easy player hull multiplier stays at ×3. Enemy counts and damage are
+- Easy player hull now uses ×6 after the subsequent Easy hull update. Enemy counts and damage are
   unchanged from the existing Easy rules.
 - Health bars, damage, retries and stage completion use the scaled maximum HP.
   See `COMBAT_BALANCE_REFERENCE.md` for the updated balance tables.

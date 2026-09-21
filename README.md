@@ -26,7 +26,7 @@ Lead Kestrel through sixteen stages, each with three levels (48 levels in total)
 
 | Mode | Player hull | Regular enemies and reinforcement batches | Bosses on level 3 |
 | --- | --- | --- | --- |
-| Easy | +200% | 1× | 1 |
+| Easy | 6× standard hull | 1× | 1 |
 | Normal | Standard | 1× | 1 |
 | Hard | Standard | 2× | 2 |
 | Crazy | Standard | 4× | 4 |
@@ -238,7 +238,7 @@ Implementation and verification plan: [Level-20 armory](docs/ARMORY_LEVEL_20_AND
 
 Air Support supply drops are available on **every mission and difficulty**: Easy / Crazy get two calls, Normal / Hard get one. The radio cooldown remains 28 seconds, shared with guided missile strikes. Small crates land near the player and are collectible only after touchdown.
 
-Each map keeps six mines, with one to three placed on alternating sides of the road as the stage level rises; the opposite lane stays open to dodge. Continuous indestructible rock now encloses all four map edges using one instanced rectangular mesh.
+Full-size maps keep six mines, all off the recommended route. Up to one to three sit near alternating shoulders as the stage level rises; the warning circles and tank hull stay clear of the passage, with remaining mines farther off-route. Continuous indestructible rock now encloses all four map edges using one instanced rectangular mesh.
 
 Five new Blender skins add vivid stripes and one through five stars: Rally Comet, Neon Sentinel, Solar Talon, Royal Nova and Prism Ace. Their shop cards state the price and actual speed, weapon damage and shield bonuses. Shared paint geometry adds only one mesh to the player and remains visible in Low detail.
 
@@ -262,7 +262,7 @@ Regular enemy tanks now have distinct health tiers: raiders 110 HP, sentries 150
 
 The ninth weapon is a close-range flamethrower with a broad 70° cone reaching 12 m. Buy it for 800 CR, upgrade it through level 20, and select **9 / Numpad 9** or **Switch Gun**. Flames damage multiple exposed enemies and leave a short burn. Trees and fuel can ignite; solid cover blocks fire. The effect uses Blender-authored flame tongues with bounded instancing in both graphics tiers.
 
-Easy now gives **+200% player hull**, or **720 HP** before armor upgrades. Normal, Hard and Crazy keep their existing player hull and enemy counts. See [the design and validation notes](docs/FLAMETHROWER_AND_EASY_MODE.md).
+Easy gives **6× standard player hull**, or **1,440 HP** before armor upgrades — double its previous 720 HP. Armor upgrades receive the same multiplier. Normal, Hard and Crazy keep their existing player hull and enemy counts. See [the design and validation notes](docs/FLAMETHROWER_AND_EASY_MODE.md).
 
 ## Stronger escorts and guided support
 
