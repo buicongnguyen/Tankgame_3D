@@ -64,8 +64,10 @@ test('phone layout and simultaneous captured touch sticks',async({browser})=>{
   const left=(await page.locator('#move-pad').boundingBox())!,right=(await page.locator('#aim-pad').boundingBox())!;
   const session=await context.newCDPSession(page);
   const points=[{x:left.x+left.width/2,y:left.y+left.height/2-25,id:1},{x:right.x+right.width/2,y:right.y+right.height/2-30,id:2}];
-  await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:points});await page.waitForTimeout(700);
-  const state=await page.evaluate(()=>{const g=(window as any).__steel;return {move:g.input.move.z,fire:g.shotsFired};});expect(state.move).toBeLessThan(0);expect(state.fire).toBeGreaterThan(0);
+  await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:points});
+  // High-detail shader compilation on CI can delay the first simulated frame.
+  // Assert actual simultaneous input and firing, not a 700 ms GPU deadline.
+  await expect.poll(()=>page.evaluate(()=>{const g=(window as any).__steel;return {moving:g.input.move.z<0,firing:g.input.touchFiring,shot:g.shotsFired>0};})).toEqual({moving:true,firing:true,shot:true});
   await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});expect(await page.evaluate(()=>(window as any).__steel.input.touchFiring)).toBe(false);
   await page.screenshot({path:'test-results/battle-phone.png'});await page.setViewportSize({width:844,height:390});await page.screenshot({path:'test-results/battle-landscape.png'});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await context.close();
 });
