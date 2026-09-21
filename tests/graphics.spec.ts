@@ -4,7 +4,7 @@ import {test,expect,webkit} from '@playwright/test';
 for(const viewport of [{width:390,height:844},{width:844,height:390}])test(`mobile detail selection reduces geometry and survives reload ${viewport.width}`,async({browser})=>{
  const context=await browser.newContext({viewport,isMobile:true,hasTouch:true,deviceScaleFactor:3});const page=await context.newPage();
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('/?e2e');await page.locator('.menu-settings>summary').click();const graphics=page.locator('[data-action="quality"]');await expect(graphics).toHaveText('GRAPHICS LOW DETAIL');await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','false');
+ await page.goto('/?e2e');await page.locator('.menu-settings>summary').click();const graphics=page.locator('[data-action="quality"]');await expect(graphics).toHaveText('GRAPHICS HIGH DETAIL');await expect(graphics).toHaveAttribute('aria-pressed','false');
  const sample=()=>page.evaluate(()=>{const g=(window as any).__steel,w=g.world;let triangles=0;g.player.visual.root.traverse((o:any)=>{if(o.isMesh)triangles+=(o.geometry.index?.count??o.geometry.attributes.position.count)/3;});return {triangles,ratio:w.renderer.getPixelRatio(),shadow:w.renderer.shadowMap.enabled,reflection:!!w.scene.environment,width:document.documentElement.scrollWidth,phase:g.phase};});
  const high=await sample();await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','true');const low=await sample();
  expect(low.triangles).toBeLessThan(high.triangles*.4);expect(low.ratio).toBeLessThanOrEqual(.8);expect(low.shadow||low.reflection).toBe(false);expect(low.width).toBeLessThanOrEqual(viewport.width);expect(low.phase).toBe('menu');
@@ -41,7 +41,7 @@ test('failed detail download keeps current graphics and allows retry',async({pag
 test('iPhone WebKit can select low detail from pause and resume',async()=>{
  const browser=await webkit.launch({args:[]});const context=await browser.newContext({viewport:{width:375,height:667},isMobile:true,hasTouch:true,deviceScaleFactor:3});const page=await context.newPage();const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:5178/?e2e');await page.getByRole('button',{name:'DEPLOY'}).tap();await page.locator('#pause').tap();
- const graphics=page.locator('[data-action="quality"]');await expect(graphics).toHaveAttribute('aria-pressed','true');await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','false');await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','true');
+ const graphics=page.locator('[data-action="quality"]');await expect(graphics).toHaveAttribute('aria-pressed','false');await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','true');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  // Windows WebKit screenshots can omit the composited WebGL canvas; inspect
  // the actual drawing buffer as well as checking the native-resolution UI.

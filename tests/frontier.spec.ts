@@ -6,7 +6,7 @@ import {awardStage} from '../src/three/results';
 test('historical campaigns extend without losing purchases or progress',()=>{
  expect(MISSIONS).toHaveLength(16);
  for(const length of [6,9]){
-  const old={...freshSave(),mission:length-1,cleared:Array(length).fill(true),credits:1800,weapons:[3,4],equippedWeapon:4,skins:['classic','sunburst','inferno'],skin:'inferno',low:true};
+  const old={...freshSave(),mission:length-1,cleared:Array(length).fill(true),credits:1800,weapons:[3,4],equippedWeapon:4,skins:['classic','sunburst','inferno'],skin:'inferno',low:true,graphicsChosen:true};
   const save=parseSave(JSON.stringify(old));expect(save.mission).toBe(length);expect(save.cleared).toEqual([...old.cleared,...Array(16-length).fill(false)]);expect(save.credits).toBe(1800);expect(save.weapons).toEqual([3,4]);expect(save.skin).toBe('inferno');expect(save.low).toBe(true);
   const partial={...old,mission:2,cleared:Array.from({length},(_,i)=>i<2)};expect(parseSave(JSON.stringify(partial)).mission).toBe(2);
  }

@@ -180,11 +180,11 @@ export class World {
   }
   skinMarkings=new SkinMarkings();
   skinMaterials=new Map<string,T.MeshStandardMaterial>();
-  applySkin(root:T.Object3D,id:string){const palette:Record<string,string>=skinPalette(id);
+  applySkin(root:T.Object3D,id:string,flag:import('./tank-flags').TankFlag='none'){const palette:Record<string,string>=skinPalette(id);
     root.traverse(o=>{if(!(o instanceof T.Mesh)||!(o.material instanceof T.MeshStandardMaterial)||!palette[o.material.name])return;
       const key=id+':'+o.material.name;let material=this.skinMaterials.get(key);
       if(!material){material=o.material.clone();material.color.set('#'+palette[material.name]);this.skinMaterials.set(key,material);}o.material=material;
-    });this.skinMarkings.apply(root,id);root.userData.skin=id;
+    });this.skinMarkings.apply(root,id,flag);root.userData.skin=id;root.userData.flag=flag;
   }
   enemyMaterials=new Map<string,T.MeshStandardMaterial>();
   clear() { this.leadReady=false;this.enemyBatches.clear();this.environment.clear();this.fx.clear();this.wrecks=[];this.activities=[];

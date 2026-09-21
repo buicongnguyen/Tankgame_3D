@@ -8,7 +8,7 @@ SOURCE=ROOT/'assets'/'blender'; SOURCE.mkdir(parents=True,exist_ok=True)
 bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
 bpy.ops.import_scene.gltf(filepath=str(ROOT/'public'/'models'/'tank.glb'))
 palettes={
-'classic':{'Armor':'698d82','Trim':'c7e5d3','Gunmetal':'768a85','Signal':'8dffe7','Tracks':'48565a'},
+'classic':{'Armor':'176cff','Trim':'ffb52e','Gunmetal':'354d72','Signal':'ffffff','Tracks':'202f46'},
 'sunburst':{'Armor':'ffac24','Trim':'663dbf','Gunmetal':'624569','Signal':'fff1a6','Tracks':'354052'},
 'guardian':{'Armor':'167bda','Trim':'e4f5ff','Gunmetal':'325286','Signal':'54ffff','Tracks':'27394c'},
 'inferno':{'Armor':'e72b53','Trim':'ffc83d','Gunmetal':'532c45','Signal':'ffed95','Tracks':'302737'},
@@ -23,8 +23,16 @@ palettes.update({
 'sprint':{'Armor':'ff982b','Trim':'d6edff','Gunmetal':'314473','Signal':'459bff','Tracks':'293441'},
 'lance':{'Armor':'20c7cd','Trim':'ffe14b','Gunmetal':'3b425e','Signal':'ff4569','Tracks':'26343e'},
 'quartermaster':{'Armor':'e8ac24','Trim':'8928e6','Gunmetal':'57406c','Signal':'d06cff','Tracks':'302941'}})
-ratings={'comet':1,'sentinel':2,'talon':3,'nova':4,'prism':5,'bastion':3,'sprint':3,'lance':3,'quartermaster':3}
+palettes.update({
+'coral':{'Armor':'ff416f','Trim':'fff2ed','Gunmetal':'4a3457','Signal':'ffffff','Tracks':'2b2840'},
+'tropical':{'Armor':'00d9de','Trim':'ffc72e','Gunmetal':'28547b','Signal':'ffe347','Tracks':'213746'},
+'acid':{'Armor':'aaff19','Trim':'7529d5','Gunmetal':'36485c','Signal':'ff51ce','Tracks':'26363c'},
+'aurora':{'Armor':'8838ff','Trim':'19efd0','Gunmetal':'463a72','Signal':'69ffdf','Tracks':'292940'}})
+ratings={'classic':1,'coral':2,'tropical':3,'acid':4,'aurora':5,'comet':1,'sentinel':2,'talon':3,'nova':4,'prism':5,'bastion':3,'sprint':3,'lance':3,'quartermaster':3}
 marking_data={}
+# Build all paint data but optionally render only named variants.
+selected=next((arg.split('=',1)[1].split(',') for arg in sys.argv if arg.startswith('--only=')),None)
+bpy.context.preferences.filepaths.save_version=0
 
 def markings(name,palette):
  # Paint geometry is authored in Blender and reused by the game, including Low detail.
@@ -74,7 +82,7 @@ for name,palette in palettes.items():
    if material.use_nodes:
     bs=material.node_tree.nodes.get('Principled BSDF')
     if bs:bs.inputs['Base Color'].default_value=(*rgb,1)
- if '--specialists-only' not in sys.argv or name in ['bastion','sprint','lance','quartermaster']:
+ if (selected is None or name in selected) and ('--specialists-only' not in sys.argv or name in ['bastion','sprint','lance','quartermaster']):
   scene.render.filepath=str(OUT/(name+'.png'));bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/('skin-'+name+'.blend')));bpy.ops.render.render(write_still=True)
  if paint:
   mesh=paint.data;bpy.data.objects.remove(paint,do_unlink=True);bpy.data.meshes.remove(mesh)

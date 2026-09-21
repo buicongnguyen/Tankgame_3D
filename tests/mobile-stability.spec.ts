@@ -23,15 +23,15 @@ test('Easy halves every enemy type including bosses without changing encounter c
  });expect(rows[1].counts).toBe(rows[0].counts);expect(rows[1].health).toEqual(rows[0].health.map(h=>h/2));expect(rows[1].player).toBe(rows[0].player*3);
 });
 
-test('phone defaults and legacy saves use low detail, manual detailed choice persists',async({browser})=>{
+test('phone defaults to High, legacy progress and manual Low choice persist',async({browser})=>{
  const context=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,isMobile:true,deviceScaleFactor:3});const page=await context.newPage();
- await page.goto('/?e2e');await expect.poll(()=>page.evaluate(()=>(window as any).__steel?.save.low)).toBe(true);
- expect(await page.evaluate(()=>{const g=(window as any).__steel;return {easy:g.save.difficulty,shadow:g.world.renderer.shadowMap.enabled,ratio:g.world.renderer.getPixelRatio(),antialias:g.world.renderer.getContext().getContextAttributes().antialias};})).toEqual({easy:'easy',shadow:false,ratio:.8,antialias:false});
+ await page.goto('/?e2e');await expect.poll(()=>page.evaluate(()=>(window as any).__steel?.save.low)).toBe(false);
+ expect(await page.evaluate(()=>{const g=(window as any).__steel;return {easy:g.save.difficulty,shadow:g.world.renderer.shadowMap.enabled,ratio:g.world.renderer.getPixelRatio(),antialias:g.world.renderer.getContext().getContextAttributes().antialias};})).toEqual({easy:'easy',shadow:true,ratio:1.6,antialias:true});
  const legacy={...freshSave(),difficulty:'hard',credits:123,low:false};delete legacy.graphicsChosen;
  await page.evaluate(({key,save})=>localStorage.setItem(key,JSON.stringify(save)),{key:SAVE_KEY,save:legacy});await page.reload();await page.waitForFunction(()=>(window as any).__steel?.phase==='menu');
- expect(await page.evaluate(()=>{const s=(window as any).__steel.save;return [s.low,s.difficulty,s.credits];})).toEqual([true,'hard',123]);
- await page.locator('.menu-settings>summary').click();await page.locator('[data-action="quality"]').tap();await expect(page.locator('[data-action="quality"]')).toHaveAttribute('aria-pressed','false');
- await page.reload();await page.waitForFunction(()=>(window as any).__steel?.phase==='menu');expect(await page.evaluate(()=>(window as any).__steel.save.low)).toBe(false);await context.close();
+ expect(await page.evaluate(()=>{const s=(window as any).__steel.save;return [s.low,s.difficulty,s.credits];})).toEqual([false,'hard',123]);
+ await page.locator('.menu-settings>summary').click();await page.locator('[data-action="quality"]').tap();await expect(page.locator('[data-action="quality"]')).toHaveAttribute('aria-pressed','true');
+ await page.reload();await page.waitForFunction(()=>(window as any).__steel?.phase==='menu');expect(await page.evaluate(()=>(window as any).__steel.save.low)).toBe(true);await context.close();
 });
 
 test('effect resources are reused and retired enemy graphics leave the scene',async({page})=>{

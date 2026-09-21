@@ -15,3 +15,9 @@
 }
 
 .mode-hint{display:block;margin:5px 0 9px;color:#c6d4ca;font-size:11px}.level-select{display:flex;gap:4px;margin:0 0 10px}.level-select button{flex:1;padding:8px 3px;min-height:40px;font-size:10px}.level-select button[aria-pressed="true"]{border-color:#acffdb;background:#254a43}.difficulty button{min-width:0;flex:1}
+
+/* Compact cosmetic control, shared by desktop and mobile skin shop. */
+.flag-picker{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #466272;border-radius:12px;background:#122434}
+.flag-picker label{font-size:13px;font-weight:700;flex:1}.flag-picker small{display:block;font-size:10px;font-weight:400;color:#a9c2cf;margin-top:3px}
+#flag-preview{display:flex;width:36px;flex:none}#flag-preview svg{width:36px;height:24px;border-radius:2px}
+#tank-flag{min-width:0;width:44%;max-width:190px;min-height:44px;background:#223b4b;border:1px solid #67828d;border-radius:8px;color:#fff;padding:6px;font:inherit;font-size:13px}

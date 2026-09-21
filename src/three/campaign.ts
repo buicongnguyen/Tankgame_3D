@@ -6,6 +6,8 @@ import type {Difficulty} from './difficulty';
 export type {Difficulty} from './difficulty';
 import type {Biome} from './terrain';
 import { SKINS } from './skins';
+import {normalizeFlag} from './tank-flags';
+import type {TankFlag} from './tank-flags';
 import type { Upgrade } from './rules';
 export type MissionKind = 'assault' | 'capture' | 'escort' | 'defense' | 'boss' | 'rescue';
 export interface Mission { biome:Biome; parTime:number; commandBriefing?:string; commandRadio?:string; boss?:'rail'|'missile'|'walker'|'helicopter'|'spider'|'laser'|'quad-mech'|'siege-mech'|'missile-truck'|'quadcopter'|'jet'; name: string; sector: string; kind: MissionKind; briefing: string; radio: string; debrief: string; objective: string; count: number; duration: number; reward: number; }
@@ -30,9 +32,8 @@ export const MISSIONS: Mission[] = [
 ];
 export const SAVE_KEY = 'steel-front-3d-v1';
 export const LEVEL_NAMES=['Approach','Counterattack','Command battle'];
-export interface Save { training?:{completed:boolean[];skipped:boolean}; version: 1; mission: number; level:number; cleared: boolean[]; credits: number; weapons: number[]; weaponLevels:number[]; equippedWeapon: number; autoPack:number; strikeCharges:number; strikeBackgrounds:boolean[]; skins: string[]; skin: string; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; graphicsChosen?: boolean; }
-const mobileGraphics = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
-export const freshSave = (): Save => ({ training:{completed:[false,false,false],skipped:false}, version: 1, mission: 0, level:0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], weaponLevels: Array(WEAPONS.length).fill(0), equippedWeapon: 0, autoPack:0, strikeCharges:0, strikeBackgrounds:Array(MISSIONS.length).fill(false), skins: ['classic','sunburst'], skin:'classic', upgrades: { armor: 0, power: 0, reload: 0, engine:0, shield:0 }, difficulty: 'easy', sound: false, low: mobileGraphics(), graphicsChosen: false });
+export interface Save { training?:{completed:boolean[];skipped:boolean}; version: 1; mission: number; level:number; cleared: boolean[]; credits: number; weapons: number[]; weaponLevels:number[]; equippedWeapon: number; autoPack:number; strikeCharges:number; strikeBackgrounds:boolean[]; skins: string[]; skin: string; flag: TankFlag; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; graphicsChosen?: boolean; }
+export const freshSave = (): Save => ({ training:{completed:[false,false,false],skipped:false}, version: 1, mission: 0, level:0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], weaponLevels: Array(WEAPONS.length).fill(0), equippedWeapon: 0, autoPack:0, strikeCharges:0, strikeBackgrounds:Array(MISSIONS.length).fill(false), skins: ['classic','sunburst'], skin:'classic', flag:'none', upgrades: { armor: 0, power: 0, reload: 0, engine:0, shield:0 }, difficulty: 'easy', sound: false, low: false, graphicsChosen: false });
 export function parseSave(raw: string | null): Save {
   try {
     const s = JSON.parse(raw || 'null');
@@ -51,6 +52,7 @@ export function parseSave(raw: string | null): Save {
     if(!Number.isInteger(s.equippedWeapon)||s.equippedWeapon<0||s.equippedWeapon>=WEAPONS.length||!ownsWeapon(s,s.equippedWeapon))s.equippedWeapon=0;
     s.skins=[...new Set(['classic','sunburst',...(Array.isArray(s.skins)?s.skins.filter((id:unknown)=>SKINS.some(skin=>skin.id===id)):[])])];
     if(!s.skins.includes(s.skin))s.skin='classic';
+    s.flag=normalizeFlag(s.flag);
     // Extend either historical campaign length without changing purchases or progress.
     if(s.cleared.length<MISSIONS.length){const previous=s.cleared.length,finished=s.cleared.every(Boolean);s.cleared.push(...Array(MISSIONS.length-previous).fill(false));if(finished){s.mission=previous;s.level=0;}}
     // Historical saves get their first allowance on the current background, not retroactive stockpiles.
@@ -60,7 +62,10 @@ export function parseSave(raw: string | null): Save {
     // A checkpoint cannot unlock past a gap in the campaign.
     const firstUncleared = s.cleared.indexOf(false);
     if (firstUncleared >= 0 && (s.mission > firstUncleared || s.cleared.slice(firstUncleared).some(Boolean))) return freshSave();
-    return { ...s, sound: s.sound === true, low: s.graphicsChosen === true ? s.low === true : s.low === true || mobileGraphics(), graphicsChosen: s.graphicsChosen === true };
+    // Older automatic mobile Low settings upgrade to High. Explicit selections and
+    // legacy Low saves without a preference marker remain deliberate choices.
+    const graphicsChosen=s.graphicsChosen===true||(s.graphicsChosen===undefined&&s.low===true);
+    return { ...s, sound: s.sound === true, low: graphicsChosen && s.low === true, graphicsChosen };
   } catch { return freshSave(); }
 }
 /** Advance only the next unfinished level; old stages stay available for replay. */

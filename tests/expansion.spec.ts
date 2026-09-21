@@ -15,7 +15,7 @@ test('48 levels preserve mode counts, sequential checkpoints and one-time reward
 });
 test('historical saves retain completed stages and migrate named modes',()=>{
  for(const length of [6,9,14])for(const [old,current] of [['story','easy'],['standard','normal'],['veteran','hard']]){
-  const source={...freshSave(),mission:length-1,level:undefined,cleared:Array(length).fill(true),difficulty:old,credits:1700,weapons:[3,4],equippedWeapon:4,skin:'sunburst',low:true};const save=parseSave(JSON.stringify(source));
+  const source={...freshSave(),mission:length-1,level:undefined,cleared:Array(length).fill(true),difficulty:old,credits:1700,weapons:[3,4],equippedWeapon:4,skin:'sunburst',low:true,graphicsChosen:true};const save=parseSave(JSON.stringify(source));
   expect(save.mission).toBe(length);expect(save.level).toBe(0);expect(save.difficulty).toBe(current);expect(save.credits).toBe(1700);expect(save.equippedWeapon).toBe(4);expect(save.skin).toBe('sunburst');expect(save.low).toBe(true);expect(save.cleared.slice(0,length).every(Boolean)).toBe(true);
  }
  expect(levelMission(13,0).kind).toBe('assault');expect(levelMission(13,2).kind).toBe('boss');expect(levelMission(12,1).duration).toBe(60);

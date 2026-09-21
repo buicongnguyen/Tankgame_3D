@@ -1,8 +1,12 @@
 import {SKIN_PALETTES} from './skin-palettes';
 import type {Save} from './campaign';
 export const SKINS=[
- {id:'classic',name:'Kestrel',price:0,bonus:'Standard performance',speed:1,damage:1,shield:3},
+ {id:'classic',name:'Cobalt Kestrel',price:0,stars:1,starColor:'#ffffff',bonus:'Standard performance',speed:1,damage:1,shield:3},
  {id:'sunburst',name:'Sunburst',price:0,bonus:'Free color scheme',speed:1,damage:1,shield:3},
+ {id:'coral',name:'Coral Flash',price:300,stars:2,starColor:'#ffffff',bonus:'+18% movement speed',speed:1.18,damage:1,shield:3},
+ {id:'tropical',name:'Tropical Wave',price:350,stars:3,starColor:'#ffe347',bonus:'+1.5 seconds of shield',speed:1,damage:1,shield:4.5},
+ {id:'acid',name:'Lime Viper',price:450,stars:4,starColor:'#ff51ce',bonus:'+15% weapon damage',speed:1,damage:1.15,shield:3},
+ {id:'aurora',name:'Electric Aurora',price:800,stars:5,starColor:'#69ffdf',bonus:'+10% speed / damage · 5 s shield',speed:1.10,damage:1.10,shield:5},
  {id:'volt',name:'Volt Runner',price:300,bonus:'+18% movement speed',speed:1.18,damage:1,shield:3},
  {id:'guardian',name:'Azure Guardian',price:350,bonus:'+1.5 seconds of shield',speed:1,damage:1,shield:4.5},
  {id:'inferno',name:'Crimson Fury',price:450,bonus:'+15% weapon damage',speed:1,damage:1.15,shield:3},
