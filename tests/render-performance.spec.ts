@@ -17,5 +17,8 @@ test('batched enemy rigs keep poses, visibility, detail swaps and clean retries'
 });
 
 test('camera look-ahead changes smoothly at route bends and resets on deployment',async({page})=>{
- await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};const w=g.world,p=g.player.visual.root.position;w.cameraOffset=()=>({x:8,z:0});w.update(0,p);w.cameraOffset=()=>({x:-8,z:0});w.update(1/60,p);const gradual=w.smoothLead.x>0;for(let i=0;i<180;i++)w.update(1/60,p);const settled=Math.abs(w.smoothLead.x+8)<.01;g.start(0);return {gradual,settled,reset:w.smoothLead.x===-8};});expect(r).toEqual({gradual:true,settled:true,reset:true});
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};const w=g.world,p=g.player.visual.root.position;w.cameraOffset=()=>({x:8,z:0});w.update(0,p);w.cameraOffset=()=>({x:-8,z:0});w.update(1/60,p);const gradual=w.smoothLead.x>0;// Allow Chromium's software GPU to drain between frames, as in actual gameplay.
+ // Three simulated seconds at the mobile render cadence.
+ for(let i=0;i<90;i++){w.update(1/30,p);await new Promise<void>(resolve=>requestAnimationFrame(()=>resolve()));}
+ w.renderer.getContext().finish();const settled=Math.abs(w.smoothLead.x+8)<.01;g.start(0);return {gradual,settled,reset:w.smoothLead.x===-8};});expect(r).toEqual({gradual:true,settled:true,reset:true});
 });

@@ -44,3 +44,12 @@ Android action reference: https://github.com/android-actions/setup-android#the-d
   weapon selection and graphics switching (including iPhone WebKit).
 - Existing unrelated marketing files, upload ZIP and Android launch notes were
   preserved outside this commit.
+
+## CI browser setup follow-up
+
+The rocket integration test intermittently failed before its body ran, during
+Chromium context creation (`Browser.setDownloadBehavior`: context not found).
+The preceding camera test issued 180 synchronous full-scene renders. It now yields
+to the browser after each frame and drains pending GPU commands before teardown.
+Camera interpolation assertions and the following rocket test are unchanged;
+no retries, skipped assertions or relaxed timeouts were added.
