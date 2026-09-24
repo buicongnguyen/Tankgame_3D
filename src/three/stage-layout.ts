@@ -124,6 +124,9 @@ export function stageLayout(stage:number,level=0,kind='assault',difficulty='norm
   }
  }
  barriers.push(...breaches.flat());
+ // Later scenery passes (houses, guard posts, trees, fuel) must not be placed inside concrete runs.
+ // Mines already keep a wider clearance from barriers, so their placement is unchanged.
+ reserved.push(...barriers);
  // Keep the whole warning circle plus a tank radius and 1 m margin outside
  // every route segment, including the neighboring legs of loops and zigzags.
  const mineRouteOffset=corridors[0].width/2+MINE_TRIGGER_RADIUS+1.25+1;

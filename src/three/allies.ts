@@ -33,7 +33,8 @@ export class Allies {
    }
    u.cooldown=Math.max(0,u.cooldown-dt);
    if(g.elapsed>=(a.scanAt??0)){a.scanAt=g.elapsed+.2;a.target=g.enemies.filter(e=>this.validTarget(g,p,e,26)).sort((a,b)=>distance(p,a.visual.root.position)-distance(p,b.visual.root.position))[0];}const target=this.validTarget(g,p,a.target,26)?a.target:undefined;
-   if(target){const t=target.visual.root.position;u.aim=turnToward(u.aim,Math.atan2(t.x-p.x,t.z-p.z),dt*4);if(u.cooldown===0){g.syncVisual(u);g.allyRound(p,u.aim,34,32,0,u.visual.muzzle);u.cooldown=2.8;}}
+   // Fire only once the turret has actually swung onto a newly acquired target.
+   if(target){const t=target.visual.root.position,want=Math.atan2(t.x-p.x,t.z-p.z);u.aim=turnToward(u.aim,want,dt*4);const error=Math.abs(Math.atan2(Math.sin(want-u.aim),Math.cos(want-u.aim)));if(u.cooldown===0&&error<.05){g.syncVisual(u);g.allyRound(p,u.aim,34,32,0,u.visual.muzzle);u.cooldown=2.8;}}
    // Follow a short player breadcrumb trail; navigate around cover, never teleport through it.
    let walked=0,destination:Point=player;for(let n=this.trail.length-1;n>0;n--){walked+=distance(this.trail[n],this.trail[n-1]);destination=this.trail[n-1];if(walked>=6+i*5)break;}
    const exit=g.world.layout.points.at(-1)!,extracting=this.saved===2&&distance(player,exit)<7;

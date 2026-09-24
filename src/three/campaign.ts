@@ -31,13 +31,16 @@ export const MISSIONS: Mission[] = [
 
 ];
 export const SAVE_KEY = 'steel-front-3d-v1';
+/** Replays keep paying credits, so large balances are legitimate: clamp, never reset. */
+export const CREDIT_CAP = 999_999;
 export const LEVEL_NAMES=['Approach','Counterattack','Command battle'];
 export interface Save { training?:{completed:boolean[];skipped:boolean}; version: 1; mission: number; level:number; cleared: boolean[]; credits: number; weapons: number[]; weaponLevels:number[]; equippedWeapon: number; autoPack:number; strikeCharges:number; strikeBackgrounds:boolean[]; skins: string[]; skin: string; flag: TankFlag; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; graphicsChosen?: boolean; }
 export const freshSave = (): Save => ({ training:{completed:[false,false,false],skipped:false}, version: 1, mission: 0, level:0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], weaponLevels: Array(WEAPONS.length).fill(0), equippedWeapon: 0, autoPack:0, strikeCharges:0, strikeBackgrounds:Array(MISSIONS.length).fill(false), skins: ['classic','sunburst'], skin:'classic', flag:'none', upgrades: { armor: 0, power: 0, reload: 0, engine:0, shield:0 }, difficulty: 'easy', sound: false, low: false, graphicsChosen: false });
 export function parseSave(raw: string | null): Save {
   try {
     const s = JSON.parse(raw || 'null');
-    if (!s || s.version !== 1 || !Number.isInteger(s.mission) || s.mission < 0 || s.mission >= s.cleared?.length || !Array.isArray(s.cleared) || ![6,9,14,MISSIONS.length].includes(s.cleared.length) || s.cleared.some((v: unknown) => typeof v !== 'boolean') || !Number.isInteger(s.credits) || s.credits < 0 || s.credits > 100000 || !normalizeDifficulty(s.difficulty)) return freshSave();
+    if (!s || s.version !== 1 || !Number.isInteger(s.mission) || s.mission < 0 || s.mission >= s.cleared?.length || !Array.isArray(s.cleared) || ![6,9,14,MISSIONS.length].includes(s.cleared.length) || s.cleared.some((v: unknown) => typeof v !== 'boolean') || !Number.isInteger(s.credits) || s.credits < 0 || !normalizeDifficulty(s.difficulty)) return freshSave();
+    s.credits=Math.min(s.credits,CREDIT_CAP);
     s.training={completed:Array.from({length:3},(_,i)=>s.training?.completed?.[i]===true),skipped:s.training?.skipped===true||s.training===undefined};
     s.difficulty=normalizeDifficulty(s.difficulty);s.level??=0;
     if(!Number.isInteger(s.level)||s.level<0||s.level>2)return freshSave();
@@ -91,10 +94,11 @@ export function levelMission(index:number,level:number):Mission{
 }
 export const unlockedLevel=(save:Save,mission:number)=>save.cleared[mission]?2:mission===save.mission?save.level:0;
 export const weaponNames = WEAPONS.map(w=>w.name);
-export function weaponCount(save: Save): number { return Math.max(save.cleared[2]?3:save.cleared[0]?2:1,...save.weapons.filter(w=>w<3).map(w=>w+1)); }
+/** Leading weapons unlocked by campaign progress; purchases are tracked individually. */
+export function weaponCount(save: Save): number { return save.cleared[2]?3:save.cleared[0]?2:1; }
 
 export const weaponPrices:Record<number,number>=Object.fromEntries(WEAPONS.map((w,i)=>[i,w.price]));
-export function ownsWeapon(save:Save,id:number){return Number.isInteger(id)&&!!WEAPONS[id]&&(id<3?id<weaponCount(save):save.weapons.includes(id));}
+export function ownsWeapon(save:Save,id:number){return Number.isInteger(id)&&!!WEAPONS[id]&&(id<3&&id<weaponCount(save)||save.weapons.includes(id));}
 export function buyWeapon(save:Save,id:number){const cost=weaponPrices[id];if(!Number.isInteger(id)||!WEAPONS[id]||!cost||ownsWeapon(save,id)||save.credits<cost)return false;save.credits-=cost;save.weapons.push(id);save.equippedWeapon=id;return true;}
 
 export function upgradeWeapon(save:Save,id:number){

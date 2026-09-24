@@ -35,7 +35,7 @@ Bosses use faster light volleys and wider warned heavy attacks; see [boss attack
 
 Enemy armor and infantry both use the multiplier. Bosses are additional units on the third level; every boss must fall before completion, alongside the stage objective. The first two levels of former boss stages are patrol battles. Higher modes do not increase enemy damage or reduce player hull. A large Crazy finale starts with 32 tanks, 72 riflemen, 28 rocketeers, 12 scout jeeps and four bosses. Normal First Light starts with 5 tanks, 9 riflemen, 4 rocketeers and one jeep. Rifle and jeep bullets deal 3 damage; jeeps fire short three-round bursts.
 
-The separate fifteen-stage 2D campaign and its enterable infantry shelters remain available through the legacy route. Historical six-, nine- and fourteen-stage saves retain completed stages, purchases, credits and graphics settings; completed old stages expose all three levels for replay. Story/Standard/Veteran settings migrate to Easy/Normal/Hard. New progress saves after every level; replaying a completed level never awards duplicate credits.
+The separate fifteen-stage 2D campaign and its enterable infantry shelters remain available through the legacy route. Historical six-, nine- and fourteen-stage saves retain completed stages, purchases, credits and graphics settings; completed old stages expose all three levels for replay. Story/Standard/Veteran settings migrate to Easy/Normal/Hard. New progress saves after every level; replaying a completed level pays half its base reward plus the usual time and hull bonuses. Balances are capped at 999,999 CR, and a larger saved balance is clamped rather than treated as a corrupt save.
 
 ## Run and verify
 
@@ -131,9 +131,9 @@ Every level completion, including the chapter and campaign endings, offers **Sho
 
 Shop system upgrades have armor, damage, reload, engine and shield icons. Each destroyed tank has a 1-in-3 chance to leave a medical, shield, laser or arc-ammo crate near its wreck, subject to the mission loot limit. Later levels and harder modes reduce the allowance and payload. Infantry and jeeps do not generate tank salvage. These drops last for the sortie and do not purchase permanent weapon ownership.
 
-All defense missions start Kestrel near the uplink. Initial opposition starts in staggered perimeter waves, including finale bosses; four finite waves advance at 0, 4, 8 and 12 seconds and the mission ends when every hostile is defeated; ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, open Air Support with R (1 missiles / 2 supply), shield with Q and locate a repair center with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
+All defense missions start Kestrel near the uplink. Initial opposition starts in staggered perimeter waves, including finale bosses; the first of four finite waves arrives after a 7-second preparation window, and each later wave follows 9 seconds after the current wave is cut to 40% (25% on Easy); the mission ends when every hostile is defeated, and ordinary enemies must close to 24 m to attack the relay. PC players can aim with I/J/K/L, fire with Space or F, call a missile strike with R, a supply drop with T, the shield with Q and an auto guided missile with E. Mouse controls remain available, and the desktop HUD includes a Fire button and shortcut guide.
 
-Repair centers are large green circular service pads, marked with a green cross on the minimap. Drive within 3 m to restore up to 32 HP per second; starting capacity is 160 / 100 / 80 / 60 HP on Easy / Normal / Hard / Crazy, falling by 20 HP per sublevel to a minimum of 40. Medical cases dropped by tanks can also heal; houses and weapon boxes do not. E / Find Repair reports the nearest available center and never restores health remotely.
+Repair centers are large green circular service pads, marked with a green cross on the minimap. Drive within 3 m to restore up to 32 HP per second; starting capacity is 160 / 100 / 80 / 60 HP on Easy / Normal / Hard / Crazy, falling by 20 HP per sublevel to a minimum of 40. Medical cases dropped by tanks can also heal; houses and weapon boxes do not. Centers never restore health remotely.
 
 ## Lightweight destruction feedback
 
@@ -143,9 +143,9 @@ Effects reuse the existing shard geometry and a single small procedural texture.
 
 ## Stage finish and performance bonuses
 
-A completed objective starts a 0.8-second finish sequence: combat stops while destruction effects keep playing. The results screen then shows elapsed time, remaining hull, defeated tanks and soldiers, base reward, time bonus, hull bonus and total credits. Boss endings include the same breakdown and Shop access.
+A completed objective starts a 1.5-second finish sequence: combat stops while destruction effects keep playing. The results screen then shows elapsed time, remaining hull, defeated tanks and soldiers, base reward, time bonus, hull bonus and total credits. Boss endings include the same breakdown and Shop access.
 
-On the first clear, the hull bonus is 25% of the base reward multiplied by remaining hull percentage. The time bonus is 25% of the base reward multiplied by the fraction of the target time saved, clamped to zero for a late finish. Both round to whole credits. Target times for operations 1-9 are 90, 90, 150, fixed timer, 120, 150, 120, 150, fixed timer seconds. Level-one targets for stages 10–16 are 110, 150, 180, fixed timer, 170, 140 and 190 seconds. Counterattack target times increase by 20%; Command battle targets increase by 60%. Per-level base rewards are 65%, 80% and 100% of the stage reward. Counterattack capture durations also increase by 20%; defense missions use finite waves without a time limit. Defense stages retain their hull bonus but have no time bonus. Replays show performance but do not grant duplicate rewards. Credits and progression save when the objective completes, before the short visual delay.
+On the first clear, the hull bonus is 25% of the base reward multiplied by remaining hull percentage. The time bonus is 25% of the base reward multiplied by the fraction of the target time saved, clamped to zero for a late finish. Both round to whole credits. Target times for operations 1-9 are 90, 90, 150, fixed timer, 120, 150, 120, 150, fixed timer seconds. Level-one targets for stages 10–16 are 110, 150, 180, fixed timer, 170, 140 and 190 seconds. Counterattack target times increase by 20%; Command battle targets increase by 60%. Per-level base rewards are 65%, 80% and 100% of the stage reward. Counterattack capture durations also increase by 20%; defense missions use finite waves without a time limit. Defense stages retain their hull bonus but have no time bonus. Replays pay 50% of the level's base reward plus the same time and hull bonuses. Credits and progression save when the objective completes, before the short visual delay.
 
 ## Blender tank skins
 
@@ -175,7 +175,7 @@ The combat weapon panel always shows **Switch Gun**. Click or tap it to select a
 
 ## Arc rocket range assistance
 
-Arc rockets now adapt their landing distance to live enemies in an 18-degree cone when aiming with the touch stick or I/J/K/L. Assistance considers targets 10–45 meters away, favoring nearer aligned enemies; with no target the normal 28-meter aim remains. Mouse aim only snaps within 3 meters of an enemy, preserving deliberate ground targeting. The purple aim ring previews the seven-meter blast radius. Destinations stay fixed after launch; rockets still cross cover and blasts can hurt either side. Ordinary siege rockets remain direct-fire projectiles.
+Arc rockets now adapt their landing distance to live enemies within 18° either side of the aim line when aiming with the touch stick or I/J/K/L. Assistance considers targets 10–45 meters away, favoring nearer aligned enemies; with no target the normal 28-meter aim remains. Mouse aim only snaps within 3 meters of an enemy, preserving deliberate ground targeting. The purple aim ring previews the seven-meter blast radius. Destinations stay fixed after launch; rockets still cross cover and blasts can hurt either side. Ordinary siege rockets remain direct-fire projectiles.
 
 ## Detailed Blender visual pass
 
@@ -216,7 +216,7 @@ See [Air support, threat ranges and breachable routes](docs/AIR_SUPPORT_AND_BREA
 
 ## Level-20 armory and missile expansion
 
-All nine weapons have individual upgrades from level 0 to **20**. The shop also offers 20 levels each for armor, damage, autoloader, engine and shield. Early upgrades preserve their old benefits; higher damage/reload upgrades use diminishing returns and minimum firing intervals. Credits remain limited by first-clear rewards, so choose which systems to specialize in. Older saves keep their purchases, skins and progression, and receive level-zero defaults for the new tracks.
+All nine weapons have individual upgrades from level 0 to **20**. The shop also offers 20 levels each for armor, damage, autoloader, engine and shield. Early upgrades preserve their old benefits; higher damage/reload upgrades use diminishing returns and minimum firing intervals. First clears pay full rewards and replays pay half, so choose which systems to specialize in. Older saves keep their purchases, skins and progression, and receive level-zero defaults for the new tracks.
 
 | Key | Weapon | Purchase | Ammunition / behavior |
 | --- | --- | --- | --- |
@@ -228,7 +228,7 @@ All nine weapons have individual upgrades from level 0 to **20**. The shop also 
 | 6 | Machine gun | 280 CR | Two simultaneous rounds; four at weapon level 10; unlimited |
 | 7 | Micro missiles | 340 CR | Smaller, faster missiles; 60 base direct damage, 3.5 m splash; unlimited |
 | 8 | Triple arc launcher | 720 CR | Three rockets per trigger; **3 volleys per mission**; 180 base damage per rocket, 5.5 m blast each |
-| 9 | Flamethrower | 800 CR | 100 bursts per mission; 12 m, 70° cone; 19.2 base burst damage and a 2-second burn |
+| 9 | Flamethrower | 800 CR | 80 bursts per mission; 12 m, 60° cone; 19.2 base burst damage and a 2-second burn |
 
 Missile blasts hit nearby destructible cover using the object's footprint, so building edges and individual concrete panels take damage. Fuel can chain-react. Hills and other indestructible terrain remain intact. Blast damage still affects both sides. Triple-arc landing circles show the three impact areas; ordinary arc-ammo crates do not refill this special launcher. It refills on the next mission or retry. The existing Blender rocket model supplies fins, nose, exhaust and smoke for all missile sizes, with capped effects in Low detail.
 
@@ -250,17 +250,17 @@ Design and checks: [Tactical supplies, skins and boundaries](docs/TACTICAL_SUPPL
 
 All ten bosses now fire a separate 3-damage machine gun about three times per second while charging, firing and recovering from their special attacks. Cover blocks this gun; heavy-weapon warnings and exposed cores remain. The Vanguard includes a new Blender-authored light-gun mount in both graphics tiers.
 
-Defeat every remaining hostile to finish any mission from anywhere, followed by the existing 0.8-second effects delay and results/shop screen. Dormant waves count as remaining enemies. A surviving transport can finish before extraction once all hostiles are defeated; dormant reserves still count. Uplink defense sends four finite perimeter waves, starting immediately and releasing every four seconds; there is no timer victory while attackers remain. Capture missions retain their ring-holding objective.
+Defeat every remaining hostile to finish any mission from anywhere, followed by the existing 1.5-second effects delay and results/shop screen. Dormant waves count as remaining enemies. A surviving transport can finish before extraction once all hostiles are defeated; dormant reserves still count. Uplink defense sends four finite perimeter waves: the first after a 7-second preparation window, each later one 9 seconds after the current wave is cut to 40% (25% on Easy); there is no timer victory while attackers remain. Capture missions retain their ring-holding objective.
 
 Broad painted roads are replaced by amber direction signs, narrow traversable passages and additional destructible groves, buildings, crates and fuel drums. Escort routes retain two narrow wheel traces. New scenery reuses existing Blender models with instanced rendering, capped at 48 props per map (64 in jungle/marsh), and preserves local destruction when switching detail levels. See [implementation and verification plan](docs/NATURAL_BATTLEFIELDS_AND_UPLINK_WAVES.md).
 
 ## Enemy durability
 
-Regular enemy tanks now have distinct health tiers: raiders 110 HP, sentries 150 HP, and heavies 240 HP at the opening campaign level. Armored tank HP grows gently with campaign progress, reaching 160 / 220 / 355 HP in the last level. Scout jeeps have 75 HP; riflemen, rocketeers and bosses retain their existing health. Flanking still deals more damage, and anti-tank weapons remain effective. See the [health balance review and combat targets](docs/UNIT_HEALTH_BALANCE.md).
+Regular enemy tanks have distinct Normal-mode health tiers: raiders 220 HP, sentries 300 HP and heavies 480 HP at the opening campaign level. Enemy HP grows 2% per campaign level, reaching 427 / 582 / 931 HP in the last level. Scout jeeps start at 150 HP, riflemen at 70 and rocketeers at 110; bosses keep their own health. Easy halves enemy health. Flanking still deals more damage, and anti-tank weapons remain effective. See the [health balance review and combat targets](docs/UNIT_HEALTH_BALANCE.md).
 
 ## Flamethrower and Easy hull
 
-The ninth weapon is a close-range flamethrower with a broad 70° cone reaching 12 m. Buy it for 800 CR, upgrade it through level 20, and select **9 / Numpad 9** or **Switch Gun**. Flames damage multiple exposed enemies and leave a short burn. Trees and fuel can ignite; solid cover blocks fire. The effect uses Blender-authored flame tongues with bounded instancing in both graphics tiers.
+The ninth weapon is a close-range flamethrower with a broad 60° cone reaching 12 m. Buy it for 800 CR, upgrade it through level 20, and select **9 / Numpad 9** or **Switch Gun**. Flames damage multiple exposed enemies and leave a short burn. Trees and fuel can ignite; solid cover blocks fire. The effect uses Blender-authored flame tongues with bounded instancing in both graphics tiers.
 
 Easy gives **6× standard player hull**, or **1,440 HP** before armor upgrades — double its previous 720 HP. Armor upgrades receive the same multiplier. Normal, Hard and Crazy keep their existing player hull and enemy counts. See [the design and validation notes](docs/FLAMETHROWER_AND_EASY_MODE.md).
 
@@ -273,10 +273,10 @@ Transports start with **1,040 HP**, four times their previous hull, on every dif
 
 The compact **Strike** and **Drop** buttons act immediately. They share the existing radio cooldown. **Auto / E** replaces the repair finder; green repair crosses remain on the minimap. Buy a **40 CR pack of six Auto missiles** for the next deployment. Each press launches one vehicle-seeking missile within **42 m**, with **160 base damage**, a **3.5 m blast** and a **1.6 s** launch interval. It targets jeeps, tanks and bosses, including airborne bosses, and flies over cover. No eligible target means no ammo spent. The pack persists through shopping and pre-deployment reloads; unused rounds expire when that sortie ends, restarts or is abandoned. Pausing and graphics changes retain ammunition.
 
-Four Blender-painted specialist skins add colored stars: **Verdant Bastion** (green, 6 s shield), **Cobalt Sprint** (blue, +30% speed), **Ruby Lance** (red, +30% damage), and **Quartermaster** (violet, 250 flame bursts and +25% to other finite ammo, rounded up). Quartermaster carries **15 laser shots, 8 arc rockets, 4 Triple Arc volleys, 8 Auto missiles and 250 flamethrower bursts** when those weapons/pack are purchased. Unlimited guns stay unlimited. Weapon refills obey the increased caps.
+Four Blender-painted specialist skins add colored stars: **Verdant Bastion** (green, 6 s shield), **Cobalt Sprint** (blue, +30% speed), **Ruby Lance** (red, +30% damage), and **Quartermaster** (violet, 200 flame bursts and +25% to other finite ammo, rounded up). Quartermaster carries **15 laser shots, 8 arc rockets, 4 Triple Arc volleys, 8 Auto missiles and 200 flamethrower bursts** when those weapons/pack are purchased. Unlimited guns stay unlimited. Weapon refills obey the increased caps.
 
 **Storm Kite** debuts in White Horizon level 3 and joins later Crazy reinforcements. Its four rotors, missile pods and light gun are authored in Blender. A two-second warning marks its three-missile pincer; move out of the circles, then attack its exposed core when it lands. Detailed / Low models use **2,496 / 742 triangles**.
 
 The shop uses icon-led rows, coin-and-price buttons with accessible labels, expandable weapon details and smaller skin previews. See [design, balance and verification](docs/AUTO_SUPPORT_AND_QUADCOPTER_PLAN.md).
 
-Strike has a saved charge bank: **two charges on first deployment into each new background**, with unused charges carried forward. Level changes, retries, previews and revisits do not refill the bank. Each accepted call spends one charge and fires at most **six missiles at 90 base damage each**; rejected calls spend nothing. Drop keeps its separate per-mission allowance and shares the radio cooldown. The flamethrower costs **800 CR**, carries **100 bursts** (250 with Quartermaster), and deals **19.2 impact / 14.4 burn DPS**, both 20% below its original output. The mobile mission card shows a small stage badge, one objective counter and a short boss warning.
+Strike has a saved charge bank: **two charges on first deployment into each new background**, with unused charges carried forward. Level changes, retries, previews and revisits do not refill the bank. Each accepted call spends one charge and fires at most **six missiles at 90 base damage each**; rejected calls spend nothing. Drop keeps its separate per-mission allowance and shares the radio cooldown. The flamethrower costs **800 CR**, carries **80 bursts** (200 with Quartermaster), and deals **19.2 impact / 14.4 burn DPS**, both 20% below its original output. The mobile mission card shows a small stage badge, one objective counter and a short boss warning.

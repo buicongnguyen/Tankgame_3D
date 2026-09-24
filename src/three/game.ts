@@ -240,7 +240,7 @@ export class Game {
   }
   isInfantry(unit:Unit){return unit.role==='rifleman'||unit.role==='rocketeer';}
   unitRadius(unit:Unit){return this.isInfantry(unit)?.55:unit.role==='boss'?BOSS[unit.bossKind??bossKind(this.mission)].radius:1.25;}
-  weaponAvailable(w:number){const info=WEAPONS[w];if(!info)return false;if(info.ammoSlot!==undefined)return (this.specialAmmo[info.ammoSlot]??0)>0;return w<3?w<Math.max(this.fieldWeaponCount,weaponCount(this.save)):ownsWeapon(this.save,w);}
+  weaponAvailable(w:number){const info=WEAPONS[w];if(!info)return false;if(info.ammoSlot!==undefined)return (this.specialAmmo[info.ammoSlot]??0)>0;return w<3&&w<this.fieldWeaponCount||ownsWeapon(this.save,w);}
   playerDamageMultiplier(w=this.weapon){return (powerMultiplier(this.save)+(this.powerBoost>0?.35:0))*getSkin(this.save.skin).damage*weaponDamage(this.save,w);}
   weaponStats(){return WEAPONS[this.weapon];}
   reloadDuration(){return reloadSeconds(this.save,this.weapon);}
@@ -255,7 +255,7 @@ export class Game {
     // Short accepted segments preserve wall sliding and prevent contact through cover.
     const steps=Math.max(1,Math.ceil(Math.max(Math.abs(motion.x),Math.abs(motion.z))/.35)),sx=motion.x/steps,sz=motion.z/steps,stepTime=dt/steps;
     const candidateCrush=unit===this.player&&this.phase==='playing'&&Math.hypot(motion.x,motion.z)/dt>=3;
-    const blocked=(x:number,z:number,ignoreInfantry:boolean)=>this.world.covers.some(c=>c.hp>0&&circleBox({x,z},r,c))||[this.player,...this.enemies,...this.allies.active].some(other=>other!==unit&&!other.dead&&!other.pending&&!this.airborne(other)&&!(ignoreInfantry&&this.isInfantry(other))&&distance({x,z},other.visual.root.position)<this.unitRadius(other)+r)||!!(this.convoy&&distance({x,z},this.convoy.position)<2.3);
+    const blocked=(x:number,z:number,ignoreInfantry:boolean)=>this.world.covers.some(c=>c.hp>0&&circleBox({x,z},r,c))||[this.player,...this.enemies,...this.allies.tanks.map(a=>a.unit)].some(other=>other!==unit&&!other.dead&&!other.pending&&!this.airborne(other)&&!(ignoreInfantry&&this.isInfantry(other))&&distance({x,z},other.visual.root.position)<this.unitRadius(other)+r)||!!(this.convoy&&distance({x,z},this.convoy.position)<2.3);
     for(let i=0;i<steps;i++){
       const from={x:p.x,z:p.z};
       const resolve=(ignoreInfantry:boolean)=>{let x=clamp(from.x+sx,-this.world.bounds.x,this.world.bounds.x),z=clamp(from.z+sz,-this.world.bounds.z,this.world.bounds.z);if(blocked(x,from.z,ignoreInfantry))x=from.x;if(blocked(x,z,ignoreInfantry))z=from.z;return {x,z};};
@@ -307,7 +307,7 @@ export class Game {
       if(unit.role==='rifleman'||unit.role==='jeep'||friendly&&this.weapon===5)this.world.fx.emit(mesh.position.clone(),'flash',0xffd494,.3,.07);else this.world.fx.muzzle(mesh.position,heading,!!rocket);
     }
     if(friendly){this.shotsFired++;this.reload=this.reloadDuration();this.tone([1,5].includes(this.weapon)?110:65,.1,.05);}
-    unit.visual.turret.position.y=this.isInfantry(unit)?1.2:unit.role==='jeep'?1.635:1.10;
+    unit.visual.turret.position.y=this.isInfantry(unit)?1.2:unit.role==='jeep'?1.635:(unit.visual.turret.userData.restY??1.17)-.07;
   }
   bossRound(unit:Unit,heading:number,damage:number,muzzleName='LightMuzzle',speed=38){
     if(unit.dead||this.phase!=='playing')return;
@@ -497,7 +497,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     if(this.phase==='finishing'){this.finishDelay=Math.max(0,this.finishDelay-dt);if(this.finishDelay<1e-6){if(this.training){this.showTrainingResult();return;}if(this.level===2&&(this.mission===5||this.mission===8||this.mission===MISSIONS.length-1)){this.setPhase('victory');this.showVictory();}else this.showDepot();}return;}
     if(this.phase!=='playing')return;
     this.trailClock-=dt;this.elapsed+=dt;this.hazards.update(this,dt);if(this.player.dead){this.fail();return;}this.updatePlayer(dt);this.updateEnemies(dt);this.updateShots(dt);this.updateActivities(dt);this.special.update(this,dt);this.flame.update(this,dt);if(this.trailClock<=0)this.trailClock=.06;
-    for(const unit of [this.player,...this.enemies,...this.allies.active])if(!this.isInfantry(unit))unit.visual.turret.position.y+=((unit.role==='jeep'?1.64:1.17)-unit.visual.turret.position.y)*Math.min(1,dt*12);
+    for(const unit of [this.player,...this.enemies,...this.allies.active])if(!this.isInfantry(unit))unit.visual.turret.position.y+=((unit.role==='jeep'?1.64:unit.visual.turret.userData.restY??1.17)-unit.visual.turret.position.y)*Math.min(1,dt*12);
     this.syncVisual(this.player);
     const m=this.missionData(),p=this.player.visual.root.position;
     if(m.kind==='capture'&&distance(p,{x:0,z:-13})<6.7&&!this.enemies.some(e=>!e.dead&&distance(e.visual.root.position,{x:0,z:-13})<6.7))this.capture+=dt;

@@ -1,4 +1,4 @@
-import {rewardClear,levelMission,MISSIONS} from './campaign';
+import {rewardClear,levelMission,MISSIONS,CREDIT_CAP} from './campaign';
 import type {Save} from './campaign';
 export function awardStage(save:Save,mission:number,seconds:number,hp:number,maxHp:number,level:number){
  const time=Math.max(0,Number.isFinite(seconds)?seconds:0),health=Math.max(0,Math.min(1,maxHp>0?hp/maxHp:0));
@@ -8,7 +8,7 @@ export function awardStage(save:Save,mission:number,seconds:number,hp:number,max
  if(replay)save.credits+=base;
  const timeBonus=target?Math.round(base*.25*Math.max(0,1-time/target)):0;
  const healthBonus=Math.round(base*.25*health),total=base+timeBonus+healthBonus;
- save.credits+=timeBonus+healthBonus;
+ save.credits=Math.min(CREDIT_CAP,save.credits+timeBonus+healthBonus);
  return {stars:health>=.75?3:health>=.4?2:1,time,healthPercent:Math.round(health*100),base,timeBonus,healthBonus,total,target,replay};
 }
 export type StageResult=ReturnType<typeof awardStage>&{tanks:number;infantry:number};

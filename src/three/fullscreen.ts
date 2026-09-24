@@ -8,6 +8,8 @@ export function installFullscreen(){
  const message=(text:string)=>{clearTimeout(timer);notice.textContent=text;notice.hidden=false;timer=setTimeout(()=>notice.hidden=true,7000);};
  const sync=()=>{for(const button of document.querySelectorAll<HTMLButtonElement>('[data-action="fullscreen"]')){button.textContent=document.fullscreenElement?'EXIT FULLSCREEN':'⛶ FULLSCREEN';button.setAttribute('aria-pressed',String(!!document.fullscreenElement));button.disabled=busy;}};
  document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement){try{orientation()?.unlock();}catch{/* Some browsers do not allow orientation control. */}}sync();});
+ // Capture phase: the overlay stops the compatibility click that follows a handled touch,
+ // so a bubbling listener would never see fullscreen taps on phones.
  document.addEventListener('click',async event=>{
   if(!(event.target instanceof Element)||!event.target.closest('[data-action="fullscreen"]')||busy)return;
   if(!document.fullscreenElement&&(!document.documentElement.requestFullscreen||document.fullscreenEnabled===false)){
@@ -25,5 +27,5 @@ export function installFullscreen(){
    }
   }catch{message('The browser could not enter fullscreen. You can still play by rotating your phone to landscape.');}
   finally{busy=false;sync();}
- });
+ },{capture:true});
 }

@@ -16,7 +16,7 @@ test('flame upgrades and old eight-weapon saves preserve purchases and append a 
  for(const heading of [0,Math.PI/2,Math.PI,-Math.PI/2]){expect(flameExposure({x:0,z:0},heading,{x:Math.sin(heading)*11.99,z:Math.cos(heading)*11.99})).toBeGreaterThan(0);expect(flameExposure({x:0,z:0},heading,{x:Math.sin(heading)*12.01,z:Math.cos(heading)*12.01})).toBe(0);}
 });
 
-test('one flame burst hits several exposed targets inside 70 degrees and never reaches far, behind or airborne targets',async({page})=>{
+test('one flame burst hits several exposed targets inside the 60-degree cone and never reaches far, behind or airborne targets',async({page})=>{
  await arena(page);const r=await page.evaluate(()=>{
   const g=(window as any).__steel,targets=[[0,4],[3,6],[-3,6],[0,12.01],[7,5],[0,-4]].map(([x,z])=>{const e=g.makeUnit(x,z,'rifleman');e.visual.root.position.set(x,0,z);e.hp=e.max=1000;return e;});
   const heli=g.makeUnit(0,8,'boss','helicopter');heli.visual.root.position.set(0,7,8);g.enemies=[...targets,heli];const hp=heli.hp;g.shoot(g.player,true);return {damage:targets.map(e=>1000-e.hp),air:heli.hp===hp,burns:g.flame.burns.size,shots:g.shots.length,ammo:g.specialAmmo};

@@ -171,7 +171,8 @@ export class World {
     beam.userData.owned=true;beam.visible=false;this.entities.add(beam);
     this.entities.add(root);
     if(enemy&&!boss)this.enemyBatches.add(root);
-    return {root,hull:root.getObjectByName('Hull')!,turret:root.getObjectByName('Turret')!,muzzle:root.getObjectByName('Muzzle')!,bar,beam};
+    const turret=root.getObjectByName('Turret')!;turret.userData.restY=turret.position.y; // recoil settles back to each rig's own height
+    return {root,hull:root.getObjectByName('Hull')!,turret,muzzle:root.getObjectByName('Muzzle')!,bar,beam};
   }
   rocketGeometry=new T.BufferGeometry();rocketMaterial=new T.MeshBasicMaterial({color:0xff9538});
   rocket(){const mesh=new T.Mesh(this.rocketGeometry,this.rocketMaterial);mesh.add(this.clone('rocket'));mesh.userData.rocket=true;mesh.userData.shared=true;return mesh;}

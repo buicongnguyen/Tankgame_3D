@@ -8,7 +8,7 @@ import {BOUNDS} from './activities';
 export type BossKind='rail'|'missile'|'walker'|'helicopter'|'spider'|'laser'|'quad-mech'|'siege-mech'|'missile-truck'|'quadcopter'|'jet';
 export const bossKind=(mission:number):BossKind=>MISSIONS[mission]?.boss??(['rail','laser','helicopter','spider','quad-mech','rail','missile','helicopter','walker','laser','spider','helicopter','spider','laser','spider','helicopter'] as BossKind[])[mission%16];
 export const BOSS={
- jet:{name:'Ash Falcon',health:912,radius:3,charge:2,tracking:3,recovery:4},
+ jet:{name:'Ash Falcon',health:912,radius:3,charge:2,tracking:3,recovery:4,strafeRadius:2.4},
  quadcopter:{name:'Storm Kite',health:1080,radius:3.2,charge:2,tracking:3,recovery:3.5,blastRadius:4.5,targetSpread:7},
  rail:{name:'Rail Titan',health:960,radius:2.5,charge:1.4,tracking:2.2,recovery:2.4,beamRadius:.8},
  missile:{name:'Tempest Carrier',health:1020,radius:2.5,charge:1.8,tracking:2.2,recovery:2.4,blastRadius:6.5,targetSpread:8},
@@ -106,17 +106,19 @@ export class BossCombat{
    const t=g.player.visual.root.position,angle=Math.atan2(t.x-p.x,t.z-p.z),dx=Math.sin(angle)*25,dz=Math.cos(angle)*25;
    const center={x:clamp(t.x,-40,40),z:clamp(t.z,-28,28)};
    s.jetStart={x:center.x-dx,z:center.z-dz};s.jetEnd={x:center.x+dx,z:center.z+dz};s.heading=angle;s.phase='charging';s.time=2;s.jetShot=0;
-   p.set(s.jetStart.x,6,s.jetStart.z);
-   for(let i=0;i<13;i++){const marker=new T.Mesh(new T.BoxGeometry(.6,.025,2.2),new T.MeshBasicMaterial({color:0xffad32,transparent:true,opacity:.65,depthWrite:false}));marker.position.set(s.jetStart.x+dx*2*i/12,.23,s.jetStart.z+dz*2*i/12);marker.rotation.y=angle;g.world.entities.add(marker);s.markers.push(marker);}
+   // The amber corridor spans the full strafe blast width, so leaving it is always safe.
+   for(let i=0;i<13;i++){const marker=new T.Mesh(new T.BoxGeometry(BOSS.jet.strafeRadius*2,.025,2.2),new T.MeshBasicMaterial({color:0xffad32,transparent:true,opacity:.45,depthWrite:false}));marker.position.set(s.jetStart.x+dx*2*i/12,.23,s.jetStart.z+dz*2*i/12);marker.rotation.y=angle;g.world.entities.add(marker);s.markers.push(marker);}
    const shadow=new T.Mesh(new T.CircleGeometry(2.8,16),new T.MeshBasicMaterial({color:0x14202a,transparent:true,opacity:.4,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.set(p.x,.24,p.z);g.world.entities.add(shadow);s.markers.push(shadow);
   }
   s.time-=dt;
+  // Glide into the next run's start and climb, instead of snapping there.
+  if(s.phase==='charging'){const k=Math.min(1,dt*3),gap=distance(p,s.jetStart);if(gap>.5)u.heading=Math.atan2(s.jetStart.x-p.x,s.jetStart.z-p.z);p.x+=(s.jetStart.x-p.x)*k;p.z+=(s.jetStart.z-p.z)*k;p.y+=(6-p.y)*k;}
   const end=s.phase==='exposed'?s.jetStart:s.jetEnd!,d=distance(p,end),speed=s.phase==='exposed'?8:24;
   if(s.phase!=='charging'){
    if(d>.05){const step=Math.min(d,speed*dt);p.x+=(end.x-p.x)/d*step;p.z+=(end.z-p.z)/d*step;u.heading=Math.atan2(end.x-p.x,end.z-p.z);}
    p.y=s.phase==='exposed'?1.4:6;
    if(s.phase!=='exposed'){
-    s.jetShot=(s.jetShot??0)-dt;if(s.jetShot<=0){s.jetShot=.3;g.world.fx.impact(new T.Vector3(p.x,.3,p.z),false);g.explode({x:p.x,z:p.z},2.4,18);}
+    s.jetShot=(s.jetShot??0)-dt;if(s.jetShot<=0){s.jetShot=.3;g.world.fx.impact(new T.Vector3(p.x,.3,p.z),false);g.explode({x:p.x,z:p.z},BOSS.jet.strafeRadius,18);}
    }
    if(d<=speed*dt+.05){
     if(s.phase==='exposed'){for(const m of s.markers){m.removeFromParent();m.geometry.dispose();(m.material as T.Material).dispose();}s.markers=[];s.jetStart=undefined;}
@@ -156,7 +158,9 @@ export class BossCombat{
  rail(g:Game,u:Unit,heading:number,damage=75,color=0xff694e,radius=BOSS.rail.beamRadius){
   const from=u.visual.root.position.clone().setY(1.5),to=from.clone().add(new T.Vector3(Math.sin(heading)*52,0,Math.cos(heading)*52));let first=1,hit:(()=>void)|null=null;
   for(const c of g.world.covers){if(c.hp<=0)continue;const t=segmentBox(from,to,c,radius);if(t!==null&&t<first){first=t;hit=()=>g.hitCover(c,damage*1.2);}}
-  for(const ally of [g.player,...g.allies.active]){if(ally.dead)continue;const t=segmentCircle(from,to,ally.visual.root.position,g.unitRadius(ally)+radius);if(t!==null&&t<first){first=t;hit=()=>g.damageUnit(ally,damage,from);}}if(hit)hit();to.lerpVectors(from,to,first);const dir=to.clone().sub(from);
+  for(const ally of [g.player,...g.allies.active]){if(ally.dead)continue;const t=segmentCircle(from,to,ally.visual.root.position,g.unitRadius(ally)+radius);if(t!==null&&t<first){first=t;hit=()=>g.damageUnit(ally,damage,from);}}
+  // The escorted transport blocks beams exactly like the regular shell collision (radius 1.9).
+  if(g.convoy&&g.convoyHealth>0){const t=segmentCircle(from,to,g.convoy.position,1.9+radius);if(t!==null&&t<first){first=t;hit=()=>g.damageConvoy(damage);}}if(hit)hit();to.lerpVectors(from,to,first);const dir=to.clone().sub(from);
   const mesh=new T.Mesh(new T.CylinderGeometry(radius,radius,Math.max(.01,dir.length()),8),new T.MeshBasicMaterial({color,transparent:true,opacity:.9,blending:T.AdditiveBlending}));mesh.position.copy(from).add(to).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),dir.normalize());g.world.entities.add(mesh);g.special.beams.push({mesh,life:.18});g.world.fx.impact(to,damage>=50);g.tone(80,.15,.05);
  }
 }

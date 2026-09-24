@@ -1,5 +1,12 @@
 import {test,expect} from '@playwright/test';
-import {freshSave,parseSave,rewardClear,buyWeapon,ownsWeapon} from '../src/three/campaign';
+import {freshSave,parseSave,rewardClear,buyWeapon,ownsWeapon,CREDIT_CAP} from '../src/three/campaign';
+test('siege rockets do not grant the autocannon and large balances survive reloads',()=>{
+ const s=freshSave();s.credits=180;expect(buyWeapon(s,2)).toBe(true);expect(ownsWeapon(s,2)).toBe(true);expect(ownsWeapon(s,1)).toBe(false);expect(buyWeapon(s,1)).toBe(false);
+ const saved=parseSave(JSON.stringify(s));expect(saved.weapons).toEqual([2]);expect(saved.equippedWeapon).toBe(2);expect(ownsWeapon(saved,1)).toBe(false);
+ // Replays keep paying credits: a six-figure balance must never reset the campaign.
+ const rich=freshSave();rich.cleared[0]=true;rich.mission=1;rich.weapons=[3];rich.credits=250_000;expect(parseSave(JSON.stringify(rich))).toEqual(rich);
+ rich.credits=CREDIT_CAP*5;const clamped=parseSave(JSON.stringify(rich));expect(clamped.credits).toBe(CREDIT_CAP);expect(clamped.cleared[0]).toBe(true);expect(clamped.weapons).toEqual([3]);
+});
 test('weapon purchases preserve old saves and reject duplicate or unaffordable purchases',()=>{
  const old:any=freshSave();delete old.weapons;old.credits=780;const s=parseSave(JSON.stringify(old));expect(s.weapons).toEqual([]);expect(buyWeapon(s,3)).toBe(true);expect(s.credits).toBe(420);expect(buyWeapon(s,3)).toBe(false);expect(buyWeapon(s,4)).toBe(true);expect(buyWeapon(s,2)).toBe(false);expect(buyWeapon(s,99)).toBe(false);expect(s.credits).toBe(0);expect(parseSave(JSON.stringify(s))).toEqual(s);for(let level=0;level<3;level++)rewardClear(s,0,level);expect(ownsWeapon(s,1)).toBe(true);expect(buyWeapon(s,1)).toBe(false);
 });

@@ -1,4 +1,9 @@
 import {test,expect} from '@playwright/test';
+test('touch taps toggle fullscreen even though the overlay swallows the follow-up click',async({browser})=>{
+ const context=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,isMobile:true});const page=await context.newPage();await page.goto('/?e2e');
+ const button=page.locator('.mobile-fullscreen button');await button.tap();await expect.poll(()=>page.evaluate(()=>!!document.fullscreenElement)).toBe(true);
+ await button.tap();await expect.poll(()=>page.evaluate(()=>!!document.fullscreenElement)).toBe(false);await context.close();
+});
 test('mobile fullscreen enters and exits without resetting the mission',async({browser})=>{
  const context=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,isMobile:true});const page=await context.newPage();await page.goto('/?e2e');const button=page.locator('.mobile-fullscreen button');await button.click();await expect.poll(()=>page.evaluate(()=>!!document.fullscreenElement)).toBe(true);await expect(button).toHaveAttribute('aria-pressed','true');await page.locator('[data-action=deploy]').click();await page.locator('#pause').click();await page.locator('[data-action=fullscreen]').click();await expect.poll(()=>page.evaluate(()=>!!document.fullscreenElement)).toBe(false);await expect(page.locator('body')).toHaveAttribute('data-phase','paused');await page.getByRole('button',{name:'RESUME OPERATION'}).click();await expect(page.locator('body')).toHaveAttribute('data-phase','playing');await context.close();
 });
