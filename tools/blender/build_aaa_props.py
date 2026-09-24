@@ -1,13 +1,15 @@
-"""Hero-quality rebuild of the six most visible static props.
+"""Hero-quality rebuild of the most visible static props.
 
-Replaces pine, barricade, volcanic-rock, hill, stonewall and barrel with sculpted
-silhouettes, weighted hard-surface normals and baked vertex-colour occlusion and
-weathering (Cycles AO multiplied into a procedural paint pass). No image textures
-except the 64 px basalt normal map that frontier rocks require.
+Replaces pine, barricade, volcanic-rock, stonewall and barrel with sculpted
+silhouettes, and authors the destructible concrete-block landmark that replaced
+the hill and basalt landforms. All use weighted hard-surface normals and baked
+vertex-colour occlusion and weathering (Cycles AO multiplied into a procedural
+paint pass). No image textures except the 64 px basalt normal map that frontier
+rocks require.
 
 Run after build_assets.py, build_environment.py and build_frontier.py. Both
 tiers are authored here (public/models and public/models/low); build_low_detail.py
-skips these six so decimation cannot tear their seams.
+skips these props so decimation cannot tear their seams.
 
 Headless:  blender --background --factory-startup --python tools/blender/build_aaa_props.py -- [names]
 Live (Blender MCP):
@@ -25,7 +27,7 @@ OUT = ROOT / 'public' / 'models'
 SOURCE = ROOT / 'assets' / 'blender'
 # Runtime file stem -> root node name kept from the original exports.
 ROOTS = {'pine': 'pine', 'barricade': 'Barricade', 'volcanic-rock': 'volcanic-rock',
-         'hill': 'hill', 'stonewall': 'stonewall', 'barrel': 'Barrel'}
+         'concrete-block': 'ConcreteBlock', 'stonewall': 'stonewall', 'barrel': 'Barrel'}
 TAG = 'aaa_props'
 LIVE = bpy.context.window is not None
 
@@ -688,87 +690,82 @@ def build_volcanic_rock(root, low=False):
     paint(rock, basalt_paint, ao[rock], 0.8)
 
 
-# ---------------------------------------------------------------- hill
-def build_hill(root, low=False):
-    """Grassed knoll with a summit crag, a stratified ledge and half-buried boulders."""
-    rng = random.Random(31)
-    grass = material('HillGrass', (0.42, 0.43, 0.21), 0.95)
-    granite = material('Granite', (0.30, 0.285, 0.26), 0.88)
-    bumps = [(-0.9, 0.5, 3.4, 2.9), (2.3, -1.0, 2.0, 2.2), (-3.6, -1.5, 1.3, 1.9), (0.8, 2.2, 0.9, 1.6)]
+# ---------------------------------------------------------------- concrete landmark
+LANDMARK_HEIGHTS = [3.3, 3.55, 3.15, 3.45, 3.05, 3.35]  # runtime climb height follows the tallest
 
-    def height(x, y):
-        e = math.hypot(x / 7.0, y / 5.0)
-        h = sum(bh * math.exp(-(math.hypot(x - bx, y - by) / br) ** 2 * 1.3) for bx, by, bh, br in bumps)
-        h *= smooth01((1.0 - e) / 0.55)
-        return h + fbm((x * 0.4, y * 0.4, 2.3)) * 0.35 * smooth01((1 - e) / 0.4)
 
+def chamfer_ring(a, b, c, per_side):
+    """Rectangle of half-size (a, b) with 45-degree corner chamfers, `per_side` spans per side."""
+    sides = [((a, -b + c), (a, b - c)), ((a - c, b), (-a + c, b)), ((-a, b - c), (-a, -b + c)), ((-a + c, -b), (a - c, -b))]
+    return [(x0 + (x1 - x0) * i / per_side, y0 + (y1 - y0) * i / per_side)
+            for (x0, y0), (x1, y1) in sides for i in range(per_side + 1)]
+
+
+def build_concrete_block(root, low=False):
+    """Destructible route landmark replacing hills and basalt outcrops: a 3 x 2 cluster of
+    square precast blocks on the old 14 x 10 m footprint. One material, so every landmark on
+    a map is a single instanced draw per detail tier."""
+    concrete = material('Concrete', (0.50, 0.49, 0.46), 0.9)
+    cols, rows, W, D, gap, edge = 3, 2, 14.0, 10.0, 0.12, 0.16
+    per_side = 1 if low else 3
     bm = bmesh.new()
-    RINGS, SEGS = (7, 20) if low else (12, 36)
-    centre = bm.verts.new((0, 0, height(0, 0)))
-    rings = []
-    for i in range(1, RINGS + 1):
-        e = (i / RINGS) ** 0.9
-        ring = []
-        for s in range(SEGS):
-            a = s / SEGS * math.tau
-            j = 1 + (rng.uniform(-0.04, 0.04) if i < RINGS else 0)
-            x, y = 7.0 * e * math.cos(a) * j, 5.0 * e * math.sin(a) * j
-            ring.append(bm.verts.new((x, y, height(x, y) if i < RINGS else -0.12)))
-        rings.append(ring)
-    for s in range(SEGS):
-        bm.faces.new((centre, rings[0][s], rings[0][(s + 1) % SEGS]))
-    for a, b in zip(rings, rings[1:]):
-        for s in range(SEGS):
-            t = (s + 1) % SEGS
-            bm.faces.new((a[s], b[s], b[t], a[t]))
-    bm.normal_update()
-    if sum(f.normal.z for f in bm.faces) < 0:
-        for f in bm.faces:
-            f.normal_flip()
-    mound = obj_from_bm(root, 'Grass mound', bm, [grass])
-
-    # (x, y, scale, seed, icosphere subdivisions): summit crag, stratified ledge, spurs, foot boulders.
-    rocks = [(-1.0, 0.6, (2.1, 1.6, 1.7), 3, 3), (-2.4, 1.3, (1.1, 0.9, 1.1), 13, 2),
-             (2.4, -1.1, (1.7, 1.1, 0.75), 4, 2), (2.9, -0.5, (1.2, 0.95, 0.55), 5, 2),
-             (-3.7, -1.6, (1.0, 0.85, 0.8), 6, 2), (1.0, 2.5, (0.7, 0.6, 0.55), 7, 2),
-             (-5.7, 1.1, (0.55, 0.5, 0.42), 8, 2), (5.5, 1.5, (0.5, 0.45, 0.38), 9, 2),
-             (4.6, -2.4, (0.42, 0.4, 0.3), 10, 2)]
-    rb = bmesh.new()
-    for x, y, s, seed, sub in rocks:
+    for k, h in enumerate(LANDMARK_HEIGHTS):
+        cx = -W / 2 + (k % cols + 0.5) * W / cols
+        cy = -D / 2 + (k // cols + 0.5) * D / rows
+        a, b = W / cols / 2 - gap / 2, D / rows / 2 - gap / 2
+        # Rings: foot, splash line, start of the top chamfer, chamfered rim, inner top ring.
+        levels = [(0.0, a, b), (h - edge, a, b), (h, a - edge, b - edge)] if low else \
+                 [(0.0, a, b), (0.9, a, b), (h - edge, a, b), (h, a - edge, b - edge), (h, (a - edge) * 0.55, (b - edge) * 0.55)]
         tmp = bmesh.new()
-        crag = sub == 3  # the summit tor is cleaved harder than the scattered boulders
-        fractured_rock(tmp, seed, s, subdiv=max(1, sub - 1) if low else sub, cuts=13 if crag else 8, rough=0.12, flat=0.6 if crag else 0.72)
-        bmesh.ops.rotate(tmp, verts=tmp.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(rng.uniform(0, math.tau), 3, 'Z'))
-        bmesh.ops.translate(tmp, vec=(x, y, height(x, y) + s[2] * 0.25), verts=tmp.verts)
-        merge(rb, tmp)
-    outcrops = obj_from_bm(root, 'Granite outcrops', rb, [granite])
-    harden(outcrops, sharp_deg=32)
-    ao = bake_ao([mound, outcrops], distance=1.5)
-    spots = [(x, y, max(s[0], s[1])) for x, y, s, _, _ in rocks]
+        rings = [[tmp.verts.new((cx + x, cy + y, z)) for x, y in chamfer_ring(ra, rb, edge, per_side)] for z, ra, rb in levels]
+        n = len(rings[0])
+        for lo_ring, hi_ring in zip(rings, rings[1:]):
+            for i in range(n):
+                tmp.faces.new((lo_ring[i], lo_ring[(i + 1) % n], hi_ring[(i + 1) % n], hi_ring[i]))
+        cap = tmp.faces.new(rings[-1])
+        bmesh.ops.triangulate(tmp, faces=[cap])
+        bmesh.ops.recalc_face_normals(tmp, faces=tmp.faces)
+        merge(bm, tmp, k + 1)
+        if not low:  # cast-in rebar lifting loop on each block
+            lb = bmesh.new()
+            R, r, steps, sides = 0.2, 0.035, 6, 4
+            loops = []
+            for i in range(steps + 1):
+                th = math.pi * i / steps
+                c = Vector((cx + R * math.cos(th), cy + 0.6, h - 0.02 + R * math.sin(th)))
+                n1, n2 = Vector((math.cos(th), 0, math.sin(th))), Vector((0, 1, 0))
+                loops.append([lb.verts.new(c + r * (math.cos(p) * n1 + math.sin(p) * n2)) for p in (j / sides * math.tau for j in range(sides))])
+            for p, q in zip(loops, loops[1:]):
+                for j in range(sides):
+                    lb.faces.new((p[j], p[(j + 1) % sides], q[(j + 1) % sides], q[j]))
+            bmesh.ops.recalc_face_normals(lb, faces=lb.faces)
+            merge(bm, lb, -1)
+    block = obj_from_bm(root, 'Precast blocks', bm, [concrete])
+    harden(block, sharp_deg=30 if low else None)
+    ao = bake_ao([block], distance=1.2)
+    rng = random.Random(19)
+    tints = [(1.0, 0.98, 0.94), (0.92, 0.92, 0.93), (0.97, 0.94, 0.88), (0.88, 0.88, 0.87), (1.0, 0.96, 0.90), (0.93, 0.91, 0.86)]
+    rng.shuffle(tints)
 
-    def turf(co, no, part):
-        c = lerp((0.52, 0.80, 0.46), (1.0, 0.95, 0.78), 0.8 * smooth01((co.z - 0.6) / 2.4))
-        c = tuple(v * (0.88 + 0.12 * fbm((co.x * 0.9, co.y * 0.9, 5.0))) for v in c)
-        c = lerp(c, (0.70, 0.86, 0.52), 0.35 * smooth01((fbm((co.x * 0.5, co.y * 0.5, 8.0)) - 0.15) / 0.3))
-        dirt = smooth01((1 - max(0.0, no.z) - 0.35) / 0.35)
-        for x, y, r in spots:
-            dirt = max(dirt, smooth01((r + 0.5 - math.hypot(co.x - x, co.y - y)) / 0.6))
-        c = lerp(c, (0.78, 0.60, 0.44), 0.8 * dirt)
-        return lerp(c, (0.62, 0.55, 0.42), 0.5 * smooth01((0.15 - co.z) / 0.25))
+    def weathering(co, no, part):
+        if part < 0:
+            return (0.30, 0.17, 0.10)  # rusted rebar
+        t = tints[(part - 1) % len(tints)]
+        mott = 0.9 + 0.1 * fbm((co.x * 0.5, co.y * 0.5, co.z * 0.5 + part))
+        c = tuple(v * mott * (1 + 0.04 * fbm(co * 3.3)) for v in t)
+        c = lerp(c, (0.54, 0.47, 0.38), 0.85 * smooth01((1.0 - co.z) / 0.9))  # road splash
+        if no.z < 0.5:  # rain streaks run down from the rims
+            streak = smooth01((fbm(((co.x + co.y) * 1.3, 0.0, 3.0)) - 0.1) / 0.35) * smooth01((co.z - 0.5) / 2.2)
+            c = tuple(v * (1 - 0.3 * streak) for v in c)
+        elif fbm((co.x * 0.7, co.y * 0.7, 9.0)) > 0.25:
+            c = lerp(c, (0.62, 0.63, 0.52), 0.35)  # damp stains on the tops
+        return c
 
-    def stone(co, no, part):
-        n = 0.85 + 0.15 * fbm(co * 1.8 + Vector((2, 9, 4)))
-        c = (n, n * 0.98, n * 0.95)
-        if no.z > 0.55 and fbm(co * 1.3 + Vector((5, 5, 1))) > 0.15:
-            c = lerp(c, (0.78, 0.86, 0.52), 0.5)
-        return lerp(c, (0.55, 0.48, 0.40), 0.6 * smooth01((height(co.x, co.y) + 0.35 - co.z) / 0.5))
-
-    paint(mound, turf, ao[mound], 0.85)
-    paint(outcrops, stone, ao[outcrops], 0.9)
+    paint(block, weathering, ao[block], 0.9)
 
 
 BUILDERS = {'pine': build_pine, 'barricade': build_barricade, 'volcanic-rock': build_volcanic_rock,
-            'hill': build_hill, 'stonewall': build_stonewall, 'barrel': build_barrel}
+            'concrete-block': build_concrete_block, 'stonewall': build_stonewall, 'barrel': build_barrel}
 
 
 # ---------------------------------------------------------------- export

@@ -9,13 +9,13 @@ A playable 3D tank rescue campaign built with **Three.js + TypeScript**, using o
 Lead Kestrel through sixteen stages, each with three levels (48 levels in total), to reopen the Meridian evacuation route: clear patrols, capture a relay, escort a rescue transport, defend an uplink, break a siege battery, and defeat Warden, then reclaim river villages, escort a winter relief convoy, and defend the ridge transmitter. The frontier chapter adds a polar relay, erupting volcano, desert convoy route, jungle defense and occupied city, followed by a seismic rift and flooded lowlands. Each stage includes a story briefing and debrief. First-clear credits from each level buy persistent armor, damage and reload upgrades, weapons and tank skins. Approach and Counterattack lead to a Command battle with one to four bosses.
 
 - Independently aimed turret, directional armor and real projectile travel.
-- Blender trees, houses, stone/steel walls, bridges, rocky hills, glaciers, white pines, a volcano, palms, dense broadleaf trees and city blocks.
+- Blender trees, houses, stone/steel walls, bridges, square concrete landmarks, glaciers, white pines, a volcano, palms, dense broadleaf trees and city blocks.
 - Polar ice carries momentum; desert sand traps reduce player and enemy speed to exactly one quarter.
 - Volcanic rocks warn for 2.6 seconds before landing and can damage either side, infantry and destructible cover.
 - Earthquakes warn before stopping ground tanks for 1.6 seconds, with rising dust; guns, infantry and airborne helicopters remain active.
 - Marsh water holes slow and visually sink tanks; periodic traction recovery lets them escape. Bridges and narrow convoy wheel traces preserve speed.
 - Destructible cover, supply crates, explosive fuel drums and gasoline crates.
-- S, mirrored S, diagonal S, U and open O loops on 22 later levels. Every background starts with a direct route or short relay circuit, then uses progressively longer routes. O loops allow either direction during play. Most interior ridges become two or three rows of destructible concrete, with a few indestructible Blender hills and basalt landmarks remaining. See [O loops and boss reinforcements](docs/O_LOOPS_AND_BOSS_REINFORCEMENTS.md).
+- S, mirrored S, diagonal S, U and open O loops on 22 later levels. Every background starts with a direct route or short relay circuit, then uses progressively longer routes. O loops allow either direction during play. Most interior ridges become two or three rows of destructible concrete. The remaining landmarks, which were once indestructible hills and basalt outcrops, are now clusters of square precast concrete blocks with 1,000 HP each; see [Concrete landmarks](#concrete-landmarks). See [O loops and boss reinforcements](docs/O_LOOPS_AND_BOSS_REINFORCEMENTS.md).
 - Cannon, unlockable autocannon and siege rockets, plus collectible pulse laser and arc rockets.
 - Nine boss types: Rail Titan, Tempest Carrier, Iron Sovereign, helicopter, climbing spider, laser tank, Iron Vanguard four-gun robot, Siege Marshal rocket/gun robot and Atlas Launcher missile truck. Each has attack warnings and exposed-core windows. Helicopters land behind cover; spiders climb it and rest; laser bursts stop at solid cover.
 - Blender riflemen and rocketeers watch from trees; tanks guard buildings and fuel containers. Solid cover blocks detection and aimed fire. Nearby squadmates react to sightings or hits; ordinary enemies investigate the last sighting for six seconds. See [enemy guard posts and sight](docs/ENEMY_GUARD_POSTS_AND_SIGHT.md).
@@ -84,24 +84,31 @@ npm run test:assets
 
 ### Hero prop pass
 
-The six most frequently seen static props (pine, concrete barricade, stone wall, fuel drum, hill and volcanic rock) are rebuilt by `tools/blender/build_aaa_props.py`. That generator replaces them with authored silhouettes:
-- a layered conifer with secondary whorls and a flared trunk;
-- an F-shape precast barrier with rebar lifting loops, pin plates and hazard chevrons;
-- coursed, chiselled stonework over a mortar core;
-- a 200 L drum with rolling hoops, chimes, bungs and hazard labels;
-- a grassed knoll with a cleaved granite tor;
-- a fractured basalt bomb with glowing fissures.
+The most frequently seen static props are rebuilt by `tools/blender/build_aaa_props.py`. That generator replaces them with authored silhouettes:
+- pine: a layered conifer with secondary whorls and a flared trunk;
+- concrete barricade: an F-shape precast barrier with rebar lifting loops, pin plates and hazard chevrons;
+- stone wall: coursed, chiselled stonework over a mortar core;
+- fuel drum: a 200 L drum with rolling hoops, chimes, bungs and hazard labels;
+- volcanic rock: a fractured basalt bomb with glowing fissures, now used only for falling volcanic rocks;
+- concrete landmark (`concrete-block`): a 3 × 2 cluster of square precast blocks with lifting loops. It replaced the retired hill model.
 
 The props also carry face-weighted normals and a vertex-colour paint pass. Cycles-baked ambient occlusion is multiplied into procedural weathering such as moss, grime, rain streaks, scuffed hoops and ash. There are no new textures apart from a 64 px tileable basalt normal map.
 
-Run the generator after the base, environment and frontier generators. It authors both tiers itself. The mobile variants use fewer segments with the same materials and vertex attributes, because decimation tore the rock's UV seams and dented the drum. `build_low_detail.py` therefore skips these six props. The generator also runs inside a live Blender session through Blender MCP; see the module docstring. Editable scenes for both tiers are saved to `assets/blender/aaa-props.blend`.
+Run the generator after the base, environment and frontier generators. It authors both tiers itself. The mobile variants use fewer segments with the same materials and vertex attributes, because decimation tore the rock's UV seams and dented the drum. `build_low_detail.py` therefore skips these props. The generator also runs inside a live Blender session through Blender MCP; see the module docstring. Editable scenes for both tiers are saved to `assets/blender/aaa-props.blend`.
 
 ```powershell
 & $blender --background --factory-startup --python tools/blender/build_aaa_props.py
 npm run test:assets
 ```
 
-Use your own Blender executable location on another machine. The 38 detailed exports total 4,313,552 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
+### Concrete landmarks
+
+Every map keeps up to two large route landmarks, and classic maps add two flank landmarks. Each one is a square precast concrete cluster on the old 14 × 10 m hill footprint.
+- **Health:** each landmark has **1,000 HP**, so a standard cannon needs about 23 hits; rockets, missiles, strikes and the laser all wear it down.
+- **Behavior:** a landmark blocks movement, sight, shells and the laser until it is destroyed. Damage darkens it, hits show on the struck face, and destruction collapses it in dust, opens the path and updates enemy navigation. Spider bosses can climb it.
+- **Rendering:** all landmarks on a map share one instanced draw per detail tier (1,140 / 228 triangles). The old hill used two materials and separate clones on classic maps, and its model is no longer downloaded.
+
+Use your own Blender executable location on another machine. The 38 detailed exports total 4,288,284 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
 
 ## Architecture and planning
 
@@ -249,7 +256,7 @@ All nine weapons have individual upgrades from level 0 to **20**. The shop also 
 | 8 | Triple arc launcher | 720 CR | Three rockets per trigger; **3 volleys per mission**; 180 base damage per rocket, 5.5 m blast each |
 | 9 | Flamethrower | 800 CR | 80 bursts per mission; 12 m, 60° cone; 19.2 base burst damage and a 2-second burn |
 
-Missile blasts hit nearby destructible cover using the object's footprint, so building edges and individual concrete panels take damage. Fuel can chain-react. Hills and other indestructible terrain remain intact. Blast damage still affects both sides. Triple-arc landing circles show the three impact areas; ordinary arc-ammo crates do not refill this special launcher. It refills on the next mission or retry. The existing Blender rocket model supplies fins, nose, exhaust and smoke for all missile sizes, with capped effects in Low detail.
+Missile blasts hit nearby destructible cover using the object's footprint, so building edges and individual concrete panels take damage. Fuel can chain-react. Concrete landmarks take blast damage; the rock boundary and other indestructible terrain remain intact. Blast damage still affects both sides. Triple-arc landing circles show the three impact areas; ordinary arc-ammo crates do not refill this special launcher. It refills on the next mission or retry. The existing Blender rocket model supplies fins, nose, exhaust and smoke for all missile sizes, with capped effects in Low detail.
 
 Implementation and verification plan: [Level-20 armory](docs/ARMORY_LEVEL_20_AND_MISSILE_EXPANSION.md).
 

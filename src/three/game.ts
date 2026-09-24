@@ -397,12 +397,15 @@ export class Game {
       this.salvageDrops++;const loot=createActivity(this.world.arena,reward.kind,p.x,p.z,reward.amount);loot.hover=3.2;loot.mesh.position.y=loot.hover;this.world.activities.push(loot);this.world.fx.emit(new T.Vector3(p.x,.7,p.z),'flash',0x8fffd4,1,.3);this.radioMessage(`SALVAGE / ${reward.kind==='arc'?'Arc rockets':reward.kind==='laser'?'Laser ammo':reward.kind==='health'?'Medical case':'Shield'} above the wreck.`,3);return;
     }
   }
-  hitCover(cover:Cover,damage:number,laser=false,hitEffect=true){
+  hitCover(cover:Cover,damage:number,laser=false,hitEffect=true,at?:Point){
     if(cover.hp<=0||laser&&isConcrete(cover))return;
     cover.hp-=damage;this.world.updateConcrete(cover);
-    const surface=cover.kind==='barrel'||cover.kind==='fuelcrate'?'fuel':['pine','white-pine','palm','jungle-tree','house','crate'].includes(cover.kind)?'wood':['barricade','stonewall','hill','glacier','volcano','volcanic-rock','cityblock'].includes(cover.kind)?'stone':'metal';
-    if(hitEffect||cover.hp<=0)this.world.fx.surface(cover.mesh.position.clone().setY(.7),surface,cover.hp<=0);
+    const surface=cover.kind==='barrel'||cover.kind==='fuelcrate'?'fuel':['pine','white-pine','palm','jungle-tree','house','crate'].includes(cover.kind)?'wood':['barricade','stonewall','hill','concrete-block','glacier','volcano','volcanic-rock','cityblock'].includes(cover.kind)?'stone':'metal';
+    // A 14 m landmark shows each hit on the struck face, not buried at its centre.
+    const landmark=cover.kind==='concrete-block',where=landmark?(at?new T.Vector3(clamp(at.x,cover.x-cover.w/2,cover.x+cover.w/2),1.4,clamp(at.z,cover.z-cover.d/2,cover.z+cover.d/2)):cover.mesh.position.clone().setY(3.6)):cover.mesh.position.clone().setY(.7);
+    if(hitEffect||cover.hp<=0)this.world.fx.surface(where,surface,cover.hp<=0);
     if(cover.hp<=0){cover.mesh.visible=false;this.world.navigationRevision++;
+if(landmark)for(const [dx,dz] of [[-.3,-.3],[.3,-.3],[-.3,.3],[.3,.3]])this.world.fx.surface(new T.Vector3(cover.x+dx*cover.w,1.6,cover.z+dz*cover.d),'stone',true);
 if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kind==='fuelcrate'?7:5,cover.kind==='fuelcrate'?110:65);}}
   }
   damageConvoy(damage:number){
@@ -411,7 +414,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   }
   explode(p:Point,radius:number,damage:number,antiAir=false,alliedSafe=false){
     for(const unit of alliedSafe?this.enemies:[this.player,...this.enemies,...this.allies.active])if(!unit.dead&&!unit.pending&&distance(p,unit.visual.root.position)<radius)this.damageUnit(unit,damage*(1-distance(p,unit.visual.root.position)/radius*.6),p,antiAir);
-    for(const cover of this.world.covers)if(cover.hp>0&&Number.isFinite(cover.hp)&&circleBox(p,radius,cover))this.hitCover(cover,damage);
+    for(const cover of this.world.covers)if(cover.hp>0&&Number.isFinite(cover.hp)&&circleBox(p,radius,cover))this.hitCover(cover,damage,false,true,p);
     if(!alliedSafe&&this.convoy&&distance(p,this.convoy.position)<radius)this.damageConvoy(damage*.5);
   }
   updateShots(dt:number){
@@ -420,7 +423,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
       if(s.homing&&!s.homing.dead){const target=s.homing.visual.root.position,heading=turnToward(Math.atan2(s.dx,s.dz),Math.atan2(target.x-s.mesh.position.x,target.z-s.mesh.position.z),dt*4);s.dx=Math.sin(heading);s.dz=Math.cos(heading);s.mesh.rotation.y=heading;}
       const b={x:s.mesh.position.x+s.dx*s.speed*dt,z:s.mesh.position.z+s.dz*s.speed*dt};
       let first=Infinity,hit:(()=>void)|null=null;
-      for(const c of this.world.covers){if(c.hp<=0)continue;const t=segmentBox(s.p,b,c,.12);if(t!==null&&t<first){first=t;hit=()=>this.hitCover(c,s.damage);}}
+      for(const c of this.world.covers){if(c.hp<=0)continue;const t=segmentBox(s.p,b,c,.12);if(t!==null&&t<first){first=t;hit=()=>this.hitCover(c,s.damage,false,true,{x:s.p.x+(b.x-s.p.x)*t,z:s.p.z+(b.z-s.p.z)*t});}}
       for(const unit of s.friendly?this.enemies:[this.player,...this.allies.active]){if(unit.dead||unit.pending||this.airborne(unit))continue;const t=segmentCircle(s.p,b,unit.visual.root.position,this.unitRadius(unit));if(t!==null&&t<first){first=t;hit=()=>this.damageUnit(unit,s.damage,s.from);}}
       if(!s.friendly){
         if(this.convoy){const t=segmentCircle(s.p,b,this.convoy.position,1.9);if(t!==null&&t<first){first=t;hit=()=>{this.damageConvoy(s.damage);};}}

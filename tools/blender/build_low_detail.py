@@ -6,7 +6,7 @@ OUT = ROOT / 'public/models/low'
 OUT.mkdir(parents=True, exist_ok=True)
 selected=set(sys.argv[sys.argv.index("--")+1:]) if "--" in sys.argv else set()
 # build_aaa_props.py authors both tiers of these props; decimating them tears seams.
-HERO_PROPS={'pine','barricade','volcanic-rock','hill','stonewall','barrel'}
+HERO_PROPS={'pine','barricade','volcanic-rock','concrete-block','stonewall','barrel'}
 manifest=OUT / "manifest.json"
 report=json.loads(manifest.read_text(encoding="utf-8")) if manifest.exists() else []
 report=[entry for entry in report if entry["asset"] in HERO_PROPS or selected and entry["asset"] not in selected]

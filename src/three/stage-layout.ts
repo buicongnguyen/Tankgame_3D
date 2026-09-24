@@ -7,7 +7,7 @@ import type {Box,Point} from './rules';
 
 export type SupplyKind='repair'|'supply'|'mine'|'laser'|'arc'|'health'|'shield';
 export interface SupplyPosition extends Point {kind:SupplyKind;guardGroup?:number;}
-export interface Landform extends Box {kind:'hill'|'volcanic-rock';}
+export interface Landform extends Box {kind:'concrete-block';}
 export interface RoadCorridor {a:Point;b:Point;width:number;}
 export interface StageLayout {shape:RouteShape;closed:boolean;rotation:number;corridors:RoadCorridor[];landforms:Landform[];points:Point[];length:number;spawn:Point;heading:number;barriers:Box[];breaches:Box[][];supplies:SupplyPosition[];reserved:Box[];encounters:Point[];southbound:boolean;direction:string;}
 // Intermediate relay approaches keep their bends; introductory travel routes are direct.
@@ -97,8 +97,8 @@ export function stageLayout(stage:number,level=0,kind='assault',difficulty='norm
  for(const p of stage===13?[]:landformCandidates(shape)){
   const box={x:p.x+(shape==='O'&&stage===10?20:0),z:p.z,w:shape==='O'?12:14,d:shape==='O'?9:10};
   if(overlapsReservation(reservation,box)||stage===10&&distance(box,{x:-28,z:-38})<28)continue;
-  // Preserve a few landmarks; most former ridges become breachable shortcuts.
-  if(terrainSlot++%9===0&&landforms.length<2)landforms.push({...box,kind:[4,5,10,14].includes(stage)?'volcanic-rock':'hill'});
+  // Keep a few heavy concrete landmarks; most former ridges become breachable shortcuts.
+  if(terrainSlot++%9===0&&landforms.length<2)landforms.push({...box,kind:'concrete-block'});
   else {breachFootprints.push(box);breaches.push((level===2?[-3,0,3]:[-2.2,2.2]).map(offset=>({x:box.x,z:box.z+offset,w:box.w,d:1.8})));}
  }
  // Landforms reserve scenery space but may meet one another to form a solid ridge.

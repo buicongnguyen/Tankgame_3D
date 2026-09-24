@@ -28,7 +28,7 @@ export class SpecialWeapons{
     if(isConcrete(hit.cover))concrete.add(hit.cover.section?.wall??hit.cover);
     if(!isConcrete(hit.cover)||concrete.size===2){limit=hit.t;break;}
    }
-   for(const hit of hits){if(hit.cover)g.hitCover(hit.cover,damage,true);else if(hit.unit)g.damageUnit(hit.unit,damage,start,true);}
+   for(const hit of hits){if(hit.cover)g.hitCover(hit.cover,damage,true,true,{x:start.x+(end.x-start.x)*hit.t,z:start.z+(end.z-start.z)*hit.t});else if(hit.unit)g.damageUnit(hit.unit,damage,start,true);}
    end.lerpVectors(start,end,limit);const delta=end.clone().sub(start);
    const beam=new T.Mesh(new T.CylinderGeometry(.14,.14,Math.max(.01,delta.length()),8),new T.MeshBasicMaterial({color:0x8bffff,transparent:true,opacity:.95,blending:T.AdditiveBlending,depthWrite:false}));beam.position.copy(start).add(end).multiplyScalar(.5);beam.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),delta.normalize());g.world.entities.add(beam);this.beams.push({mesh:beam,life:.18});g.world.fx.impact(end);g.tone(920,.12,.04);
   }else{

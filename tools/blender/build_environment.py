@@ -29,9 +29,7 @@ for i in range(15):cube(p,(0,-5.6+i*.8,.04),(9,.73,.22),wood)
 for side in [-1,1]:
  cube(p,(side*4.4,0,.45),(.18,12,.18),steel)
  for y in [-5.5,-2.7,0,2.7,5.5]:cube(p,(side*4.4,y,.25),(.2,.2,.7),steel)
-p=root('hill');cone(p,(0,0,1.45),1,.50,2.9,sand,9);p.children[0].scale=(7,5,1)
-for x,y,z,r in [(-3,0,1.8,2),(2,1,2.3,2),(0,-1,2.8,2.2)]:
- bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1,radius=r);o=bpy.context.object;o.parent=p;o.location=(x,y,z);o.scale=(1,1,.8);o.data.materials.append(stone)
+# Hills were retired for destructible concrete landmarks (tools/blender/build_aaa_props.py).
 import sys
 sys.path.insert(0,str(Path(__file__).parent))
 from asset_detail import environment

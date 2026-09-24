@@ -34,17 +34,23 @@ test('every shaped Crazy level keeps all enemies and supply connections clear',a
   for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++){if(!routePattern(stage,level))continue;g.start(stage,level);const covers=g.world.covers.filter((c:any)=>c.hp>0);
    for(const u of [g.player,...g.enemies])if(covers.some((c:any)=>circleBox(u.visual.root.position,g.unitRadius(u),c)))issues.push({stage,level,unit:u.role});
    for(const a of g.world.activities.filter((a:any)=>a.kind!=='mine')){const anchor=alongRoute(g.world.layout.points,projectRoute(g.world.layout.points,a).progress);if(covers.some((c:any)=>segmentBox(anchor,a,c,1.4)!==null))issues.push({stage,level,access:a.kind});}
-   for(const c of covers.filter((c:any)=>c.natural))if(c.hp!==Infinity)issues.push({stage,level,destructible:true});
+   for(const c of covers.filter((c:any)=>c.kind==='concrete-block'))if(c.hp!==1000||!c.scenery)issues.push({stage,level,landmark:c.hp});
   }return issues;
  });expect(issues).toEqual([]);
 });
 
-test('natural cover stops cannon and laser, survives bombardment and retains Low detail collision',async({page})=>{
+test('concrete landmarks block fire, wear down, keep Low detail collision and crumble at 1000 damage',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
- const result=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};g.start(4,2);const cover=g.world.covers.find((c:any)=>c.natural);g.world.covers=[cover];g.enemies=[];g.player.visual.root.position.set(cover.x,0,cover.z+14);g.player.aim=Math.PI;g.syncVisual(g.player);const target=g.makeUnit(cover.x,cover.z-12,'heavy');target.visual.root.position.set(cover.x,0,cover.z-12);target.hp=target.max=10000;g.enemies=[target];
-  for(let shot=0;shot<10;shot++){g.shoot(g.player,true);for(let n=0;n<40;n++)g.updateShots(1/60);}g.special.fire(g,3);const protectedTarget=target.hp===10000,revision=g.world.navigationRevision;g.hitCover(cover,999999);const solid=cover.hp===Infinity&&cover.mesh.visible&&revision===g.world.navigationRevision;
-  const old=g.world.arena.getObjectByName('RouteLandforms').children[0],matrix=Array.from(old.instanceMatrix.array);await g.world.load(true);g.world.settings(true);g.player.visual.root.position.set(cover.x,0,cover.z+cover.d/2+1.35);for(let i=0;i<20;i++)g.moveUnit(g.player,0,-.9,1/60);const collision=g.player.visual.root.position.z>=cover.z+cover.d/2+1.25;
+ const result=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};g.start(4,2);const cover=g.world.covers.find((c:any)=>c.kind==='concrete-block');const full=cover.hp===1000;g.world.covers=[cover];g.enemies=[];g.player.visual.root.position.set(cover.x,0,cover.z+14);g.player.aim=Math.PI;g.syncVisual(g.player);const target=g.makeUnit(cover.x,cover.z-12,'heavy');target.visual.root.position.set(cover.x,0,cover.z-12);target.hp=target.max=10000;g.enemies=[target];
+  for(let shot=0;shot<10;shot++){g.shoot(g.player,true);for(let n=0;n<40;n++)g.updateShots(1/60);}g.special.fire(g,3);
+  const {parts,index}=cover.scenery,old=g.world.arena.getObjectByName('RouteLandforms').children[0];
+  const protectedTarget=target.hp===10000,worn=cover.hp>0&&cover.hp<1000&&cover.mesh.visible&&old.instanceColor.array[index*3]<1,matrix=Array.from(old.instanceMatrix.array);
+  // The shared instanced surfaces survive a detail switch and still collide.
+  await g.world.load(true);g.world.settings(true);const stable=matrix.every((v,i)=>v===old.instanceMatrix.array[i]);g.player.visual.root.position.set(cover.x,0,cover.z+cover.d/2+1.35);for(let i=0;i<20;i++)g.moveUnit(g.player,0,-.9,1/60);const collision=g.player.visual.root.position.z>=cover.z+cover.d/2+1.25;
   g.player.visual.root.position.set(cover.x+cover.w/2+1.5,0,cover.z+cover.d/2+1.35);for(let i=0;i<20;i++)g.moveUnit(g.player,0,-.9,1/60);const flank=g.player.visual.root.position.z<cover.z-cover.d/2;
-  return {protectedTarget,solid,instanced:old.isInstancedMesh,stable:matrix.every((v,i)=>v===old.instanceMatrix.array[i]),collision,flank,low:g.world.low};
+  const revision=g.world.navigationRevision;g.hitCover(cover,cover.hp);
+  const destroyed=cover.hp<=0&&!cover.mesh.visible&&g.world.navigationRevision===revision+1&&parts.every((p:any)=>[0,5,10].every(k=>p.instanceMatrix.array[index*16+k]===0));
+  g.player.visual.root.position.set(cover.x,0,cover.z+cover.d/2+1.35);for(let i=0;i<20;i++)g.moveUnit(g.player,0,-.9,1/60);const opened=g.player.visual.root.position.z<cover.z+cover.d/2+1.25;
+  return {full,protectedTarget,worn,instanced:old.isInstancedMesh,stable,collision,flank,low:g.world.low,destroyed,opened};
  });expect(Object.values(result).every(Boolean),JSON.stringify(result)).toBe(true);
 });
