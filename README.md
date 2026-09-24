@@ -82,7 +82,26 @@ Editable sources include `assets/blender/steel-front.blend` and `assets/blender/
 npm run test:assets
 ```
 
-Use your own Blender executable location on another machine. The 33 detailed exports total 3,997,296 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
+### Hero prop pass
+
+The six most frequently seen static props (pine, concrete barricade, stone wall, fuel drum, hill and volcanic rock) are rebuilt by `tools/blender/build_aaa_props.py`. That generator replaces them with authored silhouettes:
+- a layered conifer with secondary whorls and a flared trunk;
+- an F-shape precast barrier with rebar lifting loops, pin plates and hazard chevrons;
+- coursed, chiselled stonework over a mortar core;
+- a 200 L drum with rolling hoops, chimes, bungs and hazard labels;
+- a grassed knoll with a cleaved granite tor;
+- a fractured basalt bomb with glowing fissures.
+
+The props also carry face-weighted normals and a vertex-colour paint pass. Cycles-baked ambient occlusion is multiplied into procedural weathering such as moss, grime, rain streaks, scuffed hoops and ash. There are no new textures apart from a 64 px tileable basalt normal map.
+
+Run the generator after the base, environment and frontier generators. It authors both tiers itself. The mobile variants use fewer segments with the same materials and vertex attributes, because decimation tore the rock's UV seams and dented the drum. `build_low_detail.py` therefore skips these six props. The generator also runs inside a live Blender session through Blender MCP; see the module docstring. Editable scenes for both tiers are saved to `assets/blender/aaa-props.blend`.
+
+```powershell
+& $blender --background --factory-startup --python tools/blender/build_aaa_props.py
+npm run test:assets
+```
+
+Use your own Blender executable location on another machine. The 38 detailed exports total 4,313,552 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
 
 ## Architecture and planning
 

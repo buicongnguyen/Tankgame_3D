@@ -1,15 +1,15 @@
 [
   {
     "asset": "barrel",
-    "detailedTriangles": 312,
-    "lowTriangles": 92,
-    "bytes": 10088
+    "detailedTriangles": 1016,
+    "lowTriangles": 372,
+    "bytes": 12400
   },
   {
     "asset": "barricade",
-    "detailedTriangles": 308,
-    "lowTriangles": 91,
-    "bytes": 12988
+    "detailedTriangles": 948,
+    "lowTriangles": 496,
+    "bytes": 23296
   },
   {
     "asset": "boss-helicopter",
@@ -121,9 +121,9 @@
   },
   {
     "asset": "hill",
-    "detailedTriangles": 92,
-    "lowTriangles": 27,
-    "bytes": 6324
+    "detailedTriangles": 1788,
+    "lowTriangles": 500,
+    "bytes": 25680
   },
   {
     "asset": "house",
@@ -145,9 +145,9 @@
   },
   {
     "asset": "pine",
-    "detailedTriangles": 328,
-    "lowTriangles": 308,
-    "bytes": 43776
+    "detailedTriangles": 1378,
+    "lowTriangles": 570,
+    "bytes": 16568
   },
   {
     "asset": "relay",
@@ -187,9 +187,9 @@
   },
   {
     "asset": "stonewall",
-    "detailedTriangles": 880,
-    "lowTriangles": 260,
-    "bytes": 32452
+    "detailedTriangles": 1112,
+    "lowTriangles": 324,
+    "bytes": 26532
   },
   {
     "asset": "tank",
@@ -205,9 +205,9 @@
   },
   {
     "asset": "volcanic-rock",
-    "detailedTriangles": 400,
-    "lowTriangles": 70,
-    "bytes": 32960
+    "detailedTriangles": 1108,
+    "lowTriangles": 362,
+    "bytes": 26404
   },
   {
     "asset": "volcano",

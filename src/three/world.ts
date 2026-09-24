@@ -274,7 +274,7 @@ export class World {
       const root=new T.Group();root.name='RouteLandforms';this.arena.add(root);
       template.traverse(o=>{if(!(o instanceof T.Mesh))return;
         const instances=new T.InstancedMesh(o.geometry,o.material,forms.length);instances.userData={...o.userData};instances.castShadow=true;instances.receiveShadow=true;
-        forms.forEach((p,i)=>{const matrix=new T.Matrix4().makeScale(p.w/(kind==='hill'?14:2.6),(kind==='hill'?1:5)*(.9+i%3*.1),p.d/(kind==='hill'?10:2.2));matrix.setPosition(p.x,kind==='hill'?0:1.1,p.z);matrix.multiply(o.matrixWorld);instances.setMatrixAt(i,matrix);if(!Array.isArray(o.material)&&o.material.name==='Basalt')instances.setColorAt(i,new T.Color().setRGB(2.2,2.2,2.2));});
+        forms.forEach((p,i)=>{const matrix=new T.Matrix4().makeScale(p.w/(kind==='hill'?14:2.6),(kind==='hill'?1:5)*(.9+i%3*.1),p.d/(kind==='hill'?10:2.2));matrix.setPosition(p.x,kind==='hill'?0:1.1,p.z);matrix.multiply(o.matrixWorld);instances.setMatrixAt(i,matrix);if(!Array.isArray(o.material)&&o.material.name==='Basalt')instances.setColorAt(i,new T.Color().setRGB(1.4,1.4,1.4));});
         instances.computeBoundingSphere();root.add(instances);
       });
       for(const p of forms){const mesh=new T.Group();mesh.name='NaturalCover';mesh.position.set(p.x,0,p.z);this.arena.add(mesh);this.covers.push({...p,hp:Infinity,mesh,natural:true});}
