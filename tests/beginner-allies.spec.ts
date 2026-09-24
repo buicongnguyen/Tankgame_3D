@@ -33,6 +33,20 @@ for(const viewport of [{width:390,height:844},{width:844,height:390}])test(`mobi
  const context=await browser.newContext({viewport,isMobile:true,hasTouch:true});const page=await context.newPage();await arena(page);await page.getByRole('button',{name:'START TRAINING'}).click();await page.evaluate(()=>{const g=(window as any).__steel;g.updateHud();g.world.update(0,g.player.visual.root.position);});await expect(page.locator('#lesson-hint')).toBeVisible();await expect(page.locator('#move-pad')).toBeVisible();const r=await page.evaluate(()=>{const hint=document.querySelector('#lesson-hint')!.getBoundingClientRect(),pad=document.querySelector('#move-pad')!.getBoundingClientRect();return {width:document.documentElement.scrollWidth,clear:hint.bottom<pad.top||hint.left>pad.right};});expect(r.width).toBeLessThanOrEqual(viewport.width);expect(r.clear).toBe(true);await page.screenshot({path:`test-results/training-${viewport.width}.png`});await context.close();
 });
 
+for(const viewport of [{width:360,height:640},{width:667,height:375},{width:320,height:568}])test(`small phone ${viewport.width}: lesson hints guide each tap and never cover controls`,async({browser})=>{
+ const context=await browser.newContext({viewport,isMobile:true,hasTouch:true});const page=await context.newPage();await arena(page);
+ // Any visible hint must stay clear of the mission card, the gun list and the uplink label.
+ const clear=()=>page.evaluate(()=>{const g=(window as any).__steel;g.updateHud();g.projectRelay();const hint=document.querySelector('#lesson-hint') as HTMLElement;if(hint.hidden||getComputedStyle(hint).visibility==='hidden')return [];const h=hint.getBoundingClientRect();
+  return ['.mission-hud','#weapon-picker','#relay-label','#move-pad','#aim-pad'].filter(s=>{const e=document.querySelector(s) as HTMLElement|null;if(!e||e.hidden||e.closest('[hidden]'))return false;const b=e.getBoundingClientRect();return Math.min(h.right,b.right)-Math.max(h.left,b.left)>2&&Math.min(h.bottom,b.bottom)-Math.max(h.top,b.top)>2;});});
+ await page.evaluate(()=>{const g=(window as any).__steel;g.startTraining(1);g.training.moved=true;const a=g.world.activities.find((a:any)=>a.kind==='laser');g.player.visual.root.position.set(a.mesh.position.x,0,a.mesh.position.z);g.updateActivities(.01);g.training.update(g);g.updateHud();});
+ await expect(page.locator('#weapon')).toHaveClass(/lesson-target/);expect(await clear()).toEqual([]);
+ await page.locator('#weapon').tap();await page.evaluate(()=>(window as any).__steel.updateHud());
+ const laser=page.locator('#weapon-picker [data-weapon="4"]');await expect(laser).toHaveClass(/lesson-target/);await expect(page.locator('#lesson-hint')).toContainText('LASER');expect(await clear()).toEqual([]);
+ await laser.tap();expect(await page.evaluate(()=>{const g=(window as any).__steel;return g.training.switched&&g.weapon===3&&!g.weaponPickerOpen;})).toBe(true);
+ await page.evaluate(()=>{const g=(window as any).__steel;g.startTraining(2);g.updateHud();});await expect(page.locator('#shield')).toHaveClass(/lesson-target/);expect(await clear()).toEqual([]);
+ await page.locator('#shield').tap();expect(await page.evaluate(()=>(window as any).__steel.training.shielded)).toBe(true);await context.close();
+});
+
 test('Easy First Light splits its small arena into two encounters',async({page})=>{
  await arena(page);const r=await page.evaluate(()=>{const g=(window as any).__steel;g.start(0,0);g.updateEnemies(.01);const groups=[...new Set(g.enemies.map((e:any)=>e.encounter.group))],later=g.enemies.filter((e:any)=>e.encounter.group===1),waiting=later.every((e:any)=>!e.encounter.active);for(const e of g.enemies)if(e.encounter.group===0)e.dead=true;g.player.visual.root.position.set(0,0,-5);g.elapsed=1;g.updateEnemies(.01);return {groups,waiting,released:later.some((e:any)=>e.encounter.active)};});expect(r).toEqual({groups:[0,1],waiting:true,released:true});
 });

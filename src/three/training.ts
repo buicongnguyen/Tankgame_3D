@@ -32,13 +32,15 @@ export class TrainingSession {
   }
  }
  ready(g:Game){return this.moved&&(this.id!==0||g.shotsFired>0)&&(this.id!==1||this.switched)&&(this.id!==2||this.shielded&&this.struck)&&g.enemies.every(e=>e.dead)&&(this.id===2||distance(g.player.visual.root.position,g.world.layout.points.at(-1)!)<5);}
+ /** One step at a time; `target` is a CSS selector for the control to pulse. */
  hint(g:Game):{text:string;target:string}{
   const touch=matchMedia('(pointer: coarse)').matches;
-  if(this.id===2){if(!this.shielded)return {text:touch?'Tap Shield to protect the uplink approach.':'Press Q to raise your shield.',target:'shield'};if(!this.struck)return {text:touch?'Tap Strike to call guided missiles.':'Press R to call a guided strike.',target:'artillery'};}
-  if(!this.moved)return {text:touch?'Drag the left stick to drive along the arrows.':'Hold WASD or the arrow keys to drive.',target:'move-pad'};
+  if(this.id===2){if(!this.shielded)return {text:touch?'Tap Shield to protect the uplink approach.':'Press Q to raise your shield.',target:'#shield'};if(!this.struck)return {text:touch?'Tap Strike to call guided missiles.':'Press R to call a guided strike.',target:'#artillery'};}
+  if(!this.moved)return {text:touch?'Drag the left stick to drive along the arrows.':'Hold WASD or the arrow keys to drive.',target:'#move-pad'};
   if(this.id===1&&!this.collected)return {text:'Collect the cyan laser case on the marked path.',target:''};
-  if(this.id===1&&!this.switched)return {text:touch?'Tap Switch Gun, then select Laser.':'Press 4 to select the laser you collected.',target:'weapon'};
-  if(g.enemies.some(e=>!e.dead)||this.id===0&&g.shotsFired===0)return {text:touch?'Drag the right stick toward a hostile to aim and fire.':'Aim with mouse or IJKL; hold Space to fire.',target:'aim-pad'};
+  // Once the gun list is open, point at the laser entry itself rather than the button that opened it.
+  if(this.id===1&&!this.switched)return g.weaponPickerOpen?{text:touch?'Tap 4 · LASER in the gun list.':'Press 4, or click 4 · LASER.',target:'#weapon-picker [data-weapon="4"]'}:{text:touch?'Tap Switch Gun to open the gun list.':'Press 4 to select the laser you collected.',target:touch?'#weapon':'#weapon-shortcuts [data-quick-weapon="4"]'};
+  if(g.enemies.some(e=>!e.dead)||this.id===0&&g.shotsFired===0)return {text:touch?'Drag the right stick toward a hostile to aim and fire.':'Aim with mouse or IJKL; hold Space to fire.',target:'#aim-pad'};
   return {text:'Follow the amber arrows into the exit ring.',target:''};
  }
 }

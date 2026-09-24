@@ -179,7 +179,7 @@ export class Game {
     if(action==='reset'){const {sound,low,graphicsChosen}=this.save;this.save={...freshSave(),sound,low,graphicsChosen};this.persist();this.prepare(0);this.showMenu();}
   }
   leaveTraining(){if(this.campaignSave){this.save=this.campaignSave;this.campaignSave=null;}this.training=null;this.clearLesson();}
-  clearLesson(){delete document.body.dataset.training;this.el('lesson-hint').hidden=true;this.el('relay-label').hidden=true;this.root.querySelectorAll('.lesson-target').forEach(e=>e.classList.remove('lesson-target'));}
+  clearLesson(){delete document.body.dataset.training;this.el('lesson-hint').hidden=true;this.el('relay-label').hidden=true;this.lessonHintKey='';document.querySelectorAll('.lesson-target').forEach(e=>e.classList.remove('lesson-target'));}
   startTraining(id:number){
     this.leaveTraining();if(id>=TRAINING.length){this.prepare(this.save.mission);this.showMenu();return;}
     id=clamp(Math.floor(id),0,2);this.campaignSave=this.save;this.save={...freshSave(),low:this.save.low,graphicsChosen:this.save.graphicsChosen,sound:this.save.sound,flag:this.save.flag,strikeCharges:2};this.training=new TrainingSession(id);this.start(0,0);
@@ -583,8 +583,24 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     for(const enemy of this.enemies)enemy.visual.beam.visible=false;
     this.tone(660,.22,.06);
   }
-  updateLesson(){if(!this.training||this.phase!=='playing')return;document.body.dataset.training=String(this.training.id);this.radioTimer=0;this.radio.classList.remove('visible');const hint=this.training.hint(this),el=this.el('lesson-hint');el.hidden=false;if(el.textContent!==hint.text)el.textContent='➜ '+hint.text;this.root.querySelectorAll('.lesson-target').forEach(e=>e.classList.remove('lesson-target'));if(hint.target)this.el(hint.target).classList.add('lesson-target');}
-  projectRelay(){const el=this.el('relay-label');if(el.hidden)return;const p=new T.Vector3(0,6,-13).project(this.world.camera);el.style.left=`${clamp((p.x+1)/2*innerWidth,90,innerWidth-90)}px`;el.style.top=`${clamp((1-p.y)/2*innerHeight,60,innerHeight-150)}px`;}
+  updateLesson(){if(!this.training||this.phase!=='playing')return;document.body.dataset.training=String(this.training.id);this.radioTimer=0;this.radio.classList.remove('visible');const hint=this.training.hint(this),el=this.el('lesson-hint'),text='➜ '+hint.text;el.hidden=false;if(el.textContent!==text)el.textContent=text;const target=hint.target?document.querySelector(hint.target):null;document.querySelectorAll('.lesson-target').forEach(e=>{if(e!==target)e.classList.remove('lesson-target');});target?.classList.add('lesson-target');this.placeLessonHint(el);}
+  private lessonHintKey='';
+  /** Keep the hint clear of the mission card, map column and open gun list on small phones. */
+  private placeLessonHint(el:HTMLElement){
+    const picker=this.el('weapon-picker'),key=`${innerWidth}x${innerHeight}:${picker.hidden}:${el.textContent}`;if(key===this.lessonHintKey)return;this.lessonHintKey=key;
+    el.style.left=el.style.top=el.style.maxWidth=el.style.visibility='';
+    const card=this.root.querySelector('.mission-hud')!.getBoundingClientRect(),map=this.el('minimap').getBoundingClientRect();let r=el.getBoundingClientRect();
+    // Landscape phones: centre the hint in the free band between the mission card and the map.
+    const lo=card.right+8,hi=(map.width?map.left:innerWidth)-8;
+    if(r.top<card.bottom&&(r.left<lo||r.right>hi)&&hi-lo>=160){el.style.left=`${(lo+hi)/2}px`;el.style.maxWidth=`${hi-lo}px`;r=el.getBoundingClientRect();}
+    // Portrait phones: an open gun list rises into the hint's slot, so sit just above it. On the
+    // smallest screens there is no room; the pulsing laser entry then carries the instruction alone.
+    if(!picker.hidden){const p=picker.getBoundingClientRect(),top=p.top-6-r.height;if(r.bottom>p.top-6){if(top<card.bottom+6)el.style.visibility='hidden';else el.style.top=`${top}px`;}}
+  }
+  projectRelay(){const el=this.el('relay-label');if(el.hidden)return;const p=new T.Vector3(0,6,-13).project(this.world.camera),x=clamp((p.x+1)/2*innerWidth,90,innerWidth-90);let y=clamp((1-p.y)/2*innerHeight,60,innerHeight-150);
+    // The label hangs above its anchor: keep it below the lesson hint rather than hidden under it.
+    const hint=this.el('lesson-hint');if(!hint.hidden){const h=hint.getBoundingClientRect(),w=el.offsetWidth,height=el.offsetHeight;if(x+w/2>h.left&&x-w/2<h.right&&y-height<h.bottom+4&&y>h.top)y=h.bottom+height+6;}
+    el.style.left=`${x}px`;el.style.top=`${y}px`;}
   showTrainingResult(){this.setPhase('depot');const t=this.training!;this.overlay.innerHTML=`<section class="panel pause-panel"><span class="eyebrow">TRAINING ${t.id+1} / 3</span><h1>Lesson complete</h1><p>${t.definition.name} cleared. +${t.reward} credits${t.reward?'':' · already awarded'}.</p><button class="primary" data-action="training-next">${t.id<2?'NEXT LESSON':'BEGIN CAMPAIGN'} →</button><button data-action="menu">Return to command</button></section>`;this.focusPrimary();}
   allyRound(origin:Point,angle:number,damage:number,speed:number,splash:number,muzzle:T.Object3D,rocket=false,homing?:Unit){
     muzzle.updateWorldMatrix(true,false);const mesh=rocket?this.world.rocket():new T.Mesh(this.projectileGeometry,this.projectileMaterials[2]);muzzle.getWorldPosition(mesh.position);mesh.rotation.y=angle;if(!rocket)mesh.scale.set(.55,.55,.7);this.world.entities.add(mesh);const p={x:mesh.position.x,z:mesh.position.z};this.shots.push({mesh,p,from:{x:origin.x,z:origin.z},dx:Math.sin(angle),dz:Math.cos(angle),damage,speed,life:28/speed,friendly:true,splash,alliedSafe:true,homing});this.world.fx.muzzle(mesh.position,angle,rocket);
