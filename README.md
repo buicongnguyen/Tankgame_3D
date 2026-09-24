@@ -65,7 +65,7 @@ The browser tests use controlled integration fixtures for mission edge cases, al
 | Auto guided missile | E | Auto button (requires shop pack) |
 | Pause | Escape | Pause button |
 
-Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within 12 meters of the convoy to move it. Capture progress requires occupying the amber ring without enemies inside it. The default shield lasts three seconds (4.5 seconds with Azure Guardian) and recharges in fourteen seconds. White medical cases restore up to 60 HP. Repair centers provide sustained healing; blue shield cases activate a field for the indicated duration without resetting Q. Settings and campaign checkpoints save in this browser; clearing site data resets them.
+Autocannon unlocks after First Light; rockets unlock after Homeward. Stay within 12 meters of the convoy to move it. Capture progress requires occupying the amber ring without enemies inside it. The default shield lasts five seconds and recharges in fourteen. Shield skins lengthen it: 6.5 s with Azure Guardian, and up to 8 s with Prism Ace or Verdant Bastion. The Shield generator upgrade adds up to 2.4 s and speeds up recharge. Every cycle still leaves at least five unprotected seconds, so the field can never be chained. White medical cases restore up to 60 HP. Repair centers provide sustained healing; blue shield cases activate a field for the indicated duration without resetting Q. Settings and campaign checkpoints save in this browser; clearing site data resets them.
 
 ## Mobile graphics
 
@@ -182,7 +182,7 @@ Choose **Skin** before deploying, or open **Shop > Tank skins** between missions
 | Kestrel | Free | Standard performance |
 | Sunburst | Free | Gold and purple colors |
 | Volt Runner | 300 CR | +18% movement speed |
-| Azure Guardian | 350 CR | Shield lasts 4.5 seconds instead of 3 |
+| Azure Guardian | 350 CR | Shield lasts 6.5 seconds instead of 5 |
 | Crimson Fury | 450 CR | +15% weapon damage |
 
 Buy once with earned supply credits. Ownership and selection persist; older saves keep their progress and receive both free skins. Equip one skin at a time, with its bonus applied next mission. Crimson Fury multiplies damage for all five tank weapons, including laser and arc rockets, alongside workshop upgrades and supply boosts. Artillery is unchanged. Volt Runner still respects terrain speed penalties; Guardian retains the fourteen-second shield cooldown.
@@ -299,7 +299,7 @@ Transports start with **1,040 HP**, four times their previous hull, on every dif
 
 The compact **Strike** and **Drop** buttons act immediately. They share the existing radio cooldown. **Auto / E** replaces the repair finder; green repair crosses remain on the minimap. Buy a **40 CR pack of six Auto missiles** for the next deployment. Each press launches one vehicle-seeking missile within **42 m**, with **160 base damage**, a **3.5 m blast** and a **1.6 s** launch interval. It targets jeeps, tanks and bosses, including airborne bosses, and flies over cover. No eligible target means no ammo spent. The pack persists through shopping and pre-deployment reloads; unused rounds expire when that sortie ends, restarts or is abandoned. Pausing and graphics changes retain ammunition.
 
-Four Blender-painted specialist skins add colored stars: **Verdant Bastion** (green, 6 s shield), **Cobalt Sprint** (blue, +30% speed), **Ruby Lance** (red, +30% damage), and **Quartermaster** (violet, 200 flame bursts and +25% to other finite ammo, rounded up). Quartermaster carries **15 laser shots, 8 arc rockets, 4 Triple Arc volleys, 8 Auto missiles and 200 flamethrower bursts** when those weapons/pack are purchased. Unlimited guns stay unlimited. Weapon refills obey the increased caps.
+Four Blender-painted specialist skins add colored stars: **Verdant Bastion** (green, 8 s shield), **Cobalt Sprint** (blue, +30% speed), **Ruby Lance** (red, +30% damage), and **Quartermaster** (violet, 200 flame bursts and +25% to other finite ammo, rounded up). Quartermaster carries **15 laser shots, 8 arc rockets, 4 Triple Arc volleys, 8 Auto missiles and 200 flamethrower bursts** when those weapons/pack are purchased. Unlimited guns stay unlimited. Weapon refills obey the increased caps.
 
 **Storm Kite** debuts in White Horizon level 3 and joins later Crazy reinforcements. Its four rotors, missile pods and light gun are authored in Blender. A two-second warning marks its three-missile pincer; move out of the circles, then attack its exposed core when it lands. Detailed / Low models use **2,496 / 742 triangles**.
 

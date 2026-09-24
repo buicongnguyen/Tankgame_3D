@@ -5,7 +5,7 @@ import type {Upgrade} from './rules';
 import {AUTO_PACK} from './auto-missiles';
 import {ammoCapacity} from './skins';
 import {upgradeIcon,weaponIcon,coin} from './shop-icons';
-import {WEAPONS,weaponLevel,weaponUpgradeCost,weaponDamage,barrels,powerMultiplier,reloadMultiplier,reloadSeconds,engineMultiplier,shieldBonus,shieldCooldown} from './armory';
+import {WEAPONS,weaponLevel,weaponUpgradeCost,weaponDamage,barrels,powerMultiplier,reloadMultiplier,reloadSeconds,engineMultiplier,shieldDuration,shieldCooldown} from './armory';
 import {getSkin} from './skins';
 const titles:Record<Upgrade,string>={armor:'Reactive armor',power:'Shaped charges',reload:'Autoloader',engine:'Drive engine',shield:'Shield generator'};
 function systemValue(save:Save,id:Upgrade){
@@ -13,7 +13,7 @@ function systemValue(save:Save,id:Upgrade){
  if(id==='power')return `Damage ×${powerMultiplier(save).toFixed(2)}`;
  if(id==='reload')return `Reload ×${reloadMultiplier({...save,weaponLevels:[]},0).toFixed(2)}`;
  if(id==='engine')return `Speed ×${engineMultiplier(save).toFixed(2)}`;
- return `${(getSkin(save.skin).shield+shieldBonus(save)).toFixed(1)}s shield / ${shieldCooldown(save).toFixed(1)}s recharge`;
+ return `${shieldDuration(save).toFixed(1)}s shield / ${shieldCooldown(save).toFixed(1)}s recharge`;
 }
 export function workshop(save:Save){
  return `<section data-shop-section="support"><p class="category-help">Temporary support for your next mission.</p><article class="field-pack"><div>${weaponIcon(6)}<strong>Auto missiles <span>${save.autoPack?'PACK READY':`× ${ammoCapacity(save.skin,AUTO_PACK.rounds)}`}</span></strong><p>Next sortie only · E / Auto · vehicles within 42 m</p><small>Unused rounds expire on exit, defeat or restart.</small></div><button data-action="buy-auto" aria-label="Buy Auto missile pack for 40 credits" ${save.autoPack||save.credits<AUTO_PACK.price?'disabled':''}>${save.autoPack?'READY':coin(AUTO_PACK.price)}</button></article></section><section data-shop-section="systems"><p class="category-help">Permanent upgrades for every weapon and your tank.</p><div class="depot-heading"><h2>Tank systems</h2><span>20 LEVELS EACH</span></div><div class="upgrade-grid">${UPGRADES.map(id=>{

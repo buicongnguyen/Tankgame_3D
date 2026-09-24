@@ -1,4 +1,5 @@
 import {clamp,UPGRADE_CAP} from './rules';
+import {getSkin} from './skins';
 import type {Save} from './campaign';
 export interface WeaponDefinition {name:string;label:string;description:string;price:number;damage:number;speed:number;reload:number;splash:number;ammoSlot?:number;capacity?:number;rocket?:boolean;arc?:boolean;flame?:boolean;}
 export const WEAPONS:WeaponDefinition[]=[
@@ -21,5 +22,9 @@ export function powerMultiplier(save:Save){const n=level(save.upgrades.power);re
 export function reloadMultiplier(save:Save,id:number){const n=level(save.upgrades.reload);return (1-Math.min(n,3)*.13)/(1+Math.max(0,n-3)*.04)/(1+weaponLevel(save,id)*.01);}
 export const engineMultiplier=(save:Save)=>1+level(save.upgrades.engine)*.03;
 export const shieldBonus=(save:Save)=>level(save.upgrades.shield)*.12;
-export const shieldCooldown=(save:Save)=>14/(1+level(save.upgrades.shield)*.025);
+/** Q field length: the skin's base (5 s standard) plus generator upgrades. */
+export const shieldDuration=(save:Save)=>getSkin(save.skin).shield+shieldBonus(save);
+/** Every cycle leaves at least this long unprotected, so skins and upgrades can never chain the field. */
+export const SHIELD_EXPOSED_SECONDS=5;
+export const shieldCooldown=(save:Save)=>Math.max(14/(1+level(save.upgrades.shield)*.025),shieldDuration(save)+SHIELD_EXPOSED_SECONDS);
 export function reloadSeconds(save:Save,id:number){return Math.max(id===8?.08:id===5?.14:id===1?.09:.18,WEAPONS[id].reload*reloadMultiplier(save,id));}

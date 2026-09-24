@@ -13,7 +13,7 @@ import {Flamethrower,FLAME} from './flamethrower';
 import {enemyHealth} from './unit-health';
 import {GuidedBarrage} from './barrage';
 import {ESCORT,escortStartClear,escortEncounterMeters} from './escort';
-import {WEAPONS,weaponLevel,weaponDamage,barrels,powerMultiplier,reloadSeconds,engineMultiplier,shieldBonus,shieldCooldown as upgradedShieldCooldown} from './armory';
+import {WEAPONS,weaponLevel,weaponDamage,barrels,powerMultiplier,reloadSeconds,engineMultiplier,shieldDuration,shieldCooldown as upgradedShieldCooldown} from './armory';
 import {workshop} from './workshop';
 import {UPGRADES} from './rules';
 import {AirSupport} from './air-support';
@@ -232,7 +232,7 @@ export class Game {
     if(action==='fire'&&this.reload<=0){this.input.pendingFire=false;this.syncVisual(this.player);this.shoot(this.player,true);}
     if((action==='support-strike'||action==='artillery')&&this.artilleryCooldown<=0){this.callArtillery();}
     if(action==='support-drop')this.airSupport.request(this);
-    if(action==='shield'&&this.shieldCooldown<=0){this.shieldTime=Math.max(this.shieldTime,getSkin(this.save.skin).shield+shieldBonus(this.save));this.shieldCooldown=upgradedShieldCooldown(this.save);this.radioMessage(`KESTREL / ${this.convoy?'Both vehicles shielded':'Protective field active'} · ${this.shieldTime.toFixed(1)}s of cover.`,3);this.tone(620,.2,.04);}
+    if(action==='shield'&&this.shieldCooldown<=0){this.shieldTime=Math.max(this.shieldTime,shieldDuration(this.save));this.shieldCooldown=upgradedShieldCooldown(this.save);this.radioMessage(`KESTREL / ${this.convoy?'Both vehicles shielded':'Protective field active'} · ${this.shieldTime.toFixed(1)}s of cover.`,3);this.tone(620,.2,.04);}
     if(action==='auto')this.auto.fire(this);
     if(action==='switch'){this.weaponPickerOpen=!this.weaponPickerOpen;}
     if(/^[1-9]$/.test(action)){const w=Number(action)-1;if(this.weaponAvailable(w)){this.weapon=w;this.weaponPickerOpen=false;if(ownsWeapon(this.save,w)){this.save.equippedWeapon=w;this.persist();}}else if(w>=3)this.radioMessage(w===8?'ARMORY / Flamethrower fuel refills next mission. Buy in the shop.':w===7?'ARMORY / Triple arc: buy in the shop. Three volleys refill next mission.':ownsWeapon(this.save,w)?'ARMORY / Ammo empty. Collect a map cache or resupply next mission.':w>=5?'ARMORY / Buy this weapon in the shop.':'ARMORY / Buy in the shop or collect a map cache.',3);else this.radioMessage(`ARMORY / ${w===1?'Autocannon unlocks after First Light.':'Rockets unlock after Homeward.'}`,3);}

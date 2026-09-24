@@ -47,7 +47,7 @@ test('triple arc has three real airborne rockets per volley, three volleys total
 
 test('upgraded engine and shield change live behavior and preserve terrain slowdown and quake stops',async({page})=>{
  await battle(page);const r=await page.evaluate(()=>{const g=(window as any).__steel;g.world.environment.biome='grove';g.input.move={x:1,z:0};g.player.visual.root.position.set(0,0,35);g.updatePlayer(.1);const base=g.player.visual.root.position.x;g.player.visual.root.position.set(0,0,35);g.save.upgrades.engine=20;g.updatePlayer(.1);const fast=g.player.visual.root.position.x;g.world.environment.biome='desert';g.world.firmRoad=()=>false;g.player.visual.root.position.set(-23,0,30);g.updatePlayer(.1);const sand=g.player.visual.root.position.x+23;g.hazards.quakePhase='active';const stop=g.player.visual.root.position.x;g.updatePlayer(.1);const frozen=g.player.visual.root.position.x===stop;g.save.upgrades.shield=20;g.action('shield');const shield=g.shieldTime,cooldown=g.shieldCooldown;g.action('shield');return {base,fast,sand,frozen,shield,cooldown,guard:g.shieldTime===shield&&g.shieldCooldown===cooldown};});
- expect(r.fast).toBeCloseTo(r.base*1.6);expect(r.sand).toBeCloseTo(r.fast*.25);expect(r.frozen&&r.guard).toBe(true);expect(r.shield).toBeCloseTo(5.4);expect(r.cooldown).toBeCloseTo(14/1.5);
+ expect(r.fast).toBeCloseTo(r.base*1.6);expect(r.sand).toBeCloseTo(r.fast*.25);expect(r.frozen&&r.guard).toBe(true);expect(r.shield).toBeCloseTo(7.4);expect(r.cooldown).toBeCloseTo(7.4+5);
 });
 
 for(const viewport of [{width:1440,height:900},{width:320,height:568},{width:390,height:844},{width:844,height:390}])test(`level-20 shop and eight-weapon controls fit and persist ${viewport.width}`,async({browser})=>{
