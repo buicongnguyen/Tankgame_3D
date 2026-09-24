@@ -14,6 +14,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import {SkinMarkings} from './skin-markings';
 import {StableShadow} from './stable-shadow';
 import { skinPalette } from './skins';
+import { TEAMS } from './skirmish';
 import * as T from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -193,6 +194,14 @@ export class World {
     });this.skinMarkings.apply(root,id,flag);root.userData.skin=id;root.userData.flag=flag;
   }
   enemyMaterials=new Map<string,T.MeshStandardMaterial>();
+  /** Skirmish teams: repaint Armor/Trim/Signal and the health bar. Team 0 keeps the campaign enemy paint. */
+  paintTeam(visual:TankVisual,team:number){
+    const colors=TEAMS[team];if(!colors)return;(visual.bar.material as T.MeshBasicMaterial).color.set(colors.css);if(!team)return;
+    visual.root.traverse(o=>{if(!(o instanceof T.Mesh)||!(o.material instanceof T.MeshStandardMaterial))return;
+      const name=o.material.name,color=name==='Armor'?colors.armor:name==='Trim'?colors.trim:name==='Signal'?colors.signal:null;if(color===null)return;
+      const key=`team${team}:${name}`;let mat=this.enemyMaterials.get(key);if(!mat){mat=o.material.clone();mat.color.set(color);this.enemyMaterials.set(key,mat);}o.material=mat;
+    });
+  }
   clear() { this.leadReady=false;this.enemyBatches.clear();this.environment.clear();this.fx.clear();this.wrecks=[];this.activities=[];this.pendingLandmarks=[];
     for(const effect of this.effects){effect.mesh.removeFromParent();(effect.mesh.material as T.Material).dispose();}
     this.effects=[];

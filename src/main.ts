@@ -2,6 +2,7 @@ import './three/style.css';
 import './three/training.css';
 import './three/compact.css';
 import './three/menu.css';
+import './three/skirmish.css';
 import {installFullscreen} from './three/fullscreen';
 installFullscreen();
 import { Game } from './three/game';

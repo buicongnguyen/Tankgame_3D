@@ -1,0 +1,29 @@
+/* Skirmish series: command-screen entry, setup panel and series results. */
+.command-screen .skirmish-entry{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;margin-top:8px;padding:10px 12px;min-height:48px;text-align:left;font-size:11px;letter-spacing:.08em;background:#ffc85708;border-color:#ffc85740}
+.command-screen .skirmish-entry small{display:block;margin-top:4px;color:#b9c6ae;font-size:10px;letter-spacing:0;font-weight:400;line-height:1.4}
+.command-screen .skirmish-entry b{color:var(--amber);font-size:16px}
+.panel.skirmish-panel{width:min(720px,100%);max-width:720px;gap:12px;border-top-color:var(--amber)}
+.skirmish-panel h1{margin:0}
+.skirmish-panel p{margin:0;line-height:1.5}
+.skirmish-panel .setup-label{margin-top:6px}
+.skirmish-maps{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:5px}
+.skirmish-maps button{display:flex;align-items:center;gap:7px;min-height:38px;padding:6px 8px;text-align:left;font-size:11px;letter-spacing:.02em;border-color:#7895a333;border-radius:2px}
+.skirmish-maps b{min-width:18px;color:#8fa3ad;font-size:10px}
+.skirmish-maps .active,.skirmish-choice .active{background:#ffc8571c;border-color:var(--amber);color:#fff4d6}
+.skirmish-maps .active b{color:var(--amber)}
+.skirmish-choice{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:5px}
+.skirmish-choice button{min-height:40px;padding:8px 4px;font-size:11px;border-color:#7895a333;border-radius:2px}
+.skirmish-strategy{padding:9px 11px;border-left:2px solid var(--amber);background:#ffc8570d;font-size:13px}
+.skirmish-strategy strong{display:block;margin-bottom:3px;color:var(--amber);letter-spacing:.06em;text-transform:uppercase;font-size:11px}
+.skirmish-panel small{color:#a2b7c3}
+.skirmish-log{margin:0;padding:0;list-style:none;display:grid;gap:4px}
+.skirmish-log li{display:flex;justify-content:space-between;gap:10px;padding:7px 9px;background:#ffffff08;font-size:12px}
+.skirmish-log li span:last-child{color:#b9c6ae;text-align:right}
+@media(max-width:600px){
+ .skirmish-panel{padding:18px 16px}
+ .skirmish-maps{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .skirmish-choice button{font-size:10px;padding:8px 2px}
+ .skirmish-log li{flex-direction:column;gap:2px}
+ .skirmish-log li span:last-child{text-align:left}
+}
+@media(max-height:520px){.skirmish-panel{gap:8px}.skirmish-maps{grid-template-columns:repeat(4,minmax(0,1fr))}.skirmish-maps button{min-height:32px}}

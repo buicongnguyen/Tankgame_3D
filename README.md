@@ -235,6 +235,27 @@ Meet Iron Vanguard in **Glass Road 3**, Siege Marshal in **Cinderfall 3**, and A
 
 See the [infantry, jeep, patrol and loot balance plan](docs/INFANTRY_JEEPS_PATROLS_AND_LOOT.md) for the current encounter and recovery rules.
 
+## Skirmish series
+
+**Skirmish Series** on the command screen sets up a custom run of battles against AI teams. Choose:
+- **Battlefields:** any of the 16 campaign backgrounds, played in order as a series.
+- **AI speed:** Slow 0.75×, Normal, Fast 1.3× or Blitz 1.6×. It scales enemy movement and turret traverse.
+- **Enemy teams:** 1–4, each painted in its own colours (Crimson, Amber, Violet, Obsidian) on its tanks, health bars and minimap dots.
+- **Team size:** Squad 6, Platoon 8 or Company 13 units, each a mix of tanks, a jeep, riflemen and rocketeers.
+
+You start mid-map and every team spawns on a different side. A team commander turns the number of teams into a strategy, announced over the radio as it unfolds:
+
+| Teams | Strategy | What the AI does |
+| --- | --- | --- |
+| 1 | Spearhead | Advances to 30 m, then charges while its raiders and jeeps swing wide onto both flanks. |
+| 2 | Hammer & anvil | The anvil holds 26 m in front and pins you with fire. The hammer circles to the opposite side, then both charge. |
+| 3 | Pincer & reserve | Two teams stage on opposite flanks and assault at the same moment. The reserve waits at 40 m and commits when a flank drops below half strength, your hull drops below half, or 25 s after the pincer. |
+| 4 | Encirclement | Teams take four ring slots; opposite pairs assault for 12 s while the other pair holds the ring and fires, then they swap. Below 40% total strength, everyone closes in. |
+
+Pinning teams (the anvil and the holding ring pair) that lose sight of you try nearby firing lanes. A team reduced below 30% regroups with the strongest survivor. If you stay hidden for 14 s after every team is in position, all teams sweep in. Clear every team to win the battle and move to the next battlefield. The series screen then lists time, hull and kills per battle. Defeat offers a retry of the same battle.
+
+Your tank keeps its upgrades, weapons and skin. Each battle gets two Strike charges of its own. Campaign progress, credits, Strike charges and rankings are never changed. Settings are saved separately in this browser (`steel-front-3d-skirmish`). The difficulty chosen on the command screen still applies to your hull and enemy health.
+
 ## Air support and route progression
 
 See [Air support, threat ranges and breachable routes](docs/AIR_SUPPORT_AND_BREACHABLE_ROUTES.md) for the design and verification plan. Enemy sight reaches 34 m for infantry, 44 m for ordinary vehicles and 48 m for bosses; solid cover still blocks detection. Concrete rows share batched rendering but keep independent wall and section damage. A base cannon breaks one section in four hits; laser passes through the first row without damaging it and stops at the second.
