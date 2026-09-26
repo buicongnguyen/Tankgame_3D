@@ -2,7 +2,9 @@ import {test,expect} from '@playwright/test';
 import {freshSave,SAVE_KEY} from '../src/three/campaign';
 
 for(const low of [false,true])test(`three-minute mobile ${low?'Low':'High'} Detail battle keeps graphics resources bounded`,async({browser},testInfo)=>{
- test.setTimeout(240000);
+ // Three minutes of sampling plus setup; when both soaks share a CI shard, tearing down the
+ // High Detail context under SwiftShader can take about a minute before this one starts.
+ test.setTimeout(300000);
  const context=await browser.newContext({viewport:{width:844,height:390},isMobile:true,hasTouch:true,deviceScaleFactor:3});
  if(low)await context.addInitScript(({key,save})=>localStorage.setItem(key,JSON.stringify(save)),{key:SAVE_KEY,save:{...freshSave(),low:true,graphicsChosen:true}});
  const page=await context.newPage(),errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
