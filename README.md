@@ -236,6 +236,23 @@ Meet Iron Vanguard in **Glass Road 3**, Siege Marshal in **Cinderfall 3**, and A
 
 See the [infantry, jeep, patrol and loot balance plan](docs/INFANTRY_JEEPS_PATROLS_AND_LOOT.md) for the current encounter and recovery rules.
 
+## Safe deployment
+
+Every mission outside training opens with a short grace period:
+- **Clear start:** no enemy is placed within 30 m of your deployment point (26 m for infantry), and patrols never walk into that area. On very short routes the zone shrinks to 60% of the route length, but never below 18 m. Escort missions keep their own 36 m zone. An audit of all 16 stages × 3 levels × 4 difficulties found 76 of 192 starts with enemies 5–25 m away and the first hit about 2 s in. The nearest enemy vehicle now starts at least 30 m out, or 22 m on the two 37 m capture routes.
+- **Deployment shield:** 8 s on Easy, 6 s on Normal and 5 s on Hard or Crazy, shown as *DEPLOYMENT SHIELD · Ns*. It protects the escort transport too. Q remains available.
+- **Easy starter cache:** on Easy, two crates parachute in beside you, with 4 laser shots and 2 arc rockets. Both weapons work even before they are bought. The cache is free: it does not use the mission's supply drops or the radio cooldown.
+
+## Pilot profiles
+
+The command screen keeps **three pilot profiles** on each device. The header button (PROFILE 1 · name) opens the picker:
+- **Continue** the profile in use, or **Play this profile** to switch to another one. Switching parks the current campaign and loads that profile exactly where it left off.
+- **New game** starts a fresh campaign in an empty slot, including the training offer, without touching the other profiles.
+- **Rename** a profile (up to 20 characters). The profile in use is also the pilot name for new leaderboard records.
+- **Reset** starts one profile over after a confirmation. *Settings → Reset this profile* does the same for the profile in use.
+
+Each profile keeps its own stages, credits, weapons, upgrades, skins, difficulty and Strike charges. Sound and graphics quality belong to the device and apply to every profile. The profile in use is still stored under `steel-front-3d-v1`, so a campaign saved before profiles existed simply becomes Profile 1. The other profiles and all names live in `steel-front-3d-profiles-v1`. An unreadable profile book falls back to the current campaign as Profile 1.
+
 ## Skirmish series
 
 **Skirmish Series** on the command screen sets up a custom run of battles against AI teams. Choose:

@@ -12,6 +12,8 @@ export function bestRecords(rows:RecordEntry[],entry:RecordEntry){
  return [...rows.filter(r=>!same(r)),entry];
 }
 export function pilotName(){try{return localStorage.getItem(PILOT)||'Pilot';}catch{return 'Pilot';}}
+/** The active pilot profile's name is the name future records are saved under. */
+export function setPilotName(name:string){try{localStorage.setItem(PILOT,name);}catch{/* name lasts this session */}}
 let memory:RecordEntry[]=[];let storageWarning=false;
 function read(){try{const value=JSON.parse(localStorage.getItem(KEY)||'[]');if(Array.isArray(value))memory=value.filter(r=>r&&typeof r.pilot==='string'&&Number.isInteger(r.mission)&&r.mission>=0&&r.mission<MISSIONS.length&&Number.isInteger(r.level)&&r.level>=0&&r.level<3&&['easy','normal','hard','crazy'].includes(r.difficulty)&&Number.isFinite(r.score)&&Number.isFinite(r.seconds)&&Number.isFinite(r.health));}catch{storageWarning=true;}return memory;}
 export function recordRun(mission:number,level:number,difficulty:string,seconds:number,health:number,target:number){

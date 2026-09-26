@@ -6,7 +6,7 @@ import {WEAPONS,reloadSeconds,powerMultiplier,barrels} from '../src/three/armory
 
 async function battle(page:Page){
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
- await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.world.activities=[];g.world.navigationRevision++;g.enemies=[];g.player.visual.root.position.set(0,0,35);g.player.aim=Math.PI;g.aimPoint.set(0,0,0);g.lootRandom=()=>.99;});
+ await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.world.covers=[];g.world.activities=[];g.world.navigationRevision++;g.enemies=[];g.player.visual.root.position.set(0,0,35);g.player.aim=Math.PI;g.aimPoint.set(0,0,0);g.lootRandom=()=>.99;g.clearOpening();});
 }
 
 test('all systems and owned weapons reach level 20 with prices, limits and old-save migration',()=>{

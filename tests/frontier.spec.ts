@@ -46,13 +46,13 @@ test('all campaign spawns, frontier objectives and service routes remain reachab
 test('rockfalls warn, hit both sides once, respect shields and clean up',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
  const result=await page.evaluate(async()=>{
-  const g=(window as any).__steel;g.frame=()=>{};g.start(10);const h=g.hazards;h.update(g,5.9);const graceDelay=h.rocks.length===0;h.update(g,.11);const scheduled=h.rocks.length>0&&h.rocks.length<=3;h.clear();h.clock=999;for(const u of g.enemies)u.dead=true;const e=g.enemies[0];e.dead=false;e.hp=e.max=500;e.visual.root.position.set(11,0,0);g.player.hp=g.player.max=500;g.player.visual.root.position.set(8,0,0);
+  const g=(window as any).__steel;g.frame=()=>{};g.start(10),g.clearOpening();const h=g.hazards;h.update(g,5.9);const graceDelay=h.rocks.length===0;h.update(g,.11);const scheduled=h.rocks.length>0&&h.rocks.length<=3;h.clear();h.clock=999;for(const u of g.enemies)u.dead=true;const e=g.enemies[0];e.dead=false;e.hp=e.max=500;e.visual.root.position.set(11,0,0);g.player.hp=g.player.max=500;g.player.visual.root.position.set(8,0,0);
   h.warn(g,{x:10,z:0});const warning=h.rocks[0];h.update(g,2.5);const warned=g.player.hp===500&&e.hp===500&&h.rocks.length===1;h.update(g,.11);const hit=g.player.hp<500&&e.hp<500,once=g.player.hp;h.update(g,.5);const single=g.player.hp===once;
   h.warn(g,{x:8,z:0});g.shieldTime=10;const hp=g.player.hp;h.update(g,2.7);const shield=g.player.hp===hp;g.shieldTime=0;
   h.warn(g,{x:5,z:5});const age=h.rocks[0].age;g.pause();h.update(g,10);const paused=h.rocks[0].age===age;g.resume();
   await g.world.load(true);g.world.settings(true);const visible=h.rocks[0].marker.visible&&h.rocks[0].rock.parent!==null;
   for(let i=0;i<20;i++)h.warn(g,{x:20,z:20});const bounded=h.rocks.length<=3;g.complete();const complete=h.rocks.length===0&&h.scars.length===0&&!warning.marker.parent;
-  g.start(10);const grace=h.clock===6;h.warn(g,{x:0,z:0});g.fail();const failed=h.rocks.length===0;g.start(9);const reset=h.rocks.length===0&&h.scars.length===0;
+  g.start(10),g.clearOpening();const grace=h.clock===6;h.warn(g,{x:0,z:0});g.fail();const failed=h.rocks.length===0;g.start(9),g.clearOpening();const reset=h.rocks.length===0&&h.scars.length===0;
   return {graceDelay,scheduled,warned,hit,single,shield,paused,visible,bounded,complete,grace,failed,reset};
  });expect(Object.values(result).every(Boolean),JSON.stringify(result)).toBe(true);
 });

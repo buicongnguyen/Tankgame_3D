@@ -1,0 +1,42 @@
+/* Pilot profiles: command-screen header chip and the profile picker. */
+.command-screen .profile-chip{margin-left:auto;display:flex;align-items:center;gap:9px;width:auto;flex:0 1 auto;min-width:0;min-height:40px;padding:6px 12px;border:1px solid #e7bc7a59;background:#e7bc7a12;border-radius:3px;font-size:11px;letter-spacing:.08em;color:#eef3f5;text-transform:none}
+.command-screen .profile-chip:hover,.command-screen .profile-chip:focus-visible{background:#e7bc7a26;border-color:var(--amber)}
+.command-screen .profile-chip span{color:var(--amber);font-size:9px;letter-spacing:.16em;white-space:nowrap}
+.command-screen .profile-chip strong{font-weight:700;letter-spacing:.02em;max-width:16ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.command-screen .profile-chip b{color:var(--amber);font-size:14px}
+.panel.profiles-panel{width:min(760px,100%);max-width:760px;gap:14px;border-top-color:var(--amber)}
+.profiles-panel h1{margin:0}
+.profiles-panel>p{margin:0;line-height:1.5;color:#c9d6dc}
+.profile-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.profile-card{display:flex;flex-direction:column;gap:8px;min-width:0;padding:14px;background:#ffffff07;border:1px solid #9fb8c42e;border-radius:3px}
+.profile-card.active{background:#e7bc7a10;border-color:#e7bc7a8c;box-shadow:inset 0 2px 0 var(--amber)}
+.profile-card.empty{border-style:dashed}
+.profile-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.profile-head .eyebrow{color:#9fb3bd;font-size:10px}
+.profile-tag{padding:3px 7px;border-radius:2px;background:var(--amber);color:#1d1a10;font-size:9px;font-weight:800;letter-spacing:.12em}
+.profile-card h2{margin:0;font-size:22px;overflow-wrap:anywhere}
+.profile-card p{margin:0;font-size:12px;line-height:1.5;color:#c4d0d6}
+.profile-card small{color:#90a4ad;font-size:11px}
+.profile-actions{display:flex;flex-direction:column;gap:6px;margin-top:auto;padding-top:4px}
+.profile-actions button{width:100%;min-height:42px}
+.profile-actions .primary{padding:12px 10px;font-size:11px}
+.profile-actions .quiet{min-height:36px}
+.profile-rename{display:grid;gap:6px;font-size:11px;letter-spacing:.08em;color:#a9bcc5}
+.profile-rename input{font:600 16px 'Barlow',Arial,sans-serif;padding:10px;min-height:44px;width:100%;color:#eef3f5;background:#0b1820;border:1px solid var(--amber);border-radius:2px}
+@media(max-width:760px){
+ .profile-list{grid-template-columns:minmax(0,1fr)}
+ .profile-actions{flex-direction:row;flex-wrap:wrap}
+ .profile-actions .primary{flex:1 1 100%}
+ .profile-actions button:not(.primary){flex:1 1 0}
+}
+@media(max-width:600px) and (orientation:portrait){
+ .command-screen .profile-chip{min-height:36px;padding:5px 9px;gap:6px;font-size:10px}
+ .command-screen .profile-chip strong{max-width:11ch}
+}
+@media(max-width:360px){.command-screen .profile-chip span{display:none}}
+@media(orientation:landscape) and (max-height:600px){
+ .profile-list{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .profile-card{padding:10px}
+ .profile-card h2{font-size:18px}
+ .profile-actions{flex-direction:column}
+}

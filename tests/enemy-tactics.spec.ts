@@ -2,9 +2,9 @@ import {test,expect} from '@playwright/test';
 
 // These tests use real game updates and collision footprints; no mocked sight function.
 test('solid cover hides the player, removing it reveals them and starts enemy fire',async({page})=>{
- await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();await page.evaluate(()=>{const g=(window as any).__steel;g.save.difficulty='normal';g.start(0,0);});
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();await page.evaluate(()=>{const g=(window as any).__steel;g.save.difficulty='normal';g.start(0,0),g.clearOpening();});
  const rows=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};return ['house','pine','barrel','steelwall','concrete-block'].map(kind=>{
-  g.start(0);g.enemies=[];g.world.covers=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,22);
+  g.start(0),g.clearOpening();g.enemies=[];g.world.covers=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,22);
   const e=g.makeUnit(0,0,'rifleman');e.encounter={group:0,anchor:{x:0,z:0},meters:900,active:false};e.cooldown=0;g.enemies=[e];
   const wall={x:0,z:11,w:8,d:2,hp:100,kind};g.world.covers=[wall];g.world.navigationRevision++;
   g.updateEnemies(.2);const hidden=!e.encounter.active&&g.shots.length===0&&!e.visual.beam.visible;

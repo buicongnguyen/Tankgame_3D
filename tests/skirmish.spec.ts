@@ -106,7 +106,7 @@ for(const viewport of [{width:1280,height:800},{width:390,height:844}])test(`ski
 
 test('losing a skirmish battle offers a retry of the same battlefield',async({page})=>{
  await battle(page,{maps:[3,5],speed:1,teams:2,size:0});
- await page.evaluate(()=>{const g=(window as any).__steel;g.skirmish.round=1;g.startSkirmishBattle();g.damageUnit(g.player,1e12,{x:0,z:0});for(let i=0;i<30;i++)g.step(1/60);});
+ await page.evaluate(()=>{const g=(window as any).__steel;g.skirmish.round=1;g.startSkirmishBattle(),g.clearOpening();g.damageUnit(g.player,1e12,{x:0,z:0});for(let i=0;i<30;i++)g.step(1/60);});
  await expect(page.getByRole('button',{name:/RETRY LAST SIGNAL/})).toBeVisible();await page.getByRole('button',{name:/RETRY LAST SIGNAL/}).click();
  expect(await page.evaluate(()=>{const g=(window as any).__steel;return {phase:g.phase,map:g.mission,round:g.skirmish.round,hostiles:g.enemies.filter((e:any)=>!e.dead).length};})).toEqual({phase:'playing',map:5,round:1,hostiles:12});
 });

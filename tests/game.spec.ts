@@ -81,7 +81,7 @@ test('real cannon destroys an exposed enemy; shield, repair and escort rules',as
 
 test('expanded terrain, field activities, artillery and wreck cleanup',async({page})=>{
  await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();await page.getByRole('button',{name:'DEPLOY'}).click();
- await page.evaluate(()=>{const g=(window as any).__steel;g.save.difficulty='normal';g.start(0,0);});
+ await page.evaluate(()=>{const g=(window as any).__steel;g.save.difficulty='normal';g.start(0,0),g.clearOpening();});
  await addTestPickups(page,['supply']);
  const result=await page.evaluate(()=>{
   const g=(window as any).__steel;g.player.visual.root.position.set(61,0,50);g.moveUnit(g.player,4,0);const expanded=g.player.visual.root.position.x>62;
@@ -94,5 +94,5 @@ test('expanded terrain, field activities, artillery and wreck cleanup',async({pa
   return {expanded,healed,supplied,mined,telegraphed,detonated,wreck};
  });expect(result).toEqual({expanded:true,healed:true,supplied:true,mined:true,telegraphed:true,detonated:true,wreck:true});
  await page.waitForTimeout(350);await page.screenshot({path:'test-results/expanded-effects.png'});
- const cleanup=await page.evaluate(()=>{const g=(window as any).__steel;for(let i=0;i<500;i++)g.world.fx.smoke(g.player.visual.root.position);const bounded=g.world.fx.particles.length<=230;g.start(0);return {bounded,particles:g.world.fx.particles.length,wrecks:g.world.wrecks.length,strikes:g.strikes.length,activities:g.world.activities.filter((a:any)=>a.spent).length};});expect(cleanup).toEqual({bounded:true,particles:0,wrecks:0,strikes:0,activities:0});
+ const cleanup=await page.evaluate(()=>{const g=(window as any).__steel;for(let i=0;i<500;i++)g.world.fx.smoke(g.player.visual.root.position);const bounded=g.world.fx.particles.length<=230;g.start(0),g.clearOpening();return {bounded,particles:g.world.fx.particles.length,wrecks:g.world.wrecks.length,strikes:g.strikes.length,activities:g.world.activities.filter((a:any)=>a.spent).length};});expect(cleanup).toEqual({bounded:true,particles:0,wrecks:0,strikes:0,activities:0});
 });

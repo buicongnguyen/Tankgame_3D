@@ -67,7 +67,7 @@ for(const stage of [2,7,11,15])test(`escort ${MISSIONS[stage].name} follows all 
 });
 
 test('health and shield cases are finite and never waste full-health recovery',async({page})=>{
- await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();await addTestPickups(page,['health','shield']);const result=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};for(const e of g.enemies)e.dead=true;
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();await addTestPickups(page,['health','shield']);const result=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.clearOpening();for(const e of g.enemies)e.dead=true;
  const health=g.world.activities.find((a:any)=>a.kind==='health'),shield=g.world.activities.find((a:any)=>a.kind==='shield');g.player.visual.root.position.set(health.x,0,health.z);g.updateActivities(.01);const full=!health.spent;g.player.hp=g.player.max-20;g.updateActivities(.01);const capped=health.spent&&g.player.hp===g.player.max;g.player.hp-=100;g.updateActivities(.01);const once=g.player.hp===g.player.max-100;
  g.player.visual.root.position.set(shield.x,0,shield.z);g.shieldCooldown=10;g.updateActivities(.01);const protectedNow=g.shieldTime===6&&g.shieldCooldown===10&&shield.spent;const hp=g.player.hp;g.damageUnit(g.player,1000,shield);g.updateActivities(.01);const protectedOnce=g.player.hp===hp&&g.shieldTime===6;g.action('shield');const manualCannotShorten=g.shieldTime===6;
  return {full,capped,once,protectedNow,protectedOnce,manualCannotShorten};});expect(Object.values(result).every(Boolean),JSON.stringify(result)).toBe(true);

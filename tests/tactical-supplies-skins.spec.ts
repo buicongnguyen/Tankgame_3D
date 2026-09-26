@@ -55,7 +55,7 @@ test('desktop weapon buttons, top-row keys and number pad select the same slots'
 
 test('all difficulties can call and collect bounded air supplies on ordinary assault missions',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const rows=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};return ['easy','normal','hard','crazy'].map(d=>{
-  g.save.difficulty=d;g.start(0);g.world.covers=[];g.enemies=[];g.world.activities=[];g.player.visual.root.position.set(0,0,0);g.player.hp=20;
+  g.save.difficulty=d;g.start(0),g.clearOpening();g.world.covers=[];g.enemies=[];g.world.activities=[];g.player.visual.root.position.set(0,0,0);g.player.hp=20;
   const limit=g.airSupport.limit(g),accepted=g.airSupport.request(g),drop=g.airSupport.drops[0].activity;g.player.visual.root.position.set(drop.x,0,drop.z);g.updateActivities(3.3);return {d,limit,accepted,healed:g.player.hp>20,remaining:g.airSupport.remaining(g),cooldown:g.artilleryCooldown>0};
  });});for(const r of rows){expect(r.limit).toBe(['easy','crazy'].includes(r.d)?2:1);expect(r.accepted&&r.healed&&r.cooldown).toBe(true);expect(r.remaining).toBe(r.limit-1);}
 });
@@ -73,7 +73,7 @@ test('solid rock collides on all four edges, survives weapons and shares one ins
 test('new Blender markings survive detail changes and skin swaps with correct live bonuses',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const result=await page.evaluate(async()=>{
   const g=(window as any).__steel;g.frame=()=>{};const rows=[];g.save.skins.push('comet','sentinel','talon','nova','prism');
-  for(const id of ['comet','sentinel','talon','nova','prism']){g.save.skin=id;g.start(0);g.enemies=[];g.world.covers=[];g.world.activities=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,0);g.input.move={x:1,z:0};g.updatePlayer(.1);g.action('shield');g.shoot(g.player,true);const paint=g.player.visual.root.getObjectByName('SkinMarkings');rows.push({id,distance:g.player.visual.root.position.x,damage:g.shots.at(-1).damage,shield:g.shieldTime,stars:paint.userData.stars});}
+  for(const id of ['comet','sentinel','talon','nova','prism']){g.save.skin=id;g.start(0),g.clearOpening();g.enemies=[];g.world.covers=[];g.world.activities=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,0);g.input.move={x:1,z:0};g.updatePlayer(.1);g.action('shield');g.shoot(g.player,true);const paint=g.player.visual.root.getObjectByName('SkinMarkings');rows.push({id,distance:g.player.visual.root.position.x,damage:g.shots.at(-1).damage,shield:g.shieldTime,stars:paint.userData.stars});}
   const root=g.player.visual.root,paint=root.getObjectByName('SkinMarkings'),geometry=paint.geometry;await g.world.load(true);g.world.settings(true);const low=root.getObjectByName('SkinMarkings')===paint&&paint.geometry===geometry;
   for(let i=0;i<30;i++)for(const id of ['comet','sentinel','talon','nova','prism'])g.world.applySkin(root,id);let count=0;root.traverse((o:any)=>{if(o.name==='SkinMarkings')count++;});const shared=root.getObjectByName('SkinMarkings').geometry===geometry;
   g.world.camera.position.set(7,8,10);g.world.camera.lookAt(root.position.x,1,root.position.z);g.world.camera.updateMatrixWorld();g.world.renderer.render(g.world.scene,g.world.camera);return {rows,low,count,shared};
