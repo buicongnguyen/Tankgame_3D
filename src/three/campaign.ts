@@ -40,6 +40,8 @@ export function parseSave(raw: string | null): Save {
   try {
     const s = JSON.parse(raw || 'null');
     if (!s || s.version !== 1 || !Number.isInteger(s.mission) || s.mission < 0 || s.mission >= s.cleared?.length || !Array.isArray(s.cleared) || ![6,9,14,MISSIONS.length].includes(s.cleared.length) || s.cleared.some((v: unknown) => typeof v !== 'boolean') || !Number.isInteger(s.credits) || s.credits < 0 || !normalizeDifficulty(s.difficulty)) return freshSave();
+    // Storage metadata belongs to the profile transaction, never to a campaign or parked slot.
+    delete s.profileVersion;delete s.profileBook;delete s.profileRevision;
     s.credits=Math.min(s.credits,CREDIT_CAP);
     s.training={completed:Array.from({length:3},(_,i)=>s.training?.completed?.[i]===true),skipped:s.training?.skipped===true||s.training===undefined};
     s.difficulty=normalizeDifficulty(s.difficulty);s.level??=0;

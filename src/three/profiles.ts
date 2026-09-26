@@ -3,9 +3,8 @@ import {MISSIONS} from './campaign';
 import {MODES} from './difficulty';
 import {getSkin} from './skins';
 
-/** Three save profiles on one device. The active profile's progress stays in SAVE_KEY exactly as before,
- *  so existing campaigns become Profile 1 untouched; this book keeps every profile's name and the
- *  progress of the profiles that are not in use. */
+/** Profile metadata is embedded in the active campaign's atomic save record.
+ * PROFILES_KEY is retained solely to migrate the former split-key format. */
 export const PROFILES_KEY='steel-front-3d-profiles-v1';
 export const PROFILE_SLOTS=3;
 export interface ProfileSlot {name:string;save:string|null;played:number;}
@@ -17,8 +16,8 @@ export function cleanProfileName(raw:unknown,i:number){
  const name=typeof raw==='string'?raw.replace(/[\u0000-\u001f]/g,'').trim().slice(0,20):'';
  return name||defaultProfileName(i);
 }
-export function loadProfiles():ProfileBook{
- let raw:unknown=null;try{raw=JSON.parse(localStorage.getItem(PROFILES_KEY)??'null');}catch{/* unreadable: start a fresh book */}
+export function loadProfiles(json:string|null):ProfileBook{
+ let raw:unknown=null;try{raw=JSON.parse(json??'null');}catch{/* unreadable: start a fresh book */}
  const book=raw&&typeof raw==='object'?raw as {active?:unknown;slots?:unknown}:{};
  const stored=Array.isArray(book.slots)?book.slots:[];
  const slots=Array.from({length:PROFILE_SLOTS},(_,i)=>{
@@ -26,10 +25,10 @@ export function loadProfiles():ProfileBook{
   return {name:cleanProfileName(s.name,i),save:typeof s.save==='string'?s.save:null,played:typeof s.played==='number'&&Number.isFinite(s.played)?s.played:0};
  });
  const active=Number.isInteger(book.active)&&(book.active as number)>=0&&(book.active as number)<PROFILE_SLOTS?book.active as number:0;
- slots[active].save=null; // the profile in use lives in SAVE_KEY
+ slots[active].save=null; // the profile in use lives at the root of the atomic record
  return {active,slots};
 }
-export function storeProfiles(book:ProfileBook){try{localStorage.setItem(PROFILES_KEY,JSON.stringify(book));return true;}catch{return false;}}
+
 
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]!);
 export function profileSummary(save:Save){

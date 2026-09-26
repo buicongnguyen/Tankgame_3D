@@ -44,7 +44,7 @@ test('Strike calls persist through reload and retry; previews cannot grant and D
  const denied=!g.callArtillery()&&g.save.strikeCharges===0;g.updateHud();const disabled=(g.el('artillery') as HTMLButtonElement).disabled;
  const drop=g.airSupport.request(g)&&g.save.strikeCharges===0;g.prepare(1);const preview=g.save.strikeCharges===0;g.start(0);const retry=g.save.strikeCharges===0;g.start(1);const bank=g.save.strikeCharges===2;g.start(1,1);const level=g.save.strikeCharges===2;g.start(0);return {first,empty,accepted,duplicate,denied,disabled,drop,preview,retry,bank,level,back:g.save.strikeCharges===2};});
  expect(r).toEqual({first:2,empty:true,accepted:true,duplicate:true,denied:true,disabled:true,drop:true,preview:true,retry:true,bank:true,level:true,back:true});
- await page.reload();await page.getByRole('button',{name:'DEPLOY'}).click();expect(await page.evaluate(()=>(window as any).__steel.save.strikeCharges)).toBe(2);
+ await page.evaluate(()=>(window as any).__steel.storage.flush());await page.reload();await page.getByRole('button',{name:'DEPLOY'}).click();expect(await page.evaluate(()=>(window as any).__steel.save.strikeCharges)).toBe(2);
 });
 
 for(const viewport of [{width:320,height:568},{width:390,height:844},{width:568,height:320},{width:844,height:390}])test(`compact touch mission HUD stays readable and clear ${viewport.width}`,async({browser})=>{

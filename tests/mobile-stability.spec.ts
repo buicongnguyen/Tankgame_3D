@@ -28,7 +28,7 @@ test('phone defaults to High, legacy progress and manual Low choice persist',asy
  await page.goto('/?e2e');await expect.poll(()=>page.evaluate(()=>(window as any).__steel?.save.low)).toBe(false);
  expect(await page.evaluate(()=>{const g=(window as any).__steel;return {easy:g.save.difficulty,shadow:g.world.renderer.shadowMap.enabled,ratio:g.world.renderer.getPixelRatio(),antialias:g.world.renderer.getContext().getContextAttributes().antialias};})).toEqual({easy:'easy',shadow:true,ratio:1.6,antialias:true});
  const legacy={...freshSave(),difficulty:'hard',credits:123,low:false};delete legacy.graphicsChosen;
- await page.evaluate(({key,save})=>localStorage.setItem(key,JSON.stringify(save)),{key:SAVE_KEY,save:legacy});await page.reload();await page.waitForFunction(()=>(window as any).__steel?.phase==='menu');
+ await page.evaluate(({key,save})=>{localStorage.removeItem('steel-front-3d-state-v2');localStorage.setItem(key,JSON.stringify(save));},{key:SAVE_KEY,save:legacy});await page.reload();await page.waitForFunction(()=>(window as any).__steel?.phase==='menu');
  expect(await page.evaluate(()=>{const s=(window as any).__steel.save;return [s.low,s.difficulty,s.credits];})).toEqual([false,'hard',123]);
  await page.locator('.menu-settings>summary').click();await page.locator('[data-action="quality"]').tap();await expect(page.locator('[data-action="quality"]')).toHaveAttribute('aria-pressed','true');
  await page.reload();await page.waitForFunction(()=>(window as any).__steel?.phase==='menu');expect(await page.evaluate(()=>(window as any).__steel.save.low)).toBe(true);await context.close();

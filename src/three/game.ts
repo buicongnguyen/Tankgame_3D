@@ -1,12 +1,15 @@
 import {TANK_FLAGS,normalizeFlag,flagPreview} from './tank-flags';
 import {TrainingSession,TRAINING} from './training';
 import {Airlifts} from './airlift';
-import {loadProfiles,storeProfiles,profilesPanel,resetPrompt,profileChip,cleanProfileName,PROFILE_SLOTS} from './profiles';
+import {profilesPanel,resetPrompt,profileChip,cleanProfileName,PROFILE_SLOTS} from './profiles';
+import type {ProfileBook} from './profiles';
+import {ProfileStorage,PROFILE_STATE_KEY} from './profile-storage';
+import type {SaveFailure} from './profile-storage';
 import {SkirmishSession,normalizeSkirmish,loadSkirmish,storeSkirmish,skirmishSetup,skirmishResult,skirmishFailed,TEAMS,AI_SPEEDS,TEAM_SIZES,FIELDS,SKIRMISH_TOUGHNESS} from './skirmish';
 import {DefenseWaves} from './defense-waves';
 import {Allies} from './allies';
 import {RenderPacer} from './render-pacer';
-import {recordRun,showLeaderboard,pilotName,setPilotName} from './leaderboard';
+import {recordRun,showLeaderboard} from './leaderboard';
 import {fullscreenButton} from './fullscreen';
 import {grantBackgroundStrikes} from './strike-bank';
 import {AutoMissiles,buyAutoPack} from './auto-missiles';
@@ -55,7 +58,7 @@ interface Shot { homing?:Unit;alliedSafe?:boolean; height?:{start:number;range:n
 export class Game {
   training:TrainingSession|null=null;campaignSave:Save|null=null;waves=new DefenseWaves();allies=new Allies();
   /** Skirmish series state; the setup draft persists separately from the campaign save. */
-  airlifts=new Airlifts();profiles=loadProfiles();
+  airlifts=new Airlifts();storage=new ProfileStorage();profiles=this.storage.book;profileBusy=false;saveConflict=false;
   /** Campaign start area kept free of spawns and patrols; `deploying` applies it to initial placement only. */
   deployZone:{x:number;z:number;vehicle:number;infantry:number}|null=null;deploying=false;deployShieldUntil=0;skirmish:SkirmishSession|null=null;skirmishDraft=loadSkirmish();
   root:HTMLElement; world:World; input:Input; save:Save=freshSave(); phase:Phase='menu'; mission=0;level=0;armoredGoal=0;
@@ -81,7 +84,7 @@ export class Game {
   projectileMaterials=[new T.MeshBasicMaterial({color:0xffe7a2}),new T.MeshBasicMaterial({color:0xff7552}),new T.MeshBasicMaterial({color:0x82faff}),new T.MeshBasicMaterial({color:0xff9538})];
   constructor(root:HTMLElement){
     this.root=root;
-    try{this.save=parseSave(localStorage.getItem(SAVE_KEY));}catch{this.saveWarning=true;}
+    this.save=this.storage.save;this.saveWarning=this.storage.unavailable;
     root.innerHTML=`<div id="battlefield"></div><div class="vignette"></div><div id="hud" hidden>
       <div class="mission-hud"><span class="eyebrow" id="mission-number"></span><h2 id="mission-name"></h2><span id="mission-compact"></span><p id="objective"></p><p id="objective-compact"></p><div id="boss-readout" hidden></div><div id="boss-compact" hidden></div><div class="objective-track"><i id="objective-fill"></i></div></div>
       <div class="top-actions"><button id="pause" aria-label="Pause game">Ⅱ <span>PAUSE</span></button><canvas id="minimap" width="176" height="132" aria-label="Tactical map"></canvas></div>
@@ -93,6 +96,7 @@ export class Game {
     </div><div id="overlay"></div><div class="loading" id="loading"><span class="eyebrow">KESTREL // CONNECTING</span><h1>Establishing uplink<span class="blink">_</span></h1><p>Loading the valley and armored units.</p></div>`;
     this.overlay=this.el('overlay');this.hud=this.el('hud');this.radio=this.el('radio');this.mini=this.el('minimap') as HTMLCanvasElement;
     this.world=new World(this.el('battlefield'),this.save.low);this.input=new Input(this.world.renderer.domElement);
+    window.addEventListener('storage',event=>{if((event.key===PROFILE_STATE_KEY||event.key===SAVE_KEY||event.key==='steel-front-3d-profiles-v1'||event.key===null)&&this.storage.changed())this.saveProblem('conflict');});
     this.input.onPause=()=>{if(this.phase==='playing')this.pause();else if(this.phase==='paused'&&!document.hidden&&document.hasFocus())this.resume();};
     this.input.onBackground=()=>{if(this.phase==='playing')this.pause();};
     this.input.onAction=a=>this.action(a);
@@ -126,7 +130,27 @@ export class Game {
     this.last=performance.now();requestAnimationFrame(t=>this.frame(t));
     if(import.meta.env.DEV && new URLSearchParams(location.search).has('e2e'))(window as unknown as {__steel:Game}).__steel=this;
   }
-  persist(){if(this.campaignSave){this.campaignSave.low=this.save.low;this.campaignSave.graphicsChosen=this.save.graphicsChosen;this.campaignSave.sound=this.save.sound;}try{localStorage.setItem(SAVE_KEY,JSON.stringify(this.campaignSave??this.save));}catch{this.saveWarning=true;}this.profiles.slots[this.profiles.active].played=Date.now();storeProfiles(this.profiles);}
+  persist(){
+    if(this.saveConflict||this.profileBusy)return Promise.resolve(false);
+    if(this.campaignSave){this.campaignSave.low=this.save.low;this.campaignSave.graphicsChosen=this.save.graphicsChosen;this.campaignSave.sound=this.save.sound;}
+    this.profiles.slots[this.profiles.active].played=Date.now();
+    return this.commitProfiles(this.campaignSave??this.save,this.profiles);
+  }
+  async commitProfiles(save:Save,book:ProfileBook){
+    const outcome=await this.storage.commit(save,book);
+    if(!outcome.ok){this.saveProblem(outcome.reason);return false;}
+    this.saveWarning=false;this.root.querySelector('#save-notice')?.remove();return true;
+  }
+  saveProblem(reason:SaveFailure){
+    this.saveWarning=true;
+    if(reason==='conflict'){
+      this.saveConflict=true;this.finishDelay=0;this.finishDeadline=0;this.setPhase('paused');
+      this.overlay.innerHTML='<section class="panel pause-panel"><h1>Progress updated in another tab</h1><p>Reload to use the latest saved profiles. This tab has stopped saving to protect your progress.</p><button class="primary" data-action="reload-save">RELOAD SAVED GAME</button></section>';
+      return;
+    }
+    let notice=this.root.querySelector<HTMLElement>('#save-notice');if(!notice){notice=document.createElement('p');notice.id='save-notice';notice.className='save-notice';notice.setAttribute('role','alert');this.root.append(notice);}
+    notice.textContent=reason==='unsupported'?'Saving needs an updated browser on HTTPS. Profile changes were cancelled.':'Could not save. Your previous saved profiles are safe. Free browser storage and retry; keep this tab open for unsaved progress.';
+  }
   setPhase(phase:Phase){if(phase!=='playing')this.clearLesson();if(!['playing','paused'].includes(phase)){this.clearBarrage();this.auto.clear();}this.phase=phase;document.body.dataset.phase=phase;this.hud.hidden=!['playing','paused','finishing'].includes(phase);this.input.active=phase==='playing';this.input.reset();this.weaponPickerOpen=false;this.el('weapon-picker').hidden=true;this.overlay.hidden=phase==='playing'||phase==='finishing';if(phase!=='playing')this.world.cursor.visible=false;}
   focusPrimary(){requestAnimationFrame(()=>this.overlay.querySelector<HTMLButtonElement>('.primary')?.focus({preventScroll:true}));}
   missionData(){if(this.training)return this.training.mission();if(this.skirmish)return this.skirmish.mission(this.mission);return levelMission(this.mission,this.level);}
@@ -134,15 +158,16 @@ export class Game {
   settings(){return `<div class="settings"><button data-action="training" data-value="0">REPLAY TRAINING</button>${fullscreenButton()}<button data-action="sound">SOUND <b>${this.save.sound?'ON':'OFF'}</b></button><button data-action="quality" aria-pressed="${this.save.low}" aria-describedby="graphics-help" ${this.qualityChanging?'disabled':''}>GRAPHICS <b>${this.qualityChanging?'LOADING…':this.save.low?'LOW DETAIL':'HIGH DETAIL'}</b></button><a href="./legacy.html">Original 2D ↗</a><small id="graphics-help" role="status">${this.qualityError?'Could not load graphics. Tap to retry.':'Low detail: simpler models · fewer effects · 30 FPS cap'}</small></div>`;}
   controls(){return '<div class="control-guide"><span><kbd>W A S D</kbd> Drive</span><span><kbd>I J K L / MOUSE</kbd> Aim</span><span><kbd>SPACE / F / CLICK</kbd> Fire</span><span><kbd>C / 1–9</kbd> Switch gun</span><span><kbd>Q</kbd> Shield</span><span><kbd>E</kbd> Auto vehicle missile</span><span><kbd>R / T</kbd> Strike / Drop</span><span><kbd>ESC</kbd> Pause</span><p class="touch-guide">On touch: left stick drives; right stick aims and fires. Tap Switch Gun to choose a gun. Strike, Drop, Shield and Auto have separate buttons.</p></div>';}
   showMenu(){
+    if(this.saveConflict){this.saveProblem('conflict');return;}
     const expanded=Array.from(this.overlay.querySelectorAll<HTMLDetailsElement>('details[data-menu-section][open]')).map(e=>e.dataset.menuSection);
     this.setPhase('menu');this.world.target.copy(this.player.visual.root.position);const m=this.missionData();
-    this.overlay.innerHTML=`<main class="command-screen"><header class="brand"><span class="brand-mark">◈</span><span>KESTREL DIVISION<small>MERIDIAN RECOVERY COMMAND</small></span>${profileChip(this.profiles,pilotName())}</header><section class="hero"><span class="eyebrow">THE MERIDIAN CAMPAIGN</span><h1>STEEL<br><em>FRONT</em><span>LAST SIGNAL</span></h1><p class="menu-tagline">One tank. The road home.</p><div class="tank-showcase"><div class="showcase-ring" aria-hidden="true"></div><img src="${import.meta.env.BASE_URL}skins/${this.save.skin}.png?v=vivid-2" alt="${getSkin(this.save.skin).name} tank"/><div class="showcase-caption"><span class="eyebrow">YOUR ARMOR</span><strong>${getSkin(this.save.skin).name}</strong><span>${getSkin(this.save.skin).bonus}</span></div></div></section><aside class="briefing panel"><div class="panel-top"><span class="eyebrow">STAGE ${String(this.mission+1).padStart(2,'0')} / ${MISSIONS.length}</span></div><h2>${m.name}</h2><div class="mission-task"><span>OBJECTIVE</span><strong>${m.objective}${this.level===2?` · ${mode(this.save.difficulty).bosses} boss${mode(this.save.difficulty).bosses>1?'es':''}`:''}</strong></div><details class="mission-setup" data-menu-section="setup"><summary>Mission setup <span>${MODES[this.save.difficulty].label} · Level ${this.level+1}</span></summary><div class="setup-label">DIFFICULTY</div><div class="difficulty" aria-label="Difficulty">${DIFFICULTIES.map(d=>`<button data-action="difficulty" data-value="${d}" aria-pressed="${this.save.difficulty===d}" class="${this.save.difficulty===d?'active':''}">${MODES[d].label}</button>`).join('')}</div><small class="mode-hint">${mode(this.save.difficulty).hint}</small><div class="setup-label">STAGE LEVEL</div><div class="level-select" aria-label="Stage level">${LEVEL_NAMES.map((name,i)=>`<button data-action="level" data-value="${i}" aria-pressed="${i===this.level}" ${i>unlockedLevel(this.save,this.mission)?'disabled':''}>${i+1} · ${name}</button>`).join('')}</div></details>${!this.save.training?.skipped&&!this.save.training?.completed.every(Boolean)?`<button class="primary" data-action="training" data-value="${Math.max(0,this.save.training?.completed.indexOf(false)??0)}">START TRAINING →</button><small>Three short lessons · or skip below</small>`:''}<button class="${!this.save.training?.skipped&&!this.save.training?.completed.every(Boolean)?'quiet':'primary'} deploy" data-action="deploy">DEPLOY <span>→</span></button><button class="hangar-button" data-action="hangar"><img src="${import.meta.env.BASE_URL}skins/${this.save.skin}.png?v=vivid-2" alt=""/><span>SKIN · ${getSkin(this.save.skin).name}<small>${getSkin(this.save.skin).bonus} · Change →</small></span></button><button class="skirmish-entry" data-action="skirmish-setup"><span>SKIRMISH SERIES<small>${this.skirmishDraft.maps.length} battlefield${this.skirmishDraft.maps.length>1?'s':''} · ${this.skirmishDraft.teams} AI team${this.skirmishDraft.teams>1?'s':''} · ${AI_SPEEDS[this.skirmishDraft.speed].label} speed${this.skirmishDraft.field?` · ${FIELDS[this.skirmishDraft.field].label} field`:''}</small></span><b aria-hidden="true">→</b></button><details><summary>Briefing & controls</summary><p class="briefing-copy">${m.briefing} ${m.kind==='defense'?'A repair stop sits off the relay approach.':`${this.world.layout.closed?'O loop: circle either way and return to the gate. The convoy follows your first branch.':`${this.world.layout.points.length===2?'Direct marked path':ROUTE_LABELS[this.world.layout.shape]} · follow the amber chevrons ${this.world.layout.direction} to the exit.`}`}</p>${this.controls()}<p class="manual">Tanks guard buildings and fuel; infantry watch from trees. Some squads patrol, with wider sweeps for tanks farther from the marked route. Solid cover blocks their view. Nearby squads react when they spot you or take a hit. Break sight to stop aimed fire. Front armor absorbs damage. Flank for stronger hits. Driving at speed can run down hostile infantry; a stationary tank cannot. Red lines warn of incoming fire. Amber marks the objective. Red mine circles show their 2.7 m trigger radius; ground units on either side set them off. Helicopters fly over cover and land to expose their core; use laser or arc rockets while they are airborne. Spiders climb cover and rest between attacks. Laser bosses warn before their beam burst. Vanguard fires four arm guns; Marshal and Atlas warn before paired missiles. Every boss keeps firing its light machine gun while its special weapon cycles; use cover to break its line of sight. Red drums and gasoline crates explode and can chain-react. Destroyed tanks have a 1-in-3 chance to leave medical, shield or weapon crates nearby, up to the mission loot limit. Later levels and harder modes have smaller drops. Most maps have one fixed repair stop. Riflemen and scout jeeps use light bullets; rocketeers remain dangerous. Green repair centers provide more healing. Repair pads remain marked with green crosses on the minimap. Cannon is available immediately; clear First Light for autocannon and Homeward for rockets. Tap Switch Gun to choose. Cyan and purple crates refill special ammo, normally capped at 12 laser shots or 6 arc rockets (Quartermaster: 15 / 8). Laser pierces enemies and one concrete barrier; the second stops it. Laser does not damage concrete. Four base cannon hits break one concrete section. Every weapon and tank system can be upgraded to level 20. The machine gun fires two rounds together, or four at weapon level 10. Micro missiles are smaller and faster. Triple Arc launches three rockets over cover, with only three volleys per mission. Ordinary arc crates do not refill Triple Arc. Flamethrower fires a 60° cone up to 12 m, with a two-second burn and 80 bursts per mission (Quartermaster: 200); solid cover blocks it. Buy it in the shop and select key 9 or Switch Gun. Later routes are longer. Breach two or three concrete rows for shortcuts. Square concrete landmarks take 1,000 damage before they collapse and open a path. Clearing every hostile, including reserves, finishes any mission after the effects delay; the transport must survive. Otherwise, assault and boss stages can finish at the marked exit after their armor objective. Relay defense uses four finite waves from the perimeter; defeat them all. Escort the 1,040 HP transport home along the signs. Q shields both vehicles; shield pickups protect both too. Ambushes wait beyond the clear deployment area: no enemy starts within 30 m of you. A deployment shield covers your first seconds (8 s on Easy, 6 s on Normal, 5 s on Hard or Crazy). On Easy, a starter cache with 4 laser shots and 2 arc rockets lands beside you. Arc rockets fly over cover and blast both sides. Keys 1–9 (including the number pad) select weapons. Empty weapons select the next usable advanced slot to the right, then the nearest usable slot to the left if none remain. R calls Strike: up to six guided missiles, 90 base damage each, against hostiles within 64 m. Two Strike charges arrive on first deployment into each new background. Unused charges carry over; retries and revisits do not refill them. T calls a nearby supply drop. E fires one purchased Auto missile at a jeep, tank or boss within 42 m. A 40-credit pack holds six missiles for one deployment; unused rounds expire on sortie end or restart. Quartermaster carries 200 flame bursts and adds 25% to other finite ammo, rounded up. Storm Kite uses four rotors and a warned three-missile pincer, then lands to expose its core. Missiles fly over cover and track moving targets, assigning at most two missiles per enemy. Direct support blasts spare Kestrel and the transport; fuel can still chain-react. No targets means no cooldown is spent. Every mission allows supply drops: two on Easy or Crazy, one on Normal or Hard. Drops share the 28-second missile cooldown and deliver a small medical, ammo or shield crate based on your needs.</p></details></aside><details class="campaign-route" data-menu-section="campaign"><summary>Campaign <span>${this.save.cleared.filter(Boolean).length} / ${MISSIONS.length} stages complete · Change stage</span></summary><div class="route-heading"><span class="eyebrow">THE ROAD HOME</span><span>${this.save.cleared.filter(Boolean).length} / ${MISSIONS.length} COMPLETE</span></div><div class="route-list" tabindex="0" role="region" aria-label="Campaign stages — scroll for more">${this.route()}</div></details><footer><button data-action="leaderboard">LEADERBOARD</button><div class="mobile-fullscreen">${fullscreenButton()}</div><button data-action="shop">SHOP · ${this.save.credits} CR</button><details class="menu-settings" data-menu-section="settings"><summary>Settings</summary>${this.settings()}<button class="quiet" data-action="profile-reset" data-value="${this.profiles.active}">Reset this profile</button></details></footer>${this.saveWarning?'<p class="storage-warning">Browser storage is unavailable. Progress will last only for this session.</p>':''}</main>`;
+    this.overlay.innerHTML=`<main class="command-screen"><header class="brand"><span class="brand-mark">◈</span><span>KESTREL DIVISION<small>MERIDIAN RECOVERY COMMAND</small></span>${profileChip(this.profiles,this.profileName(this.profiles.active))}</header><section class="hero"><span class="eyebrow">THE MERIDIAN CAMPAIGN</span><h1>STEEL<br><em>FRONT</em><span>LAST SIGNAL</span></h1><p class="menu-tagline">One tank. The road home.</p><div class="tank-showcase"><div class="showcase-ring" aria-hidden="true"></div><img src="${import.meta.env.BASE_URL}skins/${this.save.skin}.png?v=vivid-2" alt="${getSkin(this.save.skin).name} tank"/><div class="showcase-caption"><span class="eyebrow">YOUR ARMOR</span><strong>${getSkin(this.save.skin).name}</strong><span>${getSkin(this.save.skin).bonus}</span></div></div></section><aside class="briefing panel"><div class="panel-top"><span class="eyebrow">STAGE ${String(this.mission+1).padStart(2,'0')} / ${MISSIONS.length}</span></div><h2>${m.name}</h2><div class="mission-task"><span>OBJECTIVE</span><strong>${m.objective}${this.level===2?` · ${mode(this.save.difficulty).bosses} boss${mode(this.save.difficulty).bosses>1?'es':''}`:''}</strong></div><details class="mission-setup" data-menu-section="setup"><summary>Mission setup <span>${MODES[this.save.difficulty].label} · Level ${this.level+1}</span></summary><div class="setup-label">DIFFICULTY</div><div class="difficulty" aria-label="Difficulty">${DIFFICULTIES.map(d=>`<button data-action="difficulty" data-value="${d}" aria-pressed="${this.save.difficulty===d}" class="${this.save.difficulty===d?'active':''}">${MODES[d].label}</button>`).join('')}</div><small class="mode-hint">${mode(this.save.difficulty).hint}</small><div class="setup-label">STAGE LEVEL</div><div class="level-select" aria-label="Stage level">${LEVEL_NAMES.map((name,i)=>`<button data-action="level" data-value="${i}" aria-pressed="${i===this.level}" ${i>unlockedLevel(this.save,this.mission)?'disabled':''}>${i+1} · ${name}</button>`).join('')}</div></details>${!this.save.training?.skipped&&!this.save.training?.completed.every(Boolean)?`<button class="primary" data-action="training" data-value="${Math.max(0,this.save.training?.completed.indexOf(false)??0)}">START TRAINING →</button><small>Three short lessons · or skip below</small>`:''}<button class="${!this.save.training?.skipped&&!this.save.training?.completed.every(Boolean)?'quiet':'primary'} deploy" data-action="deploy">DEPLOY <span>→</span></button><button class="hangar-button" data-action="hangar"><img src="${import.meta.env.BASE_URL}skins/${this.save.skin}.png?v=vivid-2" alt=""/><span>SKIN · ${getSkin(this.save.skin).name}<small>${getSkin(this.save.skin).bonus} · Change →</small></span></button><button class="skirmish-entry" data-action="skirmish-setup"><span>SKIRMISH SERIES<small>${this.skirmishDraft.maps.length} battlefield${this.skirmishDraft.maps.length>1?'s':''} · ${this.skirmishDraft.teams} AI team${this.skirmishDraft.teams>1?'s':''} · ${AI_SPEEDS[this.skirmishDraft.speed].label} speed${this.skirmishDraft.field?` · ${FIELDS[this.skirmishDraft.field].label} field`:''}</small></span><b aria-hidden="true">→</b></button><details><summary>Briefing & controls</summary><p class="briefing-copy">${m.briefing} ${m.kind==='defense'?'A repair stop sits off the relay approach.':`${this.world.layout.closed?'O loop: circle either way and return to the gate. The convoy follows your first branch.':`${this.world.layout.points.length===2?'Direct marked path':ROUTE_LABELS[this.world.layout.shape]} · follow the amber chevrons ${this.world.layout.direction} to the exit.`}`}</p>${this.controls()}<p class="manual">Tanks guard buildings and fuel; infantry watch from trees. Some squads patrol, with wider sweeps for tanks farther from the marked route. Solid cover blocks their view. Nearby squads react when they spot you or take a hit. Break sight to stop aimed fire. Front armor absorbs damage. Flank for stronger hits. Driving at speed can run down hostile infantry; a stationary tank cannot. Red lines warn of incoming fire. Amber marks the objective. Red mine circles show their 2.7 m trigger radius; ground units on either side set them off. Helicopters fly over cover and land to expose their core; use laser or arc rockets while they are airborne. Spiders climb cover and rest between attacks. Laser bosses warn before their beam burst. Vanguard fires four arm guns; Marshal and Atlas warn before paired missiles. Every boss keeps firing its light machine gun while its special weapon cycles; use cover to break its line of sight. Red drums and gasoline crates explode and can chain-react. Destroyed tanks have a 1-in-3 chance to leave medical, shield or weapon crates nearby, up to the mission loot limit. Later levels and harder modes have smaller drops. Most maps have one fixed repair stop. Riflemen and scout jeeps use light bullets; rocketeers remain dangerous. Green repair centers provide more healing. Repair pads remain marked with green crosses on the minimap. Cannon is available immediately; clear First Light for autocannon and Homeward for rockets. Tap Switch Gun to choose. Cyan and purple crates refill special ammo, normally capped at 12 laser shots or 6 arc rockets (Quartermaster: 15 / 8). Laser pierces enemies and one concrete barrier; the second stops it. Laser does not damage concrete. Four base cannon hits break one concrete section. Every weapon and tank system can be upgraded to level 20. The machine gun fires two rounds together, or four at weapon level 10. Micro missiles are smaller and faster. Triple Arc launches three rockets over cover, with only three volleys per mission. Ordinary arc crates do not refill Triple Arc. Flamethrower fires a 60° cone up to 12 m, with a two-second burn and 80 bursts per mission (Quartermaster: 200); solid cover blocks it. Buy it in the shop and select key 9 or Switch Gun. Later routes are longer. Breach two or three concrete rows for shortcuts. Square concrete landmarks take 1,000 damage before they collapse and open a path. Clearing every hostile, including reserves, finishes any mission after the effects delay; the transport must survive. Otherwise, assault and boss stages can finish at the marked exit after their armor objective. Relay defense uses four finite waves from the perimeter; defeat them all. Escort the 1,040 HP transport home along the signs. Q shields both vehicles; shield pickups protect both too. Ambushes wait beyond the clear deployment area: no enemy starts within 30 m of you. A deployment shield covers your first seconds (8 s on Easy, 6 s on Normal, 5 s on Hard or Crazy). On Easy, a starter cache with 4 laser shots and 2 arc rockets lands beside you. Arc rockets fly over cover and blast both sides. Keys 1–9 (including the number pad) select weapons. Empty weapons select the next usable advanced slot to the right, then the nearest usable slot to the left if none remain. R calls Strike: up to six guided missiles, 90 base damage each, against hostiles within 64 m. Two Strike charges arrive on first deployment into each new background. Unused charges carry over; retries and revisits do not refill them. T calls a nearby supply drop. E fires one purchased Auto missile at a jeep, tank or boss within 42 m. A 40-credit pack holds six missiles for one deployment; unused rounds expire on sortie end or restart. Quartermaster carries 200 flame bursts and adds 25% to other finite ammo, rounded up. Storm Kite uses four rotors and a warned three-missile pincer, then lands to expose its core. Missiles fly over cover and track moving targets, assigning at most two missiles per enemy. Direct support blasts spare Kestrel and the transport; fuel can still chain-react. No targets means no cooldown is spent. Every mission allows supply drops: two on Easy or Crazy, one on Normal or Hard. Drops share the 28-second missile cooldown and deliver a small medical, ammo or shield crate based on your needs.</p></details></aside><details class="campaign-route" data-menu-section="campaign"><summary>Campaign <span>${this.save.cleared.filter(Boolean).length} / ${MISSIONS.length} stages complete · Change stage</span></summary><div class="route-heading"><span class="eyebrow">THE ROAD HOME</span><span>${this.save.cleared.filter(Boolean).length} / ${MISSIONS.length} COMPLETE</span></div><div class="route-list" tabindex="0" role="region" aria-label="Campaign stages — scroll for more">${this.route()}</div></details><footer><button data-action="leaderboard">LEADERBOARD</button><div class="mobile-fullscreen">${fullscreenButton()}</div><button data-action="shop">SHOP · ${this.save.credits} CR</button><details class="menu-settings" data-menu-section="settings"><summary>Settings</summary>${this.settings()}<button class="quiet" data-action="profile-reset" data-value="${this.profiles.active}">Reset this profile</button></details></footer>${this.saveWarning?'<p class="storage-warning">Progress could not be saved. Keep this tab open and retry after freeing browser storage.</p>':''}</main>`;
     for(const section of expanded){const detail=this.overlay.querySelector<HTMLDetailsElement>(`details[data-menu-section="${section}"]`);if(detail)detail.open=true;}
     this.focusPrimary();
   }
   pause(){if(this.phase!=='playing')return;this.setPhase('paused');this.renderPause();}
-  renderPause(){this.overlay.innerHTML=`<section class="panel pause-panel"><span class="eyebrow">UPLINK ON HOLD</span><h1>Take a breath.</h1><p>Ready when you are.</p><button class="primary" data-action="resume">RESUME OPERATION →</button><button data-action="retry">Restart this operation</button><button data-action="menu">Return to command</button><details><summary>Controls</summary>${this.controls()}</details>${this.settings()}</section>`;this.focusPrimary();}
-  resume(){if(this.phase!=='paused'||this.qualityChanging||this.graphicsLost)return;this.setPhase('playing');this.overlay.innerHTML='';this.last=performance.now();this.accumulator=0;}
+  renderPause(){if(this.saveConflict){this.saveProblem('conflict');return;}this.overlay.innerHTML=`<section class="panel pause-panel"><span class="eyebrow">UPLINK ON HOLD</span><h1>Take a breath.</h1><p>Ready when you are.</p><button class="primary" data-action="resume">RESUME OPERATION →</button><button data-action="retry">Restart this operation</button><button data-action="menu">Return to command</button><details><summary>Controls</summary>${this.controls()}</details>${this.settings()}</section>`;this.focusPrimary();}
+  resume(){if(this.phase!=='paused'||this.qualityChanging||this.graphicsLost||this.saveConflict||this.profileBusy)return;this.setPhase('playing');this.overlay.innerHTML='';this.last=performance.now();this.accumulator=0;}
   shopTab:'equipment'|'systems'|'support'|'skins'='equipment';
   shopReturn:Phase='depot';
   async changeQuality(){
@@ -155,18 +180,19 @@ export class Game {
     catch{this.qualityError=true;}
     finally{this.qualityChanging=false;if(!this.graphicsLost){render();this.overlay.querySelector<HTMLButtonElement>('[data-action="quality"]')?.focus({preventScroll:true});}}
   }
-  menuAction(action:string,value?:string){
-    if(this.qualityChanging)return;
+  async menuAction(action:string,value?:string){
+    if(action==='reload-save'){location.reload();return;}
+    if(this.qualityChanging||this.profileBusy||this.saveConflict)return;
     if(action.startsWith('profile')&&this.phase==='menu'){
       if(action==='profiles'){this.showProfiles();return;}
       const i=Number(value);if(!Number.isInteger(i)||i<0||i>=PROFILE_SLOTS)return;
-      if(action==='profile-use'){this.switchProfile(i);this.showMenu();return;}
+      if(action==='profile-use'){if(await this.switchProfile(i))this.showMenu();return;}
       if(action==='profile-rename'){this.showProfiles(i);return;}
-      if(action==='profile-name-save'){this.renameProfile(i,this.overlay.querySelector<HTMLInputElement>('#profile-name')?.value);this.showProfiles();return;}
+      if(action==='profile-name-save'){if(await this.renameProfile(i,this.overlay.querySelector<HTMLInputElement>('#profile-name')?.value))this.showProfiles();return;}
       if(action==='profile-reset'){this.overlay.innerHTML=resetPrompt(this.profileName(i),i);this.focusPrimary();return;}
-      if(action==='profile-reset-confirm'){this.resetProfile(i);this.showProfiles();return;}
+      if(action==='profile-reset-confirm'){if(await this.resetProfile(i))this.showProfiles();return;}
     }
-    if(action==='leaderboard'&&this.phase==='menu'){showLeaderboard(this.overlay,this.mission,this.level,this.save.difficulty,()=>this.showMenu());return;}
+    if(action==='leaderboard'&&this.phase==='menu'){showLeaderboard(this.overlay,this.mission,this.level,this.save.difficulty,()=>this.showMenu(),{name:this.profileName(this.profiles.active),rename:name=>this.renameProfile(this.profiles.active,name)});return;}
     if(action==='hangar'&&this.phase==='menu'){this.shopReturn='menu';this.shopTab='skins';this.showShop();}
     if(action==='shop-tab'&&this.phase==='depot'&&(value==='skins'||value==='equipment'||value==='systems'||value==='support')){this.shopTab=value;this.overlay.scrollTop=0;this.showShop();}
     if(action==='skin-buy'&&this.phase==='depot'&&buySkin(this.save,value??'')){this.persist();this.world.applySkin(this.player.visual.root,this.save.skin,this.save.flag);this.showShop();}
@@ -206,7 +232,7 @@ export class Game {
     if(action==='buy'&&this.phase==='depot')this.buy(value as Upgrade);
   }
   /** Pilot profiles. The active profile's name is the leaderboard pilot name; device settings carry over. */
-  profileName(i:number){return i===this.profiles.active?pilotName():this.profiles.slots[i].name;}
+  profileName(i:number){return this.profiles.slots[i].name;}
   deviceSettings(){const {sound,low,graphicsChosen}=this.save;return {sound,low,graphicsChosen};}
   showProfiles(editing:number|null=null){
     this.leaveTraining();const book=this.profiles;
@@ -217,21 +243,30 @@ export class Game {
     input?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();this.menuAction('profile-name-save',String(editing));}});
     requestAnimationFrame(()=>{input?.focus();input?.select();});
   }
-  /** Parks the active campaign in its slot and loads another (a fresh campaign if the slot is empty). */
+  /** Transactional profile mutations: do not change the live campaign/name until the whole save succeeds. */
+  async profileChange(change:(book:ProfileBook,save:Save)=>Save,rebuild=false){
+    if(this.profileBusy||this.saveConflict)return false;
+    this.profileBusy=true;
+    try{
+      this.leaveTraining();const book=structuredClone(this.profiles),save=change(book,structuredClone(this.save));
+      book.slots[book.active].played=Date.now();
+      if(!await this.commitProfiles(save,book))return false;
+      this.profiles=book;this.save=save;if(rebuild)this.prepare(save.mission);return true;
+    }finally{this.profileBusy=false;}
+  }
   switchProfile(i:number){
-    this.leaveTraining();const book=this.profiles;if(i===book.active)return;
-    const device=this.deviceSettings(),from=book.slots[book.active];
-    book.slots[book.active]={name:pilotName(),save:JSON.stringify(this.save),played:from.played};
-    const raw=book.slots[i].save;this.save={...(raw?parseSave(raw):freshSave()),...device};
-    book.slots[i].save=null;book.active=i;setPilotName(book.slots[i].name);
-    this.persist();this.prepare(this.save.mission);
+    return this.profileChange((book,save)=>{
+      if(i===book.active)return save;
+      book.slots[book.active].save=JSON.stringify(save);
+      const raw=book.slots[i].save;book.slots[i].save=null;book.active=i;
+      return {...(raw?parseSave(raw):freshSave()),...this.deviceSettings()};
+    },true);
   }
-  renameProfile(i:number,raw:unknown){const name=cleanProfileName(raw,i);this.profiles.slots[i].name=name;if(i===this.profiles.active)setPilotName(name);storeProfiles(this.profiles);}
-  resetProfile(i:number){
-    this.leaveTraining();
-    if(i===this.profiles.active){this.save={...freshSave(),...this.deviceSettings()};this.persist();this.prepare(0);return;}
-    this.profiles.slots[i].save=JSON.stringify(freshSave());storeProfiles(this.profiles);
-  }
+  renameProfile(i:number,raw:unknown){return this.profileChange((book,save)=>{book.slots[i].name=cleanProfileName(raw,i);return save;});}
+  resetProfile(i:number){return this.profileChange((book,save)=>{
+    if(i===book.active)return {...freshSave(),...this.deviceSettings()};
+    book.slots[i].save=JSON.stringify(freshSave());return save;
+  },i===this.profiles.active);}
   /** Leaves training or a skirmish series and restores the real campaign save. */
   leaveTraining(){if(this.campaignSave){this.save=this.campaignSave;this.campaignSave=null;}this.training=null;this.skirmish=null;this.clearLesson();}
   showSkirmishSetup(){this.setPhase('menu');this.overlay.innerHTML=skirmishSetup(this.skirmishDraft,MODES[this.save.difficulty].label,SKIRMISH_TOUGHNESS[this.save.difficulty]??1);this.focusPrimary();}
@@ -305,7 +340,7 @@ export class Game {
     if(normalizeDifficulty(this.save.difficulty)==='easy')this.airSupport.starter(this);
   }
   action(action:string){
-    if(this.phase!=='playing')return;
+    if(this.phase!=='playing'||this.saveConflict||this.profileBusy)return;
     if(this.training&&(['auto','support-drop'].includes(action)||this.training.id!==2&&['shield','support-strike','artillery'].includes(action)))return;
     if(action==='fire'&&this.reload<=0){this.input.pendingFire=false;this.syncVisual(this.player);this.shoot(this.player,true);}
     if((action==='support-strike'||action==='artillery')&&this.artilleryCooldown<=0){this.callArtillery();}
@@ -669,7 +704,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     if(this.skirmish){this.skirmish.record(this);this.finishDelay=1.5;this.finishDeadline=performance.now()+1500;this.setPhase('finishing');this.updateHud();for(const enemy of this.enemies)enemy.visual.beam.visible=false;this.tone(660,.22,.06);return;}
     this.stageResult={...awardStage(this.save,this.mission,this.elapsed,this.player.hp,this.player.max,this.level),tanks:this.kills,infantry:this.infantryKills};
     if(this.missionData().kind==='rescue'&&this.allies.survivors===2){this.save.credits+=40;this.stageResult.total+=40;}
-    recordRun(this.mission,this.level,this.save.difficulty,this.stageResult.time,this.stageResult.healthPercent,this.stageResult.target);this.lastReward=this.stageResult.total;this.persist();this.finishDelay=1.5;this.finishDeadline=performance.now()+1500;this.setPhase('finishing');this.updateHud();
+    recordRun(this.mission,this.level,this.save.difficulty,this.stageResult.time,this.stageResult.healthPercent,this.stageResult.target,this.profileName(this.profiles.active));this.lastReward=this.stageResult.total;this.persist();this.finishDelay=1.5;this.finishDeadline=performance.now()+1500;this.setPhase('finishing');this.updateHud();
     for(const enemy of this.enemies)enemy.visual.beam.visible=false;
     this.tone(660,.22,.06);
   }

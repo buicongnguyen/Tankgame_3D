@@ -251,7 +251,7 @@ The command screen keeps **three pilot profiles** on each device. The header but
 - **Rename** a profile (up to 20 characters). The profile in use is also the pilot name for new leaderboard records.
 - **Reset** starts one profile over after a confirmation. *Settings → Reset this profile* does the same for the profile in use.
 
-Each profile keeps its own stages, credits, weapons, upgrades, skins, difficulty and Strike charges. Sound and graphics quality belong to the device and apply to every profile. The profile in use is still stored under `steel-front-3d-v1`, so a campaign saved before profiles existed simply becomes Profile 1. The other profiles and all names live in `steel-front-3d-profiles-v1`. An unreadable profile book falls back to the current campaign as Profile 1.
+Each profile keeps its own stages, credits, weapons, upgrades, skins, difficulty and Strike charges. Sound and graphics quality belong to the device and apply to every profile. All three profiles, their names and the active campaign save together in one atomic record (`steel-front-3d-state-v2`). Existing campaigns and profile slots migrate automatically on the first successful save. Tabs serialize saves with a browser lock; an outdated tab pauses and asks to reload instead of overwriting newer progress. If storage is full, profile switching, renaming and resetting are cancelled and the previous saved profiles remain intact. See [profile save safety](docs/PROFILE_SAVE_SAFETY.md).
 
 ## Skirmish series
 
