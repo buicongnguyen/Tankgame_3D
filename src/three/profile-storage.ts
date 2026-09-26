@@ -11,7 +11,7 @@ export type SaveOutcome={ok:true}|{ok:false;reason:SaveFailure};
  * Legacy profile/name keys are migration inputs only, never independently committed.
  * The lock covers compare + write across tabs; the queue preserves call order within a tab. */
 export class ProfileStorage {
- save:Save;book:ProfileBook;unavailable=false;
+ save:Save;book:ProfileBook;unavailable=false;pending=0;
  private raw:string|null=null;private legacySave:string|null=null;private legacy:string|null=null;private migrated=false;private revision=0;
  private queue:Promise<SaveOutcome>=Promise.resolve({ok:true});
  constructor(){
@@ -42,7 +42,7 @@ export class ProfileStorage {
     return {ok:true} as const;
    });}catch{return {ok:false,reason:'storage'};}
   };
-  this.queue=this.queue.then(write,write);return this.queue;
+  this.pending++;this.queue=this.queue.then(write,write).finally(()=>{this.pending--;});return this.queue;
  }
  flush(){return this.queue;}
 }

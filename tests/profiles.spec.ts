@@ -213,3 +213,17 @@ test('browsers without cross-tab locks cancel profile changes with a visible war
  expect(await page.evaluate(key=>localStorage.getItem(key),SAVE_KEY)).toBe(before);
  expect(await state(page)).toMatchObject({credits:4210,pilot:'Nguyen'});
 });
+
+test('leaving during a pending save warns before abandoning the transaction',async({page})=>{
+ await open(page);await page.locator('.profile-chip').click();await page.evaluate(()=>(window as any).__steel.persist());
+ await page.evaluate(async key=>{
+  let acquired!:()=>void;const ready=new Promise<void>(r=>acquired=r);
+  void navigator.locks.request(key,async()=>{acquired();await new Promise<void>(r=>(window as any).releaseSaveLock=r);});await ready;
+  const g=(window as any).__steel;g.save.credits=777;(window as any).pendingSave=g.persist();
+ },PROFILE_STATE_KEY);
+ const prompted=page.waitForEvent('dialog');await page.close({runBeforeUnload:true});
+ const dialog=await prompted;expect(dialog.type()).toBe('beforeunload');await dialog.dismiss();
+ await page.evaluate(()=>(window as any).releaseSaveLock());expect(await page.evaluate(()=>(window as any).pendingSave)).toBe(true);
+ expect(await page.evaluate(()=>(window as any).__steel.storage.pending)).toBe(0);
+ await page.reload();await page.locator('.profile-chip').waitFor();expect((await state(page)).credits).toBe(777);
+});

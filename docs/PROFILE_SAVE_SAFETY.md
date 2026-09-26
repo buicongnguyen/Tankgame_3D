@@ -7,6 +7,7 @@ The profile picker formerly wrote the active campaign and the parked profiles to
 - The canonical record is `steel-front-3d-state-v2`: the active campaign at its root, plus `profileVersion: 2`, `profileRevision` and `profileBook` (active index, all three names and parked campaigns).
 - A single localStorage write commits the entire record. Switching, resetting and renaming use copies, and adopt them in memory only after that write succeeds.
 - Writes queue within a tab. An exclusive Web Lock covers reading, comparing the last observed record and writing across tabs. A stale tab pauses and offers **Reload saved game**; it cannot resume saving from its old copy.
+- Navigation away from the page requests a browser warning while a save is pending, protecting an in-flight purchase or profile switch from an accidental refresh.
 - Ordinary saves cannot queue old profile data while a profile transaction is pending. Training and skirmish saves continue to preserve the real campaign.
 - Existing `steel-front-3d-v1`, `steel-front-3d-profiles-v1` and pilot-name data migrate together. The old campaign key is only a best-effort compatibility mirror after migration. Cached older builds cannot overwrite the canonical record.
 - Full or blocked storage shows a persistent warning. Profile changes are cancelled, leaving the previous record intact; after freeing storage, retry the action. Ordinary gameplay can retain unsaved progress in the current tab.

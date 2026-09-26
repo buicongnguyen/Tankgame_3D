@@ -9,7 +9,7 @@ for(const viewport of [{width:390,height:844},{width:844,height:390}])test(`mobi
  const high=await sample();await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','true');const low=await sample();
  expect(low.triangles).toBeLessThan(high.triangles*.4);expect(low.ratio).toBeLessThanOrEqual(.8);expect(low.shadow||low.reflection).toBe(false);expect(low.width).toBeLessThanOrEqual(viewport.width);expect(low.phase).toBe('menu');
  await graphics.scrollIntoViewIfNeeded();await page.screenshot({path:`test-results/mobile-graphics-${viewport.width}.png`});
- const requests:string[]=[];page.on('request',r=>{if(r.url().endsWith('.glb'))requests.push(r.url());});await page.reload();await page.locator('.menu-settings>summary').click();await expect(graphics).toHaveAttribute('aria-pressed','true');
+ const requests:string[]=[];page.on('request',r=>{if(r.url().endsWith('.glb'))requests.push(r.url());});await page.evaluate(()=>(window as any).__steel.storage.flush());await page.reload();await page.locator('.menu-settings>summary').click();await expect(graphics).toHaveAttribute('aria-pressed','true');
  expect(requests).toHaveLength(MODEL_NAMES.length+6);expect(requests.every(url=>url.includes('/models/low/')||url.includes('/models/pickup-'))).toBe(true);expect((await sample()).triangles).toBe(low.triangles);
  // Switching back from a cold low-detail start must also restore every surface.
  await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','false');expect((await sample()).triangles).toBe(high.triangles);

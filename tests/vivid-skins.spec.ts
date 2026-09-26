@@ -39,13 +39,13 @@ test('mobile flag selection persists into missions and training; None removes it
  await page.getByLabel('Country flag').selectOption('vn');await expect(page.getByLabel('Country flag')).toHaveValue('vn');
  await page.screenshot({path:'test-results/vivid-skins-mobile.png'});
  expect(await page.locator('#overlay').evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
- await page.reload();await page.getByRole('button',{name:'START TRAINING'}).tap();
+ await page.evaluate(()=>(window as any).__steel.storage.flush());await page.reload();await page.getByRole('button',{name:'START TRAINING'}).tap();
  expect(await page.evaluate(()=>{const g=(window as any).__steel;return [g.save.flag,g.player.visual.root.getObjectByName('SkinMarkings').userData.flag];})).toEqual(['vn','vn']);
  await page.evaluate(()=>{const g=(window as any).__steel;g.leaveTraining();g.prepare(0);g.showMenu();});
  await page.getByRole('button',{name:'DEPLOY'}).tap();
  expect(await page.evaluate(()=>{const g=(window as any).__steel;return {flag:g.player.visual.root.userData.flag,enemies:g.enemies.some((e:any)=>!!e.visual.root.getObjectByName('SkinMarkings'))};})).toEqual({flag:'vn',enemies:false});
- await page.reload();await page.locator('[data-action=hangar]').tap();await expect(page.getByLabel('Country flag')).toHaveValue('vn');
- await page.getByLabel('Country flag').selectOption('none');await page.reload();await page.locator('[data-action=hangar]').tap();await expect(page.getByLabel('Country flag')).toHaveValue('none');
+ await page.evaluate(()=>(window as any).__steel.storage.flush());await page.reload();await page.locator('[data-action=hangar]').tap();await expect(page.getByLabel('Country flag')).toHaveValue('vn');
+ await page.getByLabel('Country flag').selectOption('none');await page.evaluate(()=>(window as any).__steel.storage.flush());await page.reload();await page.locator('[data-action=hangar]').tap();await expect(page.getByLabel('Country flag')).toHaveValue('none');
  expect(errors).toEqual([]);await context.close();
 });
 

@@ -97,6 +97,7 @@ export class Game {
     this.overlay=this.el('overlay');this.hud=this.el('hud');this.radio=this.el('radio');this.mini=this.el('minimap') as HTMLCanvasElement;
     this.world=new World(this.el('battlefield'),this.save.low);this.input=new Input(this.world.renderer.domElement);
     window.addEventListener('storage',event=>{if((event.key===PROFILE_STATE_KEY||event.key===SAVE_KEY||event.key==='steel-front-3d-profiles-v1'||event.key===null)&&this.storage.changed())this.saveProblem('conflict');});
+    window.addEventListener('beforeunload',event=>{if(this.storage.pending){event.preventDefault();event.returnValue='';}});
     this.input.onPause=()=>{if(this.phase==='playing')this.pause();else if(this.phase==='paused'&&!document.hidden&&document.hasFocus())this.resume();};
     this.input.onBackground=()=>{if(this.phase==='playing')this.pause();};
     this.input.onAction=a=>this.action(a);
