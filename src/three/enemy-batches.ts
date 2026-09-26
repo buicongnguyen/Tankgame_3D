@@ -19,7 +19,7 @@ export class EnemyBatches {
   const groups=new Map<string,T.Mesh[]>();
   for(const {root,parts} of this.sources){
    if(!root.parent||!root.visible)continue;
-   this.sphere.center.copy(root.position);if(!this.frustum.intersectsSphere(this.sphere))continue;
+   this.sphere.center.copy(root.position);this.sphere.radius=root.userData.cullRadius??9;if(!this.frustum.intersectsSphere(this.sphere))continue;
    // Scene.onBeforeRender runs after Three.js updates all rig matrices.
    for(const part of parts){let visible=true;for(let p:T.Object3D|null=part;p&&p!==root;p=p.parent)if(!p.visible){visible=false;break;}if(!visible)continue;
     const key=`${part.geometry.uuid}:${(part.material as T.Material).uuid}:${part.castShadow}:${part.receiveShadow}`;let group=groups.get(key);if(!group){group=[];groups.set(key,group);}group.push(part);

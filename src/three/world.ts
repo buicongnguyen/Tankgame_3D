@@ -15,6 +15,7 @@ import {SkinMarkings} from './skin-markings';
 import {StableShadow} from './stable-shadow';
 import { skinPalette } from './skins';
 import { TEAMS } from './skirmish';
+import { planOuterRing, buildOuterRing } from './arena';
 import * as T from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -113,7 +114,7 @@ export class World {
       for(const root of templates.values()){
         root.updateMatrixWorld(true);
         const hull=root.getObjectByName('Hull'),turret=root.getObjectByName('Turret');
-        if(hull&&turret){parts.push(hull,turret);root.traverse(o=>{if(/^(Leg[0-9]|LeftLeg|RightLeg|Wheel[FR][LR]|Arm[LR]$|Launcher[LR]$|LightGun$|Rotor|TailRotor)/.test(o.name))parts.push(o);});}
+        if(hull&&turret){parts.push(hull,turret);root.traverse(o=>{if(/^(Leg[0-9]|LeftLeg|RightLeg|Wheel[FR][LR]|Arm[LR]$|Launcher[LR]$|LightGun$|Rotor|TailRotor|Ramp$)/.test(o.name))parts.push(o);});}
         else parts.push(root);
       }
       for (const part of parts) {
@@ -162,17 +163,18 @@ export class World {
     if(enemy) root.traverse(o=>{if(o instanceof T.Mesh && o.material instanceof T.MeshStandardMaterial){
       const name=o.material.name;if(name==='CrewSurface')return;
       // Reuse one enemy material per original material across all tanks.
-      const key=`enemy:${name}`;
+      const key=`enemy:${model}:${name}`;
       let mat=this.enemyMaterials.get(key);
       if(!mat){mat=o.material.clone(); if(name==='Armor')mat.color.set(0x744b41);if(name==='Trim')mat.color.set(0xc08a68);if(name==='Signal')mat.color.set(0xff573e);this.enemyMaterials.set(key,mat);}
       o.material=mat;
     }});
     if(boss&&model==='tank')root.scale.setScalar(1.55);
     const bar=new T.Mesh(new T.PlaneGeometry(2.8,.16),new T.MeshBasicMaterial({color:enemy?0xff795c:0x8efad6,depthTest:false}));
-    bar.userData.owned=true;bar.rotation.x=-Math.PI/3;bar.position.y=model==='scout-jeep'?3.4:model.includes('mech')?7.4:boss?4.6:3;bar.renderOrder=5;root.add(bar);bar.visible=enemy;
+    bar.userData.owned=true;bar.rotation.x=-Math.PI/3;bar.position.y=model==='airlift'?5.8:model==='scout-jeep'?3.4:model.includes('mech')?7.4:boss?4.6:3;bar.renderOrder=5;root.add(bar);bar.visible=enemy;
     const beam=new T.Mesh(new T.BoxGeometry(.08,.02,1),new T.MeshBasicMaterial({color:0xff5849,transparent:true,opacity:.55}));
     beam.userData.owned=true;beam.visible=false;this.entities.add(beam);
     this.entities.add(root);
+    if(model==='airlift')root.userData.cullRadius=12; // 16 m airframe with a 10 m rotor disc
     if(enemy&&!boss)this.enemyBatches.add(root);
     const turret=root.getObjectByName('Turret')!;turret.userData.restY=turret.position.y; // recoil settles back to each rig's own height
     return {root,hull:root.getObjectByName('Hull')!,turret,muzzle:root.getObjectByName('Muzzle')!,bar,beam};
@@ -199,7 +201,7 @@ export class World {
     const colors=TEAMS[team];if(!colors)return;(visual.bar.material as T.MeshBasicMaterial).color.set(colors.css);if(!team)return;
     visual.root.traverse(o=>{if(!(o instanceof T.Mesh)||!(o.material instanceof T.MeshStandardMaterial))return;
       const name=o.material.name,color=name==='Armor'?colors.armor:name==='Trim'?colors.trim:name==='Signal'?colors.signal:null;if(color===null)return;
-      const key=`team${team}:${name}`;let mat=this.enemyMaterials.get(key);if(!mat){mat=o.material.clone();mat.color.set(color);this.enemyMaterials.set(key,mat);}o.material=mat;
+      const key=`team${team}:${visual.root.userData.model}:${name}`;let mat=this.enemyMaterials.get(key);if(!mat){mat=o.material.clone();mat.color.set(color);this.enemyMaterials.set(key,mat);}o.material=mat;
     });
   }
   clear() { this.leadReady=false;this.enemyBatches.clear();this.environment.clear();this.fx.clear();this.wrecks=[];this.activities=[];this.pendingLandmarks=[];
@@ -233,13 +235,18 @@ export class World {
       const mesh=new T.Mesh(geometry,bucket.material);mesh.castShadow=bucket.shadow;mesh.receiveShadow=true;mesh.userData.owned=true;this.arena.add(mesh);
     }
   }
-  build(index:number,kind:string,level=0,difficulty='normal') {
-    this.bounds={...BOUNDS};this.clear();this.missionKind=kind;this.navigationRevision++;this.layout=stageLayout(index,level,kind,difficulty);
-    const frontier=GROUND_COLORS[BIOMES[index]]!==undefined;
-    const ground=this.box(frontier?184:164,.7,frontier?164:144,GROUND_COLORS[BIOMES[index]]??(BIOMES[index]==='snow'?0xc6d5d5:index===3?0x74776c:0xa69c78),0,-.4,0);ground.castShadow=false;if(GROUND_COLORS[BIOMES[index]]!==undefined)(ground.material as T.MeshStandardMaterial).map=groundTexture(BIOMES[index]);
+  /** `scale` 2 builds a Large skirmish battlefield: this stage's map as the core, plus an outer ring. */
+  build(index:number,kind:string,level=0,difficulty='normal',scale=1) {
+    this.bounds={x:BOUNDS.x*scale,z:BOUNDS.z*scale};this.clear();this.missionKind=kind;this.navigationRevision++;this.layout=stageLayout(index,level,kind,difficulty);
+    const ring=scale>1?planOuterRing(this.layout,this.bounds,index,BIOMES[index]==='river'):[];
+    const frontier=GROUND_COLORS[BIOMES[index]]!==undefined,groundW=(frontier?184:164)+(scale-1)*BOUNDS.x*2,groundD=(frontier?164:144)+(scale-1)*BOUNDS.z*2;
+    const ground=this.box(groundW,.7,groundD,GROUND_COLORS[BIOMES[index]]??(BIOMES[index]==='snow'?0xc6d5d5:index===3?0x74776c:0xa69c78),0,-.4,0);ground.castShadow=false;if(GROUND_COLORS[BIOMES[index]]!==undefined)(ground.material as T.MeshStandardMaterial).map=groundTexture(BIOMES[index]);
+    // Keep the ground texture's tile size when a Large map stretches the ground box.
+    if(scale>1){const uv=ground.geometry.attributes.uv,su=groundW/(frontier?184:164),sv=groundD/(frontier?164:144);for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*su,uv.getY(i)*sv);uv.needsUpdate=true;}
     // Winter snow replaces dirt detail; nearly coplanar patches underneath can shimmer.
-    for(let i=0;i<(BIOMES[index]==='snow'||frontier?0:86);i++){
-      const x=Math.sin(i*19.73)*72,z=Math.cos(i*8.2)*60;
+    // A Large ring continues the pattern outside the unchanged core (patches merge into two draws).
+    for(let i=0;i<(BIOMES[index]==='snow'||frontier?0:86*scale*scale);i++){
+      const s=i<86?1:scale,x=Math.sin(i*19.73)*72*s,z=Math.cos(i*8.2)*60*s;if(i>=86&&Math.abs(x)<74&&Math.abs(z)<62)continue;
       const patch=this.box(1.2+(i%4),.035,1.3+(i%3),GROUND_COLORS[BIOMES[index]]??(i%2?0x98936f:0xb1a680),x,.005,z);patch.rotation.y=i;patch.castShadow=false;
     }
     // Reserve the stage route before adding scenery. Every obstacle uses the same footprint for rendering and collision.
@@ -265,7 +272,7 @@ export class World {
     // Extraction pylons frame the road.
     const previous=this.layout.points.at(-2)!,angle=Math.atan2(exit.x-previous.x,exit.z-previous.z);
     for(const side of [-4,4]){const x=exit.x+Math.cos(angle)*side,z=exit.z-Math.sin(angle)*side;this.box(.45,3.2,.45,0x3e5751,x,1.6,z);this.box(.65,.2,.65,0x98f3bf,x,3.3,z);}
-    this.environment.build(this,index);this.buildLandmarkBlocks();buildRouteScenery(this);buildGuardLandmarks(this,kind);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
+    this.environment.build(this,index);if(ring.length)buildOuterRing(this,ring);if(scale>1)this.environment.weather?.scale.set(scale,1,scale);this.buildLandmarkBlocks();buildRouteScenery(this);buildGuardLandmarks(this,kind);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
     this.target.set(0,0,0);
   }
   buildCompact(id:number){

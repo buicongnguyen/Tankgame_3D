@@ -4,7 +4,6 @@ import * as T from 'three';
 import type {Game,Unit} from './game';
 import {distance,segmentBox,segmentCircle,turnToward,clamp,circleBox} from './rules';
 import type {Point} from './rules';
-import {BOUNDS} from './activities';
 export type BossKind='rail'|'missile'|'walker'|'helicopter'|'spider'|'laser'|'quad-mech'|'siege-mech'|'missile-truck'|'quadcopter'|'jet';
 export const bossKind=(mission:number):BossKind=>MISSIONS[mission]?.boss??(['rail','laser','helicopter','spider','quad-mech','rail','missile','helicopter','walker','laser','spider','helicopter','spider','laser','spider','helicopter'] as BossKind[])[mission%16];
 export const BOSS={
@@ -59,7 +58,7 @@ export class BossCombat{
    }
    if(kind==='spider'&&(p.y>.2||g.world.covers.some(c=>c.hp>0&&circleBox(p,g.unitRadius(u),c)))){s.time-=dt;g.syncVisual(u);this.legs(g,u,4);this.secondary(g,u,s,dt);return;}
    if(dist>52){g.syncVisual(u);this.secondary(g,u,s,dt);return;}s.time-=dt;
-   if(s.time<=0){if(kind==='spider')s.landing=undefined;s.phase='charging';s.time=cfg.charge;s.heading=aim;u.aim=aim;s.targets=isMissile(kind)?(kind==='siege-mech'||kind==='missile-truck'?[-1,1]:[-1,0,1]).map(side=>({x:clamp(target.x+side*BOSS[kind].targetSpread*(kind==='siege-mech'||kind==='missile-truck'||kind==='quadcopter'?Math.cos(aim):1),-BOUNDS.x,BOUNDS.x),z:clamp(target.z+(kind==='siege-mech'||kind==='missile-truck'||kind==='quadcopter'?-Math.sin(aim)*side*BOSS[kind].targetSpread:side===0?3:-2),-BOUNDS.z,BOUNDS.z)})):[];
+   if(s.time<=0){if(kind==='spider')s.landing=undefined;s.phase='charging';s.time=cfg.charge;s.heading=aim;u.aim=aim;s.targets=isMissile(kind)?(kind==='siege-mech'||kind==='missile-truck'?[-1,1]:[-1,0,1]).map(side=>({x:clamp(target.x+side*BOSS[kind].targetSpread*(kind==='siege-mech'||kind==='missile-truck'||kind==='quadcopter'?Math.cos(aim):1),-g.world.bounds.x,g.world.bounds.x),z:clamp(target.z+(kind==='siege-mech'||kind==='missile-truck'||kind==='quadcopter'?-Math.sin(aim)*side*BOSS[kind].targetSpread:side===0?3:-2),-g.world.bounds.z,g.world.bounds.z)})):[];
     s.launches=[];for(const [index,t] of s.targets.entries()){const radius=isMissile(kind)?BOSS[kind].blastRadius:0;const marker=new T.Mesh(new T.RingGeometry(radius-.2,radius,48),new T.MeshBasicMaterial({color:0xff6655,transparent:true,opacity:.8,side:T.DoubleSide}));marker.rotation.x=-Math.PI/2;marker.position.set(t.x,.18,t.z);marker.renderOrder=2;(marker.material as T.Material).depthWrite=false;g.world.entities.add(marker);s.markers.push(marker);const rocket=g.world.rocket();rocket.visible=false;rocket.rotation.x=Math.PI/2;rocket.position.set(t.x,28,t.z);g.world.entities.add(rocket);s.rockets.push(rocket);const launch=u.visual.root.getObjectByName('LaunchMuzzle'+index);u.visual.root.updateMatrixWorld(true);s.launches.push(launch?launch.getWorldPosition(new T.Vector3()):p.clone());}
    }
   }else if(s.phase==='charging'){
@@ -136,7 +135,7 @@ export class BossCombat{
   if(s.auxTime<=0){s.auxTime=Math.max(0,s.auxTime)+.32;g.syncVisual(u);g.bossRound(u,aim,3,'LightMuzzle',44);s.auxRound=(s.auxRound??0)+1;if(u.bossKind==='siege-mech'&&s.auxRound%7===0)g.bossRound(u,aim,8,'GunMuzzle0');}
  }
  legs(g:Game,u:Unit,count:number){for(let i=0;i<count;i++)for(const side of ['L','R']){const leg=u.visual.root.getObjectByName('Leg'+i+side);if(leg)leg.rotation.z=u.visual.root.userData.walking?Math.sin(g.elapsed*6+i*2+(side==='L'?0:Math.PI))*.18:0;}}
- freeLanding(g:Game,u:Unit,p:Point){const r=g.unitRadius(u),reserved=[...this.states].some(([other,state])=>other!==u&&!other.dead&&state.landing&&distance(p,state.landing)<r+g.unitRadius(other)+.5);return !reserved&&Math.abs(p.x)<BOUNDS.x-r&&Math.abs(p.z)<BOUNDS.z-r&&!g.world.covers.some(c=>c.hp>0&&circleBox(p,r,c))&&[g.player,...g.enemies,...g.allies.active].every(e=>e===u||e.dead||g.airborne(e)||distance(p,e.visual.root.position)>r+g.unitRadius(e)+.5)&&(!g.convoy||distance(p,g.convoy.position)>r+2.5);}
+ freeLanding(g:Game,u:Unit,p:Point){const r=g.unitRadius(u),reserved=[...this.states].some(([other,state])=>other!==u&&!other.dead&&state.landing&&distance(p,state.landing)<r+g.unitRadius(other)+.5);return !reserved&&Math.abs(p.x)<g.world.bounds.x-r&&Math.abs(p.z)<g.world.bounds.z-r&&!g.world.covers.some(c=>c.hp>0&&circleBox(p,r,c))&&[g.player,...g.enemies,...g.allies.active].every(e=>e===u||e.dead||g.airborne(e)||distance(p,e.visual.root.position)>r+g.unitRadius(e)+.5)&&(!g.convoy||distance(p,g.convoy.position)>r+2.5);}
  landingPoint(g:Game,u:Unit):Point{
   const player=g.player.visual.root.position,position=u.visual.root.position;
   // The far side of a nearby obstacle hides a grounded aircraft from direct fire.
@@ -148,7 +147,7 @@ export class BossCombat{
  fly(u:Unit,target:Point,height:number,dt:number){const p=u.visual.root.position,d=distance(p,target),travel=Math.min(d,dt*6);if(d>.01){p.x+=(target.x-p.x)/d*travel;p.z+=(target.z-p.z)/d*travel;}p.y+=clamp(height-p.y,-dt*3,dt*3);u.visual.root.userData.walking=false;}
  climb(g:Game,u:Unit,dx:number,dz:number,dt:number){
   if(g.hazards.quaking){u.velocity={x:0,z:0};return;}
-  const p=u.visual.root.position,r=g.unitRadius(u),next={x:clamp(p.x+dx,-BOUNDS.x+r,BOUNDS.x-r),z:clamp(p.z+dz,-BOUNDS.z+r,BOUNDS.z-r)};
+  const p=u.visual.root.position,r=g.unitRadius(u),next={x:clamp(p.x+dx,-g.world.bounds.x+r,g.world.bounds.x-r),z:clamp(p.z+dz,-g.world.bounds.z+r,g.world.bounds.z-r)};
   const blocked=[g.player,...g.enemies].some(e=>e!==u&&!e.dead&&!g.airborne(e)&&distance(next,e.visual.root.position)<r+g.unitRadius(e))||!!(g.convoy&&distance(next,g.convoy.position)<r+2.4);
   if(!blocked){p.x=next.x;p.z=next.z;u.visual.root.userData.walking=true;}
   const speed=Math.max(.01,Math.hypot(dx,dz)),ahead={x:p.x+dx/speed*2,z:p.z+dz/speed*2};let height=0;

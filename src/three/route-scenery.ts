@@ -31,15 +31,22 @@ export function buildRouteScenery(world:World){
  }
  // Central groves, ruins and supplies also fill gaps between route branches.
  for(let z=-36;z<=36;z+=12)for(let x=-20;x<=20;x+=10){const i=index++;add(x+Math.sin(i*4.7)*1.3,z+Math.cos(i*3.2)*1.3,choose(i),i);}
- const q=new T.Quaternion(),matrix=new T.Matrix4(),up=new T.Vector3(0,1,0);
+ instanceScenery(world,[...buckets.values()].flat(),'RouteScenery');
+ return placed.length;
+}
+
+/** One InstancedMesh per template surface per prop kind; each cover keeps its instance for damage and removal. */
+export function instanceScenery(world:World,placed:{cover:Cover;rotation:number}[],label:string){
+ const biome=world.environment.biome,buckets=new Map<Cover['kind'],typeof placed>();
+ for(const entry of placed){const bucket=buckets.get(entry.cover.kind)??[];bucket.push(entry);buckets.set(entry.cover.kind,bucket);}
+ const q=new T.Quaternion(),matrix=new T.Matrix4(),up=new T.Vector3(0,1,0),trees=new Set<Cover['kind']>(['pine','white-pine','palm','jungle-tree']);
  for(const [kind,entries] of buckets){
   const template=world.templates.get(kind)!;template.updateMatrixWorld(true);const inverse=template.matrixWorld.clone().invert(),parts:T.InstancedMesh[]=[];
   template.traverse(o=>{if(!(o instanceof T.Mesh))return;
-   const instances=new T.InstancedMesh(o.geometry,o.material,entries.length);instances.name='RouteScenery:'+kind;instances.userData={...o.userData};instances.castShadow=true;instances.receiveShadow=true;
-   entries.forEach(({cover,rotation},i)=>{q.setFromAxisAngle(up,rotation);matrix.compose(new T.Vector3(cover.x,0,cover.z),q,new T.Vector3(1,1,1)).multiply(inverse.clone().multiply(o.matrixWorld));instances.setMatrixAt(i,matrix);instances.setColorAt(i,new T.Color(kind===tree&&biome==='volcanic'?0x777363:0xffffff));});
+   const instances=new T.InstancedMesh(o.geometry,o.material,entries.length);instances.name=`${label}:${kind}`;instances.userData={...o.userData};instances.castShadow=true;instances.receiveShadow=true;
+   entries.forEach(({cover,rotation},i)=>{q.setFromAxisAngle(up,rotation);matrix.compose(new T.Vector3(cover.x,0,cover.z),q,new T.Vector3(1,1,1)).multiply(inverse.clone().multiply(o.matrixWorld));instances.setMatrixAt(i,matrix);instances.setColorAt(i,new T.Color(trees.has(kind)&&biome==='volcanic'?0x777363:0xffffff));});
    instances.computeBoundingSphere();world.arena.add(instances);parts.push(instances);
   });
   entries.forEach(({cover},index)=>cover.scenery={parts,index,maxHP:cover.hp});
  }
- return placed.length;
 }

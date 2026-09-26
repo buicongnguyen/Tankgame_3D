@@ -16,7 +16,7 @@ Live (Blender MCP):
     ns = {'__file__': path, '__name__': 'aaa_props'}; exec(open(path).read(), ns)
     ns['run'](['pine'])            # or ns['build']('pine', low=False); ns['export']('pine')
 """
-import bpy, bmesh, json, math, random, sys
+import bpy, bmesh, json, math, random, re, sys
 from contextlib import contextmanager
 from pathlib import Path
 from mathutils import Vector, Matrix, noise
@@ -27,7 +27,7 @@ OUT = ROOT / 'public' / 'models'
 SOURCE = ROOT / 'assets' / 'blender'
 # Runtime file stem -> root node name kept from the original exports.
 ROOTS = {'pine': 'pine', 'barricade': 'Barricade', 'volcanic-rock': 'volcanic-rock',
-         'concrete-block': 'ConcreteBlock', 'stonewall': 'stonewall', 'barrel': 'Barrel'}
+         'concrete-block': 'ConcreteBlock', 'stonewall': 'stonewall', 'barrel': 'Barrel', 'airlift': 'Airlift'}
 TAG = 'aaa_props'
 LIVE = bpy.context.window is not None
 
@@ -764,8 +764,121 @@ def build_concrete_block(root, low=False):
     paint(block, weathering, ao[block], 0.9)
 
 
+# ---------------------------------------------------------------- transport aircraft
+def build_airlift(root, low=False):
+    """'Condor' tandem-rotor transport for Large skirmish maps. Node contract used at runtime:
+    Hull (fuselage), Turret/Muzzle (empty nose mount, needed by the unit rig), Rotor0 (fore) and
+    Rotor1 (aft, higher) spin, Ramp (rear hinge, rotation about X opens it). Armor, Trim and
+    Signal take each team's paint; the nose faces Blender -Y like every other vehicle."""
+    armor = material('Armor', (0.36, 0.38, 0.33), 0.6, 0.2)
+    trim = material('Trim', (0.62, 0.58, 0.46), 0.5, 0.25, vcol=False)
+    signal = material('Signal', (1.0, 0.36, 0.2), 0.4, emission=1.2, vcol=False)
+    glass = material('Glass', (0.04, 0.08, 0.1), 0.12, 0.45, vcol=False)
+    metal = material('Gunmetal', (0.16, 0.17, 0.18), 0.4, 0.75, vcol=False)
+    blade = material('RotorBlade', (0.07, 0.075, 0.08), 0.55, 0.3, vcol=False)
+    seg = 8 if low else 14
+    bev = 0 if low else .18
+    hull = empty('Hull'); hull.parent = root
+    turret = empty('Turret'); turret.parent = root; turret.location = (0, -5.2, 1.2)
+    muzzle = empty('Muzzle'); muzzle.parent = turret; muzzle.location = (0, -.5, 0)
+
+    # Cargo cabin, tapered glazed nose, raised aft rotor pylon, fore rotor mast and side sponsons.
+    body = bmesh.new()
+    merge(body, block((-1.2, -3.6, .45), (1.2, 4.6, 2.95), bevel=bev))
+    nose = block((-1.1, -5.4, .65), (1.1, -3.55, 2.75), bevel=0 if low else .14)
+    for v in nose.verts:
+        if v.co.y < -4.6:
+            v.co.x *= .72
+            v.co.z = 1.9 + (v.co.z - 1.7) * .55
+    merge(body, nose)
+    merge(body, block((-.9, 2.7, 2.85), (.9, 5.0, 4.15), bevel=0 if low else .16))
+    merge(body, block((-.55, -4.15, 2.85), (.55, -2.95, 3.4), bevel=0 if low else .1))
+    for side in (-1, 1):
+        merge(body, block((side * 1.18 - .01 if side > 0 else -1.8, -2.7, .5), (1.8 if side > 0 else -1.18 + .01, 2.7, 1.35), bevel=0 if low else .16))
+    merge(body, block((-1.21, 4.55, .5), (1.21, 4.72, 2.9)), 1)  # rear frame around the ramp opening
+    bmesh.ops.recalc_face_normals(body, faces=body.faces)
+    shell = obj_from_bm(hull, 'Fuselage', body, [armor])
+    harden(shell, sharp_deg=None if not low else 35)
+
+    tb = bmesh.new()  # trim: side stripes and engine intake rings
+    for side in (-1, 1):
+        merge(tb, block((side * 1.215 - .02, -3.4, 2.05), (side * 1.215 + .02, 4.4, 2.3)))
+        ring = lathe([(0, .02), (.44, .02), (.44, -.02), (0, -.02)], seg)
+        bmesh.ops.rotate(ring, verts=ring.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(math.radians(90), 3, 'X'))
+        bmesh.ops.translate(ring, vec=(side * 1.3, 2.45, 3.62), verts=ring.verts)
+        merge(tb, ring)
+    obj_from_bm(hull, 'Stripes', tb, [trim], smooth=False)
+
+    mb = bmesh.new()  # engines, gear, rotor masts
+    for side in (-1, 1):
+        nac = lathe([(0, -1.1), (.36, -1.1), (.42, -.8), (.42, .9), (.3, 1.15), (0, 1.15)], seg)
+        bmesh.ops.rotate(nac, verts=nac.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(math.radians(90), 3, 'X'))
+        bmesh.ops.translate(nac, vec=(side * 1.3, 3.55, 3.62), verts=nac.verts)
+        merge(mb, nac)
+        for y in (-3.2, 2.4):
+            wheel = lathe([(0, -.13), (.32, -.13), (.32, .13), (0, .13)], seg)
+            bmesh.ops.rotate(wheel, verts=wheel.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(math.radians(90), 3, 'Y'))
+            bmesh.ops.translate(wheel, vec=(side * 1.45, y, .32), verts=wheel.verts)
+            merge(mb, wheel)
+            merge(mb, block((side * 1.45 - .06, y - .06, .32), (side * 1.45 + .06, y + .06, .62)))
+    for x, y, z0, z1 in ((0, -3.55, 3.35, 3.7), (0, 3.9, 4.1, 4.55)):
+        mast = lathe([(0, z0), (.2, z0), (.16, z1), (0, z1)], seg)
+        bmesh.ops.translate(mast, vec=(x, y, 0), verts=mast.verts)
+        merge(mb, mast)
+    obj_from_bm(hull, 'Engines', mb, [metal])
+
+    gb = bmesh.new()  # cockpit glazing and cabin windows
+    windshield = block((-.78, -5.3, 1.72), (.78, -5.22, 2.18), tilt=(math.radians(-35), 0, 0))
+    merge(gb, windshield)
+    for side in (-1, 1):
+        merge(gb, block((side * .98 - .03, -5.05, 1.7), (side * .98 + .03, -4.2, 2.2), tilt=(0, 0, side * math.radians(-12))))
+        if not low:
+            for y in (-2.2, -.9, .4, 1.7):
+                merge(gb, block((side * 1.215 - .02, y - .3, 1.55), (side * 1.215 + .02, y + .3, 1.9)))
+    obj_from_bm(hull, 'Glazing', gb, [glass], smooth=False)
+
+    sb = bmesh.new()  # navigation lights and the aft beacon
+    for side in (-1, 1):
+        merge(sb, block((side * 1.8 - .08, -2.75, .95), (side * 1.8 + .08, -2.55, 1.1)))
+    merge(sb, block((-.12, 4.6, 4.15), (.12, 4.85, 4.3)))
+    obj_from_bm(hull, 'Lights', sb, [signal], smooth=False)
+
+    # Rotors: three blades each; the aft rotor sits higher so the discs overlap without touching.
+    for name, hub, phase in (('Rotor0', (0, -3.55, 3.75), 0.0), ('Rotor1', (0, 3.9, 4.6), math.pi / 3)):
+        pivot = empty(name); pivot.parent = hull; pivot.location = hub  # yaw with the hull
+        bb = bmesh.new()
+        for k in range(3):
+            b = block((.35, -.17, -.03), (5.1, .17, .03))
+            bmesh.ops.rotate(b, verts=b.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(phase + k * math.tau / 3, 3, 'Z'))
+            merge(bb, b)
+        obj_from_bm(pivot, name + ' blades', bb, [blade], smooth=False)
+        hb = lathe([(0, -.12), (.34, -.12), (.3, .12), (0, .16)], seg)
+        obj_from_bm(pivot, name + ' hub', hb, [metal])
+
+    # Rear loading ramp, hinged at the cabin floor; closed it fills the rear opening.
+    ramp = empty('Ramp'); ramp.parent = hull; ramp.location = (0, 4.66, .55)
+    rb = block((-1.08, -.06, 0), (1.08, .06, 2.3), bevel=0 if low else .04)
+    merge(rb, block((-1.08, .06, 0), (1.08, .1, .12)), 1)
+    obj_from_bm(ramp, 'Ramp panel', rb, [armor])
+
+    parts = [o for o in (shell, *[c for c in ramp.children]) if o.type == 'MESH' and o.data.materials[0] == armor]
+    ao = bake_ao(parts, distance=.8, ground=False)
+
+    def livery(co, no, part):
+        n = .9 + .1 * fbm(co * 1.7)
+        c = (n, n, n * .98)
+        c = lerp(c, (.62, .6, .56), .45 * smooth01((1.1 - co.z) / .6))  # exhaust and dust under the belly
+        if part == 1:
+            c = tuple(v * .55 for v in c)  # dark ramp frame and hinge
+        return c
+
+    for o in parts:
+        paint(o, livery, ao[o], .75)
+
+
 BUILDERS = {'pine': build_pine, 'barricade': build_barricade, 'volcanic-rock': build_volcanic_rock,
-            'concrete-block': build_concrete_block, 'stonewall': build_stonewall, 'barrel': build_barrel}
+            'concrete-block': build_concrete_block, 'stonewall': build_stonewall, 'barrel': build_barrel,
+            'airlift': build_airlift}
 
 
 # ---------------------------------------------------------------- export
@@ -817,6 +930,9 @@ def export(name, directory=None, low=False):
     target = Path(directory or (OUT / 'low' if low else OUT)) / f'{name}.glb'
     pairs = [(m, m[TAG], bpy.data.materials) for m in mats]
     pairs += [(root, ROOTS[name], bpy.data.objects), (bpy.context.scene, 'Scene', bpy.data.scenes)]
+    # Both tiers live in one session, so Blender suffixes the second tier's nodes (Hull.001);
+    # rigs are looked up by node name at runtime and must export under their base names.
+    pairs += [(o, re.sub(r'\.\d{3}$', '', o.name), bpy.data.objects) for o in root.children_recursive]
     with exact_names(pairs):
         bpy.ops.export_scene.gltf(filepath=str(target), export_format='GLB', use_selection=True, use_active_scene=True,
                                   export_yup=True, export_apply=True, export_vertex_color='MATERIAL',
@@ -845,6 +961,10 @@ def record_low_manifest(names):
 def save_sources(names):
     labels = [f'AAA {n}{suffix}' for n in names for suffix in ('', ' low')]
     scenes = {bpy.data.scenes[l] for l in labels if l in bpy.data.scenes} if LIVE else {bpy.context.scene}
+    # The .blend is rewritten whole: an empty or missing scene would silently drop that prop's source.
+    empty = [l for l in labels if LIVE and (l not in bpy.data.scenes or not bpy.data.scenes[l].objects)]
+    if empty:
+        raise RuntimeError(f'Build these props in this session before saving sources: {empty}')
     bpy.data.libraries.write(str(SOURCE / 'aaa-props.blend'), scenes, path_remap='RELATIVE_ALL', compress=True)
 
 

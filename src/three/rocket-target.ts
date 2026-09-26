@@ -2,7 +2,7 @@ import {clamp} from './rules';
 import type {Point} from './rules';
 import {BOUNDS} from './activities';
 // Direction-only controls need a distance; mouse aiming already supplies one.
-export function rocketTarget(origin:Point,aim:Point,enemies:Point[],directional:boolean):Point{
+export function rocketTarget(origin:Point,aim:Point,enemies:Point[],directional:boolean,bounds:{x:number;z:number}=BOUNDS):Point{
  const dx=aim.x-origin.x,dz=aim.z-origin.z,length=Math.hypot(dx,dz);
  const range=Math.min(45,length),ux=length?dx/length:0,uz=length?dz/length:-1;
  let target={x:origin.x+ux*range,z:origin.z+uz*range},best=Infinity;
@@ -14,5 +14,5 @@ export function rocketTarget(origin:Point,aim:Point,enemies:Point[],directional:
   const score=directional?distance+(1-alignment)*100:miss;
   if(score<best){best=score;target={x:enemy.x,z:enemy.z};}
  }
- return {x:clamp(target.x,-BOUNDS.x,BOUNDS.x),z:clamp(target.z,-BOUNDS.z,BOUNDS.z)};
+ return {x:clamp(target.x,-bounds.x,bounds.x),z:clamp(target.z,-bounds.z,bounds.z)};
 }

@@ -4,8 +4,10 @@ import {freshSave,SAVE_KEY} from '../src/three/campaign';
 
 test('skirmish settings reject bad input and keep at least one battlefield',()=>{
  expect(normalizeSkirmish(null)).toEqual(defaultSkirmish());
- expect(normalizeSkirmish({maps:[5,5,-1,99,2.5,3],speed:9,teams:0,size:-2})).toEqual({maps:[3,5],speed:1,teams:2,size:1});
- expect(normalizeSkirmish({maps:[],speed:3,teams:4,size:2})).toEqual({maps:[0,1,2],speed:3,teams:4,size:2});
+ expect(normalizeSkirmish({maps:[5,5,-1,99,2.5,3],speed:9,teams:0,size:-2,field:7})).toEqual({maps:[3,5],speed:1,teams:2,size:1,field:0});
+ expect(normalizeSkirmish({maps:[],speed:3,teams:4,size:2,field:1})).toEqual({maps:[0,1,2],speed:3,teams:4,size:2,field:1});
+ // Settings saved before Large fields existed load as Standard.
+ expect(normalizeSkirmish({maps:[1],speed:1,teams:2,size:1}).field).toBe(0);
 });
 
 async function battle(page:Page,config:object){
@@ -50,6 +52,24 @@ test('encirclement: opposite pairs take turns assaulting while the others hold t
  for(let i=0;i<4;i++)expect(gap(spread[i],spread[(i+1)%4])).toBeGreaterThan(40);
 });
 
+test('a hammer broken before it strikes releases the anvil to charge',async({page})=>{
+ await battle(page,{maps:[1],speed:1,teams:2,size:1});
+ const r=await page.evaluate(()=>{const g=(window as any).__steel,[anvil,hammer]=g.skirmish.teams;
+  for(const u of hammer.units.slice(0,6))g.damageUnit(u,1e9,g.player.visual.root.position,true);
+  const p=g.player.visual.root.position.clone();for(let i=0;i<60;i++){g.step(1/60);g.player.visual.root.position.copy(p);}
+  return {follow:hammer.follow,anvil:anvil.phase};});
+ expect(r).toEqual({follow:0,anvil:'assault'});
+});
+
+test('Hard and Crazy toughen skirmish enemies instead of adding more of them',async({page})=>{
+ await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
+ const hp=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};const out:any={};
+  for(const d of ['normal','hard','crazy']){g.save.difficulty=d;g.skirmishDraft={maps:[1],speed:1,teams:1,size:0,field:0};g.startSkirmish();const raider=g.enemies.find((e:any)=>e.role==='raider');out[d]={hp:raider.max,count:g.enemies.length};g.leaveTraining();}
+  return out;});
+ expect(hp.hard.hp/hp.normal.hp).toBeCloseTo(1.25);expect(hp.crazy.hp/hp.normal.hp).toBeCloseTo(1.5);
+ expect(hp.hard.count).toBe(hp.normal.count);expect(hp.crazy.count).toBe(hp.normal.count);
+});
+
 test('AI speed scales every enemy role by the chosen pace',async({page})=>{
  await battle(page,{maps:[1],speed:0,teams:1,size:0});
  const slow=await page.evaluate(()=>{const g=(window as any).__steel;return g.enemies.filter((e:any)=>!g.isInfantry(e)).map((e:any)=>g.enemySpeed(e));});
@@ -67,7 +87,10 @@ for(const viewport of [{width:1280,height:800},{width:390,height:844}])test(`ski
  await press('[data-action="skirmish-setup"]');await expect(page.locator('.skirmish-panel')).toBeVisible();
  await press('[data-action="sk-map"][data-value="2"]');await press('[data-action="sk-teams"][data-value="1"]');await press('[data-action="sk-speed"][data-value="3"]');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- expect(JSON.parse(await page.evaluate(()=>localStorage.getItem('steel-front-3d-skirmish')!))).toEqual({maps:[0,1],speed:3,teams:2,size:1});
+ await press('[data-action="sk-field"][data-value="1"]');await expect(page.locator('.skirmish-panel')).toContainText('288 × 240 m');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await press('[data-action="sk-field"][data-value="0"]');
+ expect(JSON.parse(await page.evaluate(()=>localStorage.getItem('steel-front-3d-skirmish')!))).toEqual({maps:[0,1],speed:3,teams:2,size:1,field:0});
  await expect(page.locator('[data-action="sk-start"]')).toHaveText(/2 BATTLES/);await press('[data-action="sk-start"]');
  const first=await page.evaluate(()=>{const g=(window as any).__steel;return {map:g.mission,teams:g.skirmish.teams.length,colors:new Set(g.enemies.map((e:any)=>e.squad)).size,amber:(()=>{let hex=0;g.enemies.find((e:any)=>e.squad===1&&e.role==='raider').visual.root.traverse((o:any)=>{if(o.isMesh&&o.material.name==='Armor')hex=o.material.color.getHex();});return hex;})(),header:document.querySelector('#mission-number')!.textContent,strikes:g.save.strikeCharges};});
  expect(first).toMatchObject({map:0,teams:2,colors:2,strikes:2,amber:0x86662a});expect(first.header).toContain('SKIRMISH 1/2 · BLITZ AI');

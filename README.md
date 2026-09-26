@@ -91,6 +91,7 @@ The most frequently seen static props are rebuilt by `tools/blender/build_aaa_pr
 - fuel drum: a 200 L drum with rolling hoops, chimes, bungs and hazard labels;
 - volcanic rock: a fractured basalt bomb with glowing fissures, now used only for falling volcanic rocks;
 - concrete landmark (`concrete-block`): a 3 × 2 cluster of square precast blocks with lifting loops. It replaced the retired hill model.
+- enemy airlift (`airlift`): a tandem-rotor transport helicopter for Large skirmish fields, with two counter-rotating three-blade rotors, a hinged rear loading ramp, engine nacelles, glazing and a nose door gun. Its armor, trim and signal lights take each team's paint. The rotor and ramp pivots sit under `Hull`, so they turn with the airframe (1,428 / 772 triangles).
 
 The props also carry face-weighted normals and a vertex-colour paint pass. Cycles-baked ambient occlusion is multiplied into procedural weathering such as moss, grime, rain streaks, scuffed hoops and ash. There are no new textures apart from a 64 px tileable basalt normal map.
 
@@ -108,7 +109,7 @@ Every map keeps up to two large route landmarks, and classic maps add two flank 
 - **Behavior:** a landmark blocks movement, sight, shells and the laser until it is destroyed. Damage darkens it, hits show on the struck face, and destruction collapses it in dust, opens the path and updates enemy navigation. Spider bosses can climb it.
 - **Rendering:** all landmarks on a map share one instanced draw per detail tier (1,140 / 228 triangles). The old hill used two materials and separate clones on classic maps, and its model is no longer downloaded.
 
-Use your own Blender executable location on another machine. The 38 detailed exports total 4,288,284 bytes; the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
+Use your own Blender executable location on another machine. The 39 detailed exports total 4,337,900 bytes (the airlift has its own 55 KB budget in `tools/check-assets.mjs`); the tank has 5,712 triangles. Tank hull and turret are independent nodes, and the muzzle attachment determines shot origin. Source files and exports are committed, so ordinary web builds do not require Blender.
 
 ## Architecture and planning
 
@@ -242,6 +243,7 @@ See the [infantry, jeep, patrol and loot balance plan](docs/INFANTRY_JEEPS_PATRO
 - **AI speed:** Slow 0.75×, Normal, Fast 1.3× or Blitz 1.6×. It scales enemy movement and turret traverse.
 - **Enemy teams:** 1–4, each painted in its own colours (Crimson, Amber, Violet, Obsidian) on its tanks, health bars and minimap dots.
 - **Team size:** Squad 6, Platoon 8 or Company 13 units, each a mix of tanks, a jeep, riflemen and rocketeers.
+- **Battlefield size:** Standard (the campaign map, 144 × 120 m) or Large (288 × 240 m, with airlifts).
 
 You start mid-map and every team spawns on a different side. A team commander turns the number of teams into a strategy, announced over the radio as it unfolds:
 
@@ -254,7 +256,20 @@ You start mid-map and every team spawns on a different side. A team commander tu
 
 Pinning teams (the anvil and the holding ring pair) that lose sight of you try nearby firing lanes. A team reduced below 30% regroups with the strongest survivor. If you stay hidden for 14 s after every team is in position, all teams sweep in. Clear every team to win the battle and move to the next battlefield. The series screen then lists time, hull and kills per battle. Defeat offers a retry of the same battle.
 
-Your tank keeps its upgrades, weapons and skin. Each battle gets two Strike charges of its own. Campaign progress, credits, Strike charges and rankings are never changed. Settings are saved separately in this browser (`steel-front-3d-skirmish`). The difficulty chosen on the command screen still applies to your hull and enemy health.
+### Large fields and airlifts
+
+Large keeps the campaign map as the core and adds a seeded outer ring. The ring holds groves, buildings, crates and fuel, concrete rows, up to four 1,000 HP concrete landmarks, two repair pads and six mines. Everything is destructible and instanced, with one draw per prop surface. Teams spawn about 100 m out, strategy timeouts double, and the minimap rescales to fit.
+
+Enemy infantry do not march in. Each team's riflemen and rocketeers board a transport helicopter (**airlift**) that enters beyond the map edge at 11 m and 14 m/s, scaled by AI speed.
+- **Landing zone:** a pulsing ring in the team colour appears on the ground and minimap at dispatch, usually 34–54 m from you on the team's bearing (up to 80 m out on crowded maps). A small second ring marks where the ramp comes down. The airlift descends, lowers its rear ramp and unloads one soldier every 0.55 s. It then closes up, climbs and leaves the map without a kill.
+- **Weapons:** above 2 m it is airborne, so shells and machine-gun rounds pass under it. Laser, arc rockets and Strike missiles still hit (Micro missiles fly like shells, and Auto missiles are not issued in skirmish). On the ground with the ramp down, every weapon hits. The crew holds the ramp open about a second after the last soldier steps off, so a landing stays exposed for roughly 5.5 s.
+- **Health:** a flat 260 HP on every battlefield (times the difficulty's enemy health), so a focused stock cannon can down one during a landing. Shooting it down kills everyone still aboard, and the wreck falls where it was hit.
+- **Denying a zone:** park on it. While you are inside its 6 m clearance, the airlift holds a 3 m hover out of shell reach, then diverts to open ground at least 20 m from you after 5 s, nose toward you so the ramp opens away. Its own team's armor only blocks the fuselage footprint.
+- **Reinforcement:** the first time a team drops below half strength, it calls one more airlift with two riflemen and a rocketeer. That flight lands 18–36 m from you (farther on crowded maps), behind cover when possible.
+
+Why these numbers: mobile tank games shrink PC maps (World of Tanks Blitz is about 600 × 600 m against 1 km² on PC). Good pacing puts first contact 15–45 s into a match, so Large doubles the field rather than going larger. Measured with two Platoon teams, airlifts touch down about 13 s in and the armor makes contact at about 25 s. Transports are vulnerable at the drop, as in classic RTS design, and every landing is telegraphed before it happens. With four Company teams, Large measured 397 draw calls against 399 on Standard at the same moment.
+
+Your tank keeps its upgrades, weapons and skin. Each battle gets two Strike charges of its own. Campaign progress, credits, Strike charges and rankings are never changed. Settings are saved separately in this browser (`steel-front-3d-skirmish`). The difficulty chosen on the command screen still applies to your hull and enemy health; because you pick team sizes yourself, Hard adds 25% and Crazy 50% enemy health instead of extra enemies. The HUD's hostile count covers soldiers and vehicles, including troops still aboard an airlift, but not the airlift itself.
 
 ## Air support and route progression
 

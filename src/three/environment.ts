@@ -41,9 +41,9 @@ export class Environment{
   }
   const plane=(w:number,d:number,color:number,x:number,z:number)=>{const m=new T.Mesh(new T.PlaneGeometry(w,d),new T.MeshStandardMaterial({color,roughness:.8}));m.rotation.x=-Math.PI/2;m.position.set(x,.025,z);m.userData.owned=true;world.arena.add(m);return m;};
   if(river){
-   this.water=plane(144,8,0x398d9f,0,32);this.water.position.y=.04;(this.water.material as T.MeshStandardMaterial).roughness=.25;
+   this.water=plane(world.bounds.x*2,8,0x398d9f,0,32);this.water.position.y=.04;(this.water.material as T.MeshStandardMaterial).roughness=.25;
    for(const x of [-35,0,35]){const bridge=world.clone('bridge');bridge.position.set(x,.08,32);world.arena.add(bridge);}
-   for(let i=0;i<24;i++){const ripple=plane(2,.07,0x91d8d7,-69+i*6,30+(i%3)*2);ripple.position.y=.06;}
+   for(let i=0;i<Math.round(world.bounds.x/3);i++){const ripple=plane(2,.07,0x91d8d7,3-world.bounds.x+i*6,30+(i%3)*2);ripple.position.y=.06;}
   }
   if(snow){for(const x of [-40,40])plane(63,120,0xc6d5d5,x,0);}
   if(this.biome==='ridge'){const mud=new T.Mesh(new T.CircleGeometry(10,24),new T.MeshStandardMaterial({color:0x65503d}));mud.rotation.x=-Math.PI/2;mud.position.set(36,.04,17);mud.userData.owned=true;world.arena.add(mud);}

@@ -17,7 +17,7 @@ export class BiomeHazards{
  clear(){this.quakePhase='calm';this.quakeRemaining=8;this.dustClock=0;for(const r of this.rocks){r.marker.removeFromParent();(r.marker.material as T.Material).dispose();r.rock.removeFromParent();}this.rocks=[];for(const s of this.scars){s.mesh.removeFromParent();(s.mesh.material as T.Material).dispose();}this.scars=[];}
  warn(g:Game,p:Point,duration=ROCKFALL.warning){
   if(this.rocks.length>=ROCKFALL.maxActive)return false;
-  const x=clamp(p.x,-67,67),z=clamp(p.z,-55,55);
+  const bx=g.world.bounds.x-5,bz=g.world.bounds.z-5,x=clamp(p.x,-bx,bx),z=clamp(p.z,-bz,bz);
   if(g.world.covers.some(c=>c.kind==='volcano'&&circleBox({x,z},ROCKFALL.radius,c)))return false;
   const marker=new T.Mesh(this.ring,new T.MeshBasicMaterial({color:0xff553b,transparent:true,opacity:.9,side:T.DoubleSide,depthWrite:false}));marker.rotation.x=-Math.PI/2;marker.position.set(x,.13,z);g.world.entities.add(marker);
   const rock=g.world.clone('volcanic-rock');rock.scale.setScalar(1.1);rock.position.copy(ORIGIN);g.world.entities.add(rock);
@@ -33,7 +33,7 @@ export class BiomeHazards{
   }
   this.dustClock-=dt;
   if(this.quaking&&this.dustClock<=0){this.dustClock=g.world.low?.35:.16;const focus=g.player.visual.root.position;
-   for(let i=0;i<(g.world.low?6:16);i++){const angle=i*2.399+g.elapsed,x=clamp(focus.x+Math.cos(angle)*(4+i*2),-70,70),z=clamp(focus.z+Math.sin(angle)*(4+i*2),-58,58);g.world.fx.emit(new T.Vector3(x,.3,z),'smoke',0xa79274,2.2,1.2,new T.Vector3(0,3,0));}
+   for(let i=0;i<(g.world.low?6:16);i++){const angle=i*2.399+g.elapsed,x=clamp(focus.x+Math.cos(angle)*(4+i*2),2-g.world.bounds.x,g.world.bounds.x-2),z=clamp(focus.z+Math.sin(angle)*(4+i*2),2-g.world.bounds.z,g.world.bounds.z-2);g.world.fx.emit(new T.Vector3(x,.3,z),'smoke',0xa79274,2.2,1.2,new T.Vector3(0,3,0));}
   }
  }
  update(g:Game,dt:number){
@@ -43,9 +43,10 @@ export class BiomeHazards{
   this.clock-=dt;
   if(this.clock<=0){
    this.clock=ROCKFALL.interval;
-   const living=g.enemies.filter(e=>!e.dead),focus=this.sequence%3===0?g.player:living[this.sequence%Math.max(1,living.length)]??g.player;
+   // Riders aboard an airlift and the airlift itself are not ground targets.
+   const living=g.enemies.filter(e=>!e.dead&&!e.aboard&&e.role!=='airlift'),focus=this.sequence%3===0?g.player:living[this.sequence%Math.max(1,living.length)]??g.player;
    const p=focus.visual.root.position;
-   const target=this.sequence%3===2?{x:(this.random()-.5)*120,z:(this.random()-.5)*100}:{x:p.x+(this.random()-.5)*7,z:p.z+(this.random()-.5)*7};
+   const target=this.sequence%3===2?{x:(this.random()-.5)*(g.world.bounds.x*2-24),z:(this.random()-.5)*(g.world.bounds.z*2-20)}:{x:p.x+(this.random()-.5)*7,z:p.z+(this.random()-.5)*7};
    this.warn(g,target);
    const other=living.find(e=>distance(e.visual.root.position,target)>14);
    if(other){const p=other.visual.root.position;this.warn(g,{x:p.x+(this.random()-.5)*5,z:p.z+(this.random()-.5)*5});}

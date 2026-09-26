@@ -1,5 +1,11 @@
 [
   {
+    "asset": "airlift",
+    "detailedTriangles": 1428,
+    "lowTriangles": 772,
+    "bytes": 36048
+  },
+  {
     "asset": "barrel",
     "detailedTriangles": 1016,
     "lowTriangles": 372,
