@@ -102,6 +102,17 @@ Run the generator after the base, environment and frontier generators. It author
 npm run test:assets
 ```
 
+### Reused Hoshi Valley scenery
+
+Temperate maps (Grove, Village, River, Ridge, Industrial, Wastes, City and Quake) reuse trees and ground cover from the owner's KITEFALL / Hoshi Valley art (`../3D_game_fighting`), chosen for their cost:
+- **Trees:** broadleaf, maple and cedar models render a share of the tree cover (40–70% depending on the biome, fixed per position). Gameplay is unchanged: every one is still a destructible `pine` cover with the same footprint and health. The detailed tier is the KITEFALL tree simplified to about 1,700 triangles, close to the pine's 1,378. The mobile tier is KITEFALL's hand-made 344-triangle LOD, cheaper than the pine's 570. Canopies are scaled to the pine's footprint so they never hide tanks from the high camera.
+- **Ground cover:** grass tufts, small bushes and riverbank or marsh reeds are instanced, walk-through decoration. They never cast shadows, never sit on roads, in water or inside cover, and are not placed on snow, glacier, desert or volcanic maps.
+- **Cost:** 84 KB of meshopt-compressed models (44 KB mobile), under their own 100 KB budget in `tools/check-assets.mjs`. Measured at each stage's start, desktop gains 0–12 draw calls and phones 0–8. Phones stay under 115k triangles on the densest map.
+
+The list of reused models and their simplify settings is `src/three/reused-models.json`; the import tool, asset checks, mobile-tier script and loader all read it. The reused models are optional decoration: if a browser cannot decode meshopt (no WebAssembly), they are skipped and every tree stays a pine. Ground cover also avoids decal ground that has no collision: bog holes, the ridge mud pit, city asphalt and reserved pads.
+
+The heavier KITEFALL buildings (16–25k triangles), soldiers (about 24k) and towers were left out: Steel Front instances dozens of units and props, so they would cost far more than they add. `node tools/import-kitefall-assets.mjs` regenerates the imports from a KITEFALL checkout (`KITEFALL_DIR`, default `../3D_game_fighting`); the exports are committed, so ordinary builds do not need it. The loader decodes meshopt and converts the packed vertex attributes to floats before merging, so the quantized positions keep their real size.
+
 ### Concrete landmarks
 
 Every map keeps up to two large route landmarks, and classic maps add two flank landmarks. Each one is a square precast concrete cluster on the old 14 × 10 m hill footprint.
@@ -132,7 +143,7 @@ Player movement uses a flat gameplay plane with ice momentum and visual mud sink
 
 ## Asset attribution
 
-Game models and narrative are authored for this project. Barlow and Barlow Condensed are bundled under the SIL Open Font License; licenses are in `public/fonts/`. Three.js, Phaser and other dependencies retain their own package licenses.
+Game models and narrative are authored for this project. The reused trees, bushes, grass and reeds come from the owner's KITEFALL / Hoshi Valley (3D_game_scene) Blender art; each export records its source in `asset.extras.source`. Barlow and Barlow Condensed are bundled under the SIL Open Font License; licenses are in `public/fonts/`. Three.js, Phaser and other dependencies retain their own package licenses.
 
 ## Battlefield update
 

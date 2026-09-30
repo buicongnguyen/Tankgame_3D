@@ -1,0 +1,40 @@
+{
+  "_note": "Models reused from the owner's KITEFALL / Hoshi Valley art. name: KITEFALL source and simplify settings (tools/import-kitefall-assets.mjs).",
+  "tree-broadleaf": {
+    "high": "tree-broadleaf-a",
+    "highRatio": 0.5,
+    "low": "tree-broadleaf-a-lod",
+    "lowRatio": 1
+  },
+  "tree-maple": {
+    "high": "tree-maple",
+    "highRatio": 0.5,
+    "low": "tree-maple-lod",
+    "lowRatio": 1
+  },
+  "tree-cedar": {
+    "high": "tree-cedar",
+    "highRatio": 0.55,
+    "low": "tree-cedar-lod",
+    "lowRatio": 1
+  },
+  "grass-tuft": {
+    "high": "grass-tuft",
+    "highRatio": 1,
+    "low": "grass-tuft",
+    "lowRatio": 0.5
+  },
+  "bush": {
+    "high": "bush-a",
+    "highRatio": 0.7,
+    "low": "bush-a",
+    "lowRatio": 0.25,
+    "lowError": 0.12
+  },
+  "reeds": {
+    "high": "reeds",
+    "highRatio": 1,
+    "low": "reeds",
+    "lowRatio": 0.45
+  }
+}

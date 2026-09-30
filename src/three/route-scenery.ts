@@ -2,12 +2,13 @@ import * as T from 'three';
 import type {World,Cover} from './world';
 import {overlapsReservation,routeSample} from './stage-layout';
 import {distance} from './rules';
+import {treeLook} from './scenery-variety';
 
 /** Populate old road clearings with destructible, instanced Blender props. */
 export function buildRouteScenery(world:World){
  const layout=world.layout,biome=world.environment.biome;
  const tree:Cover['kind']=['snow','glacier'].includes(biome)?'white-pine':biome==='desert'?'palm':['jungle','marsh'].includes(biome)?'jungle-tree':'pine';
- const limit=['jungle','marsh'].includes(biome)?64:48,placed:{cover:Cover;rotation:number}[]=[],buckets=new Map<string,typeof placed>();
+ const limit=['jungle','marsh'].includes(biome)?64:48,placed:{cover:Cover;rotation:number;scale?:number}[]=[],buckets=new Map<string,typeof placed>();
  const add=(x:number,z:number,kind:Cover['kind'],seed:number)=>{
   if(placed.length>=limit)return;
   const building=kind==='house'||kind==='cityblock',fuel=kind==='barrel'||kind==='fuelcrate';
@@ -18,7 +19,8 @@ export function buildRouteScenery(world:World){
    fuel&&layout.supplies.some(s=>distance(s,box)<10))return;
   const mesh=new T.Group();mesh.name='RouteSceneryCover';mesh.position.set(x,0,z);world.arena.add(mesh);
   const cover:Cover={...box,kind,hp:building?220:fuel?25:kind==='crate'?55:70,mesh};
-  world.covers.push(cover);const entry={cover,rotation:building||fuel||kind==='crate'?0:seed*2.399};placed.push(entry);
+  const look=kind==='pine'?treeLook(world,biome,x,z):null;if(look)cover.model=look.model;
+  world.covers.push(cover);const entry={cover,rotation:building||fuel||kind==='crate'?0:seed*2.399,scale:look?.scale};placed.push(entry);
   const bucket=buckets.get(kind)??[];bucket.push(entry);buckets.set(kind,bucket);
  };
  const choose=(i:number):Cover['kind']=>i%13===0?(biome==='city'?'cityblock':'house'):i%9===0?'barrel':i%7===0?'crate':tree;
@@ -35,16 +37,16 @@ export function buildRouteScenery(world:World){
  return placed.length;
 }
 
-/** One InstancedMesh per template surface per prop kind; each cover keeps its instance for damage and removal. */
-export function instanceScenery(world:World,placed:{cover:Cover;rotation:number}[],label:string){
- const biome=world.environment.biome,buckets=new Map<Cover['kind'],typeof placed>();
- for(const entry of placed){const bucket=buckets.get(entry.cover.kind)??[];bucket.push(entry);buckets.set(entry.cover.kind,bucket);}
+/** One InstancedMesh per template surface per prop model; each cover keeps its instance for damage and removal. */
+export function instanceScenery(world:World,placed:{cover:Cover;rotation:number;scale?:number}[],label:string){
+ const biome=world.environment.biome,buckets=new Map<string,typeof placed>();
+ for(const entry of placed){const key=entry.cover.model??entry.cover.kind,bucket=buckets.get(key)??[];bucket.push(entry);buckets.set(key,bucket);}
  const q=new T.Quaternion(),matrix=new T.Matrix4(),up=new T.Vector3(0,1,0),trees=new Set<Cover['kind']>(['pine','white-pine','palm','jungle-tree']);
  for(const [kind,entries] of buckets){
   const template=world.templates.get(kind)!;template.updateMatrixWorld(true);const inverse=template.matrixWorld.clone().invert(),parts:T.InstancedMesh[]=[];
   template.traverse(o=>{if(!(o instanceof T.Mesh))return;
    const instances=new T.InstancedMesh(o.geometry,o.material,entries.length);instances.name=`${label}:${kind}`;instances.userData={...o.userData};instances.castShadow=true;instances.receiveShadow=true;
-   entries.forEach(({cover,rotation},i)=>{q.setFromAxisAngle(up,rotation);matrix.compose(new T.Vector3(cover.x,0,cover.z),q,new T.Vector3(1,1,1)).multiply(inverse.clone().multiply(o.matrixWorld));instances.setMatrixAt(i,matrix);instances.setColorAt(i,new T.Color(trees.has(kind)&&biome==='volcanic'?0x777363:0xffffff));});
+   entries.forEach(({cover,rotation,scale=1},i)=>{q.setFromAxisAngle(up,rotation);matrix.compose(new T.Vector3(cover.x,0,cover.z),q,new T.Vector3(scale,scale,scale)).multiply(inverse.clone().multiply(o.matrixWorld));instances.setMatrixAt(i,matrix);instances.setColorAt(i,new T.Color(trees.has(entries[0].cover.kind)&&biome==='volcanic'?0x777363:0xffffff));});
    instances.computeBoundingSphere();world.arena.add(instances);parts.push(instances);
   });
   entries.forEach(({cover},index)=>cover.scenery={parts,index,maxHP:cover.hp});

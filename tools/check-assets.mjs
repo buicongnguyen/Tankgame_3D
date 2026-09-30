@@ -1,12 +1,16 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 const names=JSON.parse(fs.readFileSync('src/three/model-catalog.json','utf8'));
+// Reused Hoshi Valley models (the owner's KITEFALL Blender art), imported by tools/import-kitefall-assets.mjs:
+// meshopt-compressed with their own budget, and their source recorded in asset.extras.
+const REUSED=Object.keys(JSON.parse(fs.readFileSync('src/three/reused-models.json','utf8'))).filter(k=>!k.startsWith('_'));let reusedBytes=0,reusedLowBytes=0;
 let supportBytes=0,jetBytes=0,airliftBytes=0,quadcopterBytes=0,flameBytes=0,total=0,lowTotal=0,highTriangles=0,lowTriangles=0;
 for(const name of names){
   const b=fs.readFileSync(`public/models/${name}.glb`);total+=b.length;
   assert.equal(b.readUInt32LE(0),0x46546c67);assert.equal(b.readUInt32LE(4),2);assert.equal(b.readUInt32LE(8),b.length);
   const json=JSON.parse(b.subarray(20,20+b.readUInt32LE(12)).toString());
-  assert.ok(json.asset.generator.includes('Blender'));
+  if(REUSED.includes(name)){reusedBytes+=b.length;assert.ok(json.asset.extras?.source?.includes('KITEFALL'),`${name} must record its KITEFALL source`);assert.ok(json.extensionsUsed?.includes('EXT_meshopt_compression'),`${name} must stay meshopt-compressed`);}
+  else assert.ok(json.asset.generator.includes('Blender'));
   assert.ok(!json.images?.some(i=>i.uri));
   if(['glacier','volcano','volcanic-rock','palm','jungle-tree','cityblock'].includes(name)){
     assert.ok(json.materials.some(m=>m.normalTexture),`${name} needs its authored normal detail`);
@@ -28,7 +32,10 @@ for(const name of names){
   const low=fs.readFileSync(`public/models/low/${name}.glb`);lowTotal+=low.length;
   assert.equal(low.readUInt32LE(0),0x46546c67);assert.equal(low.readUInt32LE(8),low.length);
   const lowJson=JSON.parse(low.subarray(20,20+low.readUInt32LE(12)).toString());
-  assert.ok(lowJson.asset.generator.includes('Blender'));assert.ok(!lowJson.images?.some(i=>i.uri));
+  assert.ok(REUSED.includes(name)?lowJson.asset.extras?.source?.includes('KITEFALL'):lowJson.asset.generator.includes('Blender'));
+  if(REUSED.includes(name)){reusedLowBytes+=low.length;assert.ok(lowJson.extensionsUsed?.includes('EXT_meshopt_compression'),`${name} mobile tier must stay meshopt-compressed`);
+    const names=doc=>doc.materials.map(m=>m.name).sort().join(),attrs=doc=>[...new Set(doc.meshes.flatMap(m=>m.primitives.flatMap(p=>Object.keys(p.attributes))))].sort().join();
+    assert.equal(names(lowJson),names(json),`${name} tiers must share material names`);assert.equal(attrs(lowJson),attrs(json),`${name} tiers must share vertex attributes`);}assert.ok(!lowJson.images?.some(i=>i.uri));
   let simpler=0;for(const mesh of lowJson.meshes)for(const p of mesh.primitives)simpler+=(p.indices!==undefined?lowJson.accessors[p.indices].count:lowJson.accessors[p.attributes.POSITION].count)/3;
   if(name==='flame'){assert.ok(low.length<5_000);assert.ok(triangles<=200&&simpler<=30);assert.ok(lowJson.meshes.every(m=>m.primitives.every(p=>p.attributes.COLOR_0!==undefined)));}
   assert.ok(simpler>0&&simpler<triangles,`${name} must actually simplify geometry`);
@@ -42,10 +49,10 @@ for(const name of names){
     assert.ok(Math.abs(Math.abs(a.reduce((sum,value,i)=>sum+value*c[i],0))-1)<.00001,`${name}/${node.name} rotation changed`);
   }
   highTriangles+=triangles;lowTriangles+=simpler;
-  console.log(`${name}: ${triangles} detailed / ${simpler} low triangles, valid Blender GLBs`);
+  console.log(`${name}: ${triangles} detailed / ${simpler} low triangles, valid ${REUSED.includes(name)?'reused Hoshi Valley':'Blender'} GLBs`);
 }
 // Reserve 180 KB for the four-rotor rig; retain the existing scene and flame budgets.
-assert.ok(total-flameBytes-quadcopterBytes-jetBytes-supportBytes<4_000_000);assert.ok(supportBytes<155_000);assert.ok(total<4_411_000);console.log(`Total runtime GLBs: ${total} bytes`);
+assert.ok(total-flameBytes-quadcopterBytes-jetBytes-supportBytes-airliftBytes-reusedBytes<4_000_000);assert.ok(supportBytes<155_000);assert.ok(reusedBytes<100_000,'Reused Hoshi Valley budget: 100 KB');assert.ok(reusedLowBytes<60_000,'Reused Hoshi Valley mobile budget: 60 KB');assert.ok(total-reusedBytes<4_411_000);console.log(`Total runtime GLBs: ${total} bytes`);
 
 assert.ok(lowTotal<2_000_000);assert.ok(lowTriangles<highTriangles*.4);
 console.log(`Low tier: ${lowTotal} bytes; ${lowTriangles} / ${highTriangles} triangles (${Math.round((1-lowTriangles/highTriangles)*100)}% fewer)`);

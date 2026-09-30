@@ -10,6 +10,7 @@ import {groundTexture} from './frontier-surfaces';
 import {buildRockBoundary} from './rock-boundary';
 import {GROUND_COLORS} from './frontier-environment';
 import MODEL_NAMES from './model-catalog.json';
+import REUSED_MODELS from './reused-models.json';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import {SkinMarkings} from './skin-markings';
 import {StableShadow} from './stable-shadow';
@@ -19,16 +20,28 @@ import { planOuterRing, buildOuterRing } from './arena';
 import * as T from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { buildGroundDressing } from './scenery-variety';
 import type { Box } from './rules';
 import { BIOMES, Environment } from './environment';
 import { CombatEffects } from './effects';
 import { BOUNDS, buildActivities, loadPickupModels } from './activities';
 import type { Activity } from './activities';
 export interface TankVisual { root: T.Group; hull: T.Object3D; turret: T.Object3D; muzzle: T.Object3D; bar: T.Mesh; beam: T.Mesh; }
-export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'concrete-block' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; boundary?:boolean; scenery?:{parts:T.InstancedMesh[];index:number;maxHP:number}; section?: {parts:T.InstancedMesh[];index:number;wall:object}; }
+export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'concrete-block' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; boundary?:boolean; /** Visual template when it differs from `kind` (tree variants). */ model?:string; scenery?:{parts:T.InstancedMesh[];index:number;maxHP:number}; section?: {parts:T.InstancedMesh[];index:number;wall:object}; }
 /** Square precast landmarks (formerly indestructible hills and basalt outcrops). */
 export const LANDMARK_BLOCK_HP=1000;
 interface Effect { mesh: T.Mesh; life: number; max: number; velocity: T.Vector3; }
+/** Meshopt exports store normalized 16-bit positions and move the real scale onto the node. Baking that
+ *  node transform into a normalized attribute would clamp it to the unit cube, so merge in plain floats. */
+function dequantized(g:T.BufferGeometry){
+  // Packed attributes also arrive interleaved; read both kinds through their denormalizing accessors.
+  for(const [name,a] of Object.entries(g.attributes)){if(a instanceof T.BufferAttribute&&a.array instanceof Float32Array)continue;
+    const read=[a.getX,a.getY,a.getZ,a.getW],out=new Float32Array(a.count*a.itemSize);
+    for(let i=0;i<a.count;i++)for(let k=0;k<a.itemSize;k++)out[i*a.itemSize+k]=read[k].call(a,i);
+    g.setAttribute(name,new T.BufferAttribute(out,a.itemSize));}
+  return g;
+}
 const scratch = new T.Vector3();
 export class World {
   bounds={...BOUNDS};
@@ -101,9 +114,12 @@ export class World {
     let templates=this.modelPacks.get(low);
     if(!templates){
       templates=new Map<string,T.Group>();
-      const loader=new GLTFLoader();
+      // Reused Hoshi Valley models are meshopt-compressed; the Blender exports decode as before.
+      const loader=new GLTFLoader();if(MeshoptDecoder.supported)loader.setMeshoptDecoder(MeshoptDecoder);
       await Promise.all(MODEL_NAMES.map(async name=>{
-        const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/${low?'low/':''}${name}.glb`);
+        // Reused scenery is decoration: without WebAssembly (some locked-down browsers) it is skipped and pines stay.
+        const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/${low?'low/':''}${name}.glb`).catch(error=>{if(name in REUSED_MODELS)return null;throw error;});
+        if(!gltf)return;
         const root=gltf.scene;
         if(['rifleman','rocketeer','scout-jeep'].includes(name))packCrewSurfaces(root,this.crewMaterial);
         root.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true; o.receiveShadow=true;}});
@@ -124,7 +140,7 @@ export class World {
         part.traverse(o=>{if(o instanceof T.Mesh&&!Array.isArray(o.material)){
           if(o.name==='Core')return; // Boss weak-point visibility remains independent.
           let parent=o.parent;while(parent&&parent!==part){if(parts.includes(parent))return;parent=parent.parent;}
-          const g=o.geometry.clone().applyMatrix4(inverse.clone().multiply(o.matrixWorld));
+          const g=dequantized(o.geometry.clone()).applyMatrix4(inverse.clone().multiply(o.matrixWorld));
           const key=o.material.uuid+':'+Object.keys(g.attributes).sort().join(',')+':'+!!g.index;
           let bucket=buckets.get(key);if(!bucket){bucket={material:o.material,geometries:[],sources:[]};buckets.set(key,bucket);}
           bucket.geometries.push(g);bucket.sources.push(o);
@@ -143,7 +159,8 @@ export class World {
       // Validate before touching the live scene so a bad pack cannot hide objects.
       if(this.templates.size)for(const [name,root] of templates){
         const keys=(group:T.Group)=>{const result:string[]=[];group.traverse(o=>{if(o instanceof T.Mesh)result.push(o.userData.surfaceKey);});return result.sort().join('|');};
-        if(keys(root)!==keys(this.templates.get(name)!))throw new Error(`Incompatible detail model: ${name}`);
+        const current=this.templates.get(name);
+        if(current&&keys(root)!==keys(current))throw new Error(`Incompatible detail model: ${name}`);
       }
       this.modelPacks.set(low,templates);
     }
@@ -272,7 +289,7 @@ export class World {
     // Extraction pylons frame the road.
     const previous=this.layout.points.at(-2)!,angle=Math.atan2(exit.x-previous.x,exit.z-previous.z);
     for(const side of [-4,4]){const x=exit.x+Math.cos(angle)*side,z=exit.z-Math.sin(angle)*side;this.box(.45,3.2,.45,0x3e5751,x,1.6,z);this.box(.65,.2,.65,0x98f3bf,x,3.3,z);}
-    this.environment.build(this,index);if(ring.length)buildOuterRing(this,ring);if(scale>1)this.environment.weather?.scale.set(scale,1,scale);this.buildLandmarkBlocks();buildRouteScenery(this);buildGuardLandmarks(this,kind);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
+    this.environment.build(this,index);if(ring.length)buildOuterRing(this,ring);if(scale>1)this.environment.weather?.scale.set(scale,1,scale);this.buildLandmarkBlocks();buildRouteScenery(this);buildGuardLandmarks(this,kind);buildGroundDressing(this,index);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
     this.target.set(0,0,0);
   }
   buildCompact(id:number){

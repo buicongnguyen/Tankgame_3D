@@ -58,7 +58,7 @@ test('campaign siege completion and first chapter ending retain cleared stages',
 });
 test('phone layout and simultaneous captured touch sticks',async({browser})=>{
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const page=await context.newPage();
-  await page.goto('http://127.0.0.1:5178/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();
+  await page.goto('/?e2e');await expect(page.getByRole('button',{name:'DEPLOY'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'test-results/command-phone.png',fullPage:true});
   await page.getByRole('button',{name:'DEPLOY'}).click();await expect(page.locator('#move-pad')).toBeVisible();
   const left=(await page.locator('#move-pad').boundingBox())!,right=(await page.locator('#aim-pad').boundingBox())!;

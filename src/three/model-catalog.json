@@ -37,5 +37,11 @@
   "boss-jet",
   "convoy-missile",
   "convoy-gun",
-  "airlift"
+  "airlift",
+  "tree-broadleaf",
+  "tree-maple",
+  "tree-cedar",
+  "grass-tuft",
+  "bush",
+  "reeds"
 ]
