@@ -3,8 +3,10 @@ import {test,expect,type Page,type Browser} from '@playwright/test';
 const VIEWS=[{name:'phone',viewport:{width:390,height:844},touch:true},{name:'small',viewport:{width:320,height:568},touch:true},{name:'landscape',viewport:{width:844,height:390},touch:true},{name:'desktop',viewport:{width:1440,height:900},touch:false}] as const;
 type View=typeof VIEWS[number];
 
-async function open(browser:Browser,view:View,fresh=false){
- const context=await browser.newContext({viewport:view.viewport,hasTouch:view.touch,isMobile:view.touch});const page=await context.newPage();const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+async function open(browser:Browser,view:View,fresh=false,fallbackFonts=false){
+ const context=await browser.newContext({viewport:view.viewport,hasTouch:view.touch,isMobile:view.touch});const page=await context.newPage();
+ // Without Barlow the fallback font has other metrics, like a system that renders text differently.
+ if(fallbackFonts)await context.route('**/fonts/*.ttf',route=>route.abort());const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  // A mid-campaign pilot: credits, owned and locked weapons, a bought skin. A fresh pilot still has training ahead.
  if(!fresh)await context.addInitScript(()=>{if(sessionStorage.getItem('seeded'))return;sessionStorage.setItem('seeded','1');localStorage.setItem('steel-front-3d-v1',JSON.stringify({version:1,training:{completed:[true,true,true],skipped:false},mission:4,level:1,cleared:Array(16).fill(false).map((_,i)=>i<4),credits:2860,weapons:[1,2,3],weaponLevels:[3,2,1,0,0,0,0,0,0],equippedWeapon:1,autoPack:0,strikeCharges:2,strikeBackgrounds:Array(16).fill(false),skins:['classic','sunburst'],skin:'sunburst',flag:'none',upgrades:{armor:3,power:2,reload:1,engine:0,shield:0},difficulty:'normal',sound:false,low:false,graphicsChosen:true}));});
  await page.goto('/?e2e');await page.locator('[data-action=deploy]').waitFor();
@@ -39,8 +41,8 @@ function iconsLoad(page:Page,selector:string,pseudo=''){
   return out;},{selector,pseudo});
 }
 
-for(const view of VIEWS)test(`menu, settings, shop, pause and results keep touch sizes and readable type (${view.name})`,async({browser})=>{
- const {context,page,errors}=await open(browser,view);
+for(const view of VIEWS)for(const fallback of view.touch?[false,true]:[false])test(`menu, settings, shop, pause and results keep touch sizes and readable type (${view.name}${fallback?', fallback font':''})`,async({browser})=>{
+ const {context,page,errors}=await open(browser,view,false,fallback);
  const tap=async(selector:string)=>{const l=page.locator(selector).first();await l.scrollIntoViewIfNeeded();view.touch?await l.tap():await l.click();};
  const screens:Record<string,Awaited<ReturnType<typeof audit>>>={};
  screens.menu=await audit(page);
@@ -77,7 +79,7 @@ for(const view of VIEWS)test(`menu, settings, shop, pause and results keep touch
  // Results wait out the 1.5 s finish; a mid-campaign clear opens the depot, a region finale the victory panel.
  await page.evaluate(()=>{const g=(window as any).__steel;g.start(0,1);g.complete();for(let i=0;i<120;i++)g.step(1/60);});await expect(page.getByRole('heading',{name:'Mission accomplished'})).toBeVisible();screens.depot=await audit(page);
  await page.evaluate(()=>{const g=(window as any).__steel;g.save.level=2;g.start(5,2);g.complete();for(let i=0;i<120;i++)g.step(1/60);});await expect(page.getByRole('heading',{name:'Everyone comes home.'})).toBeVisible();screens.victory=await audit(page);
- expectClean(screens);expect(errors).toEqual([]);await context.close();
+ expectClean(screens);expect(errors.filter(e=>!fallback||!/font/i.test(e))).toEqual([]);await context.close();
 });
 
 for(const view of [VIEWS[0],VIEWS[1]])test(`a new pilot's command screen keeps the same floor (${view.name})`,async({browser})=>{
