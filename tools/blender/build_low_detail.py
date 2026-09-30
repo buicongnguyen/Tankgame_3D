@@ -6,7 +6,7 @@ OUT = ROOT / 'public/models/low'
 OUT.mkdir(parents=True, exist_ok=True)
 selected=set(sys.argv[sys.argv.index("--")+1:]) if "--" in sys.argv else set()
 # build_aaa_props.py authors both tiers of these props; decimating them tears seams.
-HERO_PROPS={'pine','barricade','volcanic-rock','concrete-block','stonewall','barrel','airlift'}
+HERO_PROPS={'pine','barricade','volcanic-rock','concrete-block','stonewall','barrel','airlift','rifleman','rocketeer'}
 # The reused KITEFALL models ship their own hand-made mobile tier (tools/import-kitefall-assets.mjs).
 REUSED={k for k in json.loads((ROOT / 'src/three/reused-models.json').read_text(encoding='utf-8')) if not k.startswith('_')}
 HERO_PROPS|=REUSED

@@ -12,7 +12,10 @@ export function packCrewSurfaces(root:T.Group,material:T.MeshStandardMaterial){
  root.traverse(o=>{if(!(o instanceof T.Mesh)||!(o.material instanceof T.MeshStandardMaterial))return;
   const authored=o.material;if(authored.map||authored.normalMap||authored.roughnessMap||authored.metalnessMap)throw new Error('Crew surface requires an untextured Blender material');
   const geometry=o.geometry.clone(),count=geometry.getAttribute('position').count,colors=new Float32Array(count*3),surfaces=new Float32Array(count*2);
-  for(let i=0;i<count;i++){authored.color.toArray(colors,i*3);surfaces[i*2]=authored.roughness;surfaces[i*2+1]=authored.metalness;}
+  // Blender-baked occlusion and paint (COLOR_0) tint the material colour, so models can carry shading too.
+  const baked=geometry.getAttribute('color');
+  for(let i=0;i<count;i++){authored.color.toArray(colors,i*3);surfaces[i*2]=authored.roughness;surfaces[i*2+1]=authored.metalness;
+    if(baked){colors[i*3]*=baked.getX(i);colors[i*3+1]*=baked.getY(i);colors[i*3+2]*=baked.getZ(i);}}
   geometry.setAttribute('color',new T.BufferAttribute(colors,3));geometry.setAttribute('crewSurface',new T.BufferAttribute(surfaces,2));o.geometry=geometry;o.material=material;
  });
 }
