@@ -73,6 +73,13 @@ Tap **Graphics** on the command screen or in **Pause** to choose **Detailed** or
 
 Only the selected model tier downloads on startup. Low detail contains 33 models totaling 1.76 MB; the tank uses 1,692 triangles instead of 5,712. Switch back to Detailed whenever desired. Actual frame rate depends on the phone.
 
+**Phones and tablets adapt during battle** (`src/three/performance.ts`); desktop keeps a fixed resolution:
+- **Resolution follows the frame rate.** Detailed starts at 1.6x and steps down to 1x when frames run late. A step that does not make frames at least 10% faster is undone, and that battle stops trading resolution; this happens, for example, when the browser caps frames at 30 Hz to save power. Low detail starts at its small buffer (0.8x, at most 960 px on the long side) and sharpens toward 1.2x only while the device keeps up, never back to a rate that ran late. Menus and the next battle use each tier's own ratio.
+- **A one-time hint.** When Detailed stays under 25 FPS for six seconds after lowering its resolution, the game offers Low detail. **LOW DETAIL** pauses and switches in place, and **KEEP** dismisses the offer for the session. The hint closes when the battle ends.
+- **Contact shadows.** Low detail has no shadow maps, so soft drop shadows (one instanced draw) keep tanks, soldiers and the transport grounded.
+- **Lighter battle logic.** Pathfinding finds the nearest open cell ring by ring and tests the best route candidates first, and movement checks only the cover near each unit. A Large three-team skirmish went from about 2.3 ms to 0.4 ms of game logic per step on a desktop CPU; the chosen routes are identical.
+- **`?perf`** adds a live readout: frame rate, logic and render time, draw calls, triangles and the current pixel ratio.
+
 ## Menus on phones
 
 The command screen, shop, settings, pause and results panels share one design layer, `src/three/ui-polish.css`, loaded after the other stylesheets. It restyles the existing markup, so the English text that translations match stays the same.

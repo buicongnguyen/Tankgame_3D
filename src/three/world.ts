@@ -22,6 +22,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { buildGroundDressing } from './scenery-variety';
+import { ratioRange } from './performance';
 import type { Box } from './rules';
 import { BIOMES, Environment } from './environment';
 import { CombatEffects } from './effects';
@@ -374,8 +375,10 @@ export class World {
       if(pieces.length){const geometry=mergeGeometries(pieces);pieces.forEach(p=>p.dispose());if(geometry){const markers=new T.Mesh(geometry,material);markers.name='RouteDirectionBatch';markers.userData.owned=true;this.arena.add(markers);}else material.dispose();}else material.dispose();
     }
   }
-  settings(low:boolean){this.scene.environment=low?null:this.studioEnvironment;this.low=low;this.fx.low=low;this.renderer.shadowMap.enabled=!low;document.body.dataset.graphics=low?'low':'detailed';this.resize();}
-  resize(){const w=window.innerWidth,h=window.innerHeight;this.renderer.setPixelRatio(this.low?Math.min(devicePixelRatio,.8,960/Math.max(w,h)):Math.min(devicePixelRatio,1.6));this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}
+  settings(low:boolean){this.scene.environment=low?null:this.studioEnvironment;this.low=low;this.fx.low=low;this.renderer.shadowMap.enabled=!low;document.body.dataset.graphics=low?'low':'detailed';this.renderRatio=null;this.resize();}
+  /** Set by the phone frame budget during battle; null keeps the detail tier's own ratio. */
+  renderRatio:number|null=null;
+  resize(){const w=window.innerWidth,h=window.innerHeight;this.renderer.setPixelRatio(this.renderRatio??ratioRange(this.low).base);this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}
   burst(position:T.Vector3,color=0,amount=12){
     for(let i=0;i<(this.low?Math.ceil(amount/2):amount)&&this.effects.length<(this.low?24:100);i++){
       const material=this.effectMaterials[color].clone();

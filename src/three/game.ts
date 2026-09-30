@@ -23,6 +23,8 @@ import {WEAPONS,weaponLevel,weaponDamage,barrels,powerMultiplier,reloadSeconds,e
 import {workshop} from './workshop';
 import {UPGRADES} from './rules';
 import {AirSupport} from './air-support';
+import {coversNear} from './cover-grid';
+import {FrameBudget} from './performance';
 import {MINE_TRIGGER_RADIUS,AIM_WARNING_SECONDS} from './combat-ranges';
 import {assignPatrol,updatePatrol} from './patrols';
 import type {PatrolOrder} from './patrols';
@@ -69,6 +71,8 @@ export class Game {
   flame=new Flamethrower();special=new SpecialWeapons();specialAmmo=[0,0,0,0];infantryKills=0;
   weaponPickerOpen=false;auto=new AutoMissiles();airSupport=new AirSupport();
   qualityChanging=false;qualityError=false;graphicsLost=false;renderPacer=new RenderPacer();
+  /** Phone frame budget: adaptive render resolution, the ?perf readout and Low detail contact shadows. */
+  budget=new FrameBudget();
   navigation=new GroundNavigation();convoyDistance=0;convoyReverse:boolean|null=null;
   weapon=0; reload=0; shieldTime=0; shieldCooldown=0; relayHealth=300; convoyHealth=ESCORT.health; convoy:T.Group|null=null;convoyBlocked=false;
   overlay:HTMLElement; hud:HTMLElement; radio:HTMLElement; mini:HTMLCanvasElement;
@@ -376,7 +380,11 @@ export class Game {
     // Short accepted segments preserve wall sliding and prevent contact through cover.
     const steps=Math.max(1,Math.ceil(Math.max(Math.abs(motion.x),Math.abs(motion.z))/.35)),sx=motion.x/steps,sz=motion.z/steps,stepTime=dt/steps;
     const candidateCrush=unit===this.player&&this.phase==='playing'&&Math.hypot(motion.x,motion.z)/dt>=3;
-    const blocked=(x:number,z:number,ignoreInfantry:boolean)=>this.world.covers.some(c=>c.hp>0&&circleBox({x,z},r,c))||[this.player,...this.enemies,...this.allies.tanks.map(a=>a.unit)].some(other=>other!==unit&&!other.dead&&!other.pending&&!this.airborne(other)&&!(ignoreInfantry&&this.isInfantry(other))&&distance({x,z},other.visual.root.position)<this.unitRadius(other)+r)||!!(this.convoy&&distance({x,z},this.convoy.position)<2.3);
+    // Only covers near this move can stop it; the unit list is built once per move (again only if the roster changes).
+    const reach=r+Math.hypot(motion.x,motion.z)+.5,covers=coversNear(this.world,p.x-reach,p.z-reach,p.x+reach,p.z+reach);
+    let roster=this.enemies.length,others=[this.player,...this.enemies,...this.allies.tanks.map(a=>a.unit)];
+    const units=()=>{if(this.enemies.length!==roster){roster=this.enemies.length;others=[this.player,...this.enemies,...this.allies.tanks.map(a=>a.unit)];}return others;};
+    const blocked=(x:number,z:number,ignoreInfantry:boolean)=>covers.some(c=>c.hp>0&&circleBox({x,z},r,c))||units().some(other=>other!==unit&&!other.dead&&!other.pending&&!this.airborne(other)&&!(ignoreInfantry&&this.isInfantry(other))&&distance({x,z},other.visual.root.position)<this.unitRadius(other)+r)||!!(this.convoy&&distance({x,z},this.convoy.position)<2.3);
     for(let i=0;i<steps;i++){
       const from={x:p.x,z:p.z};
       const resolve=(ignoreInfantry:boolean)=>{let x=clamp(from.x+sx,-this.world.bounds.x,this.world.bounds.x),z=clamp(from.z+sz,-this.world.bounds.z,this.world.bounds.z);if(blocked(x,from.z,ignoreInfantry))x=from.x;if(blocked(x,z,ignoreInfantry))z=from.z;return {x,z};};
@@ -767,7 +775,8 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   frame(now:number){
     // Results use wall time even when the GPU frame budget skips this callback.
     if(!this.graphicsLost&&!document.hidden&&this.phase==='finishing'&&now>=this.finishDeadline){this.accumulator=0;this.step(this.finishDelay);}
-    if(this.graphicsLost||document.hidden||!this.renderPacer.due(now,this.world.low?30:60)){requestAnimationFrame(t=>this.frame(t));return;}
+    const due=!this.graphicsLost&&!document.hidden&&this.renderPacer.due(now,this.world.low?30:60);this.budget.frame(this,now,due);
+    if(!due){requestAnimationFrame(t=>this.frame(t));return;}
     // A queued RAF timestamp can predate start/resume after a slow render.
     const frameTime=Math.max(now,this.last),dt=Math.min((frameTime-this.last)/1000,.1);this.last=frameTime;
     if(this.phase==='finishing')this.accumulator=0;
@@ -775,7 +784,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     else {this.accumulator=0;if(this.phase==='menu')this.player.visual.turret.rotation.y=Math.PI+Math.sin(now*.0003)*.45;}
     this.hurtTimer=Math.max(0,this.hurtTimer-dt);document.body.classList.toggle('hurt',this.hurtTimer>0&&!matchMedia('(prefers-reduced-motion: reduce)').matches);
     this.flame.render(this,this.phase!=='paused'?dt:0);
-    this.world.update(this.phase!=='paused'?dt:0,this.player.visual.root.position,this.phase==='menu');
+    this.budget.beforeRender(this);this.world.update(this.phase!=='paused'?dt:0,this.player.visual.root.position,this.phase==='menu');this.budget.afterRender(this);
     this.projectRelay();requestAnimationFrame(t=>this.frame(t));
   }
 }
