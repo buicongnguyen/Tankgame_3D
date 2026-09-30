@@ -56,3 +56,11 @@ assert.ok(total-flameBytes-quadcopterBytes-jetBytes-supportBytes-airliftBytes-re
 
 assert.ok(lowTotal<2_000_000);assert.ok(lowTriangles<highTriangles*.4);
 console.log(`Low tier: ${lowTotal} bytes; ${lowTriangles} / ${highTriangles} triangles (${Math.round((1-lowTriangles/highTriangles)*100)}% fewer)`);
+// Menu icons rendered by tools/blender/build_ui_icons.py: square, transparent, all referenced and small.
+const {default:sharp}=await import('sharp');
+const ICONS=['credit','coins','trophy','gear','shell','tank','supply','spray'],polish=fs.readFileSync('src/three/ui-polish.css','utf8');let iconBytes=0;
+assert.deepEqual(fs.readdirSync('src/three/ui-icons').sort(),ICONS.map(icon=>`${icon}.webp`).sort(),'Only the rendered menu icons live in src/three/ui-icons');
+for(const icon of ICONS){const file=`src/three/ui-icons/${icon}.webp`,meta=await sharp(file).metadata();iconBytes+=fs.statSync(file).size;
+ assert.equal(meta.format,'webp',file);assert.equal(meta.width,160,file);assert.equal(meta.height,160,file);assert.ok(meta.hasAlpha,`${file} needs a transparent background`);
+ assert.ok(polish.includes(`./ui-icons/${icon}.webp`),`${icon} icon is not used by ui-polish.css`);}
+assert.ok(iconBytes<64_000,'Menu icon budget: 64 KB');console.log(`Menu icons: ${ICONS.length} WebP, ${iconBytes} bytes`);

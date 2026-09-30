@@ -1,0 +1,171 @@
+/* Menu design layer: one type scale, one touch size and one button family for the command screen,
+   shop, settings, pause and results panels. Loaded after every other sheet. It restyles the existing
+   markup only, so English copy (which the translation layer matches) stays untouched. Icons are
+   Blender renders from tools/blender/build_ui_icons.py. Desktop keeps the 13-14 px type of menu.css. */
+:root{--ui-tap:48px;--ui-tile:linear-gradient(180deg,#15314a,#0e2335);--ui-tile-hover:linear-gradient(180deg,#1b3d5a,#122b41);--ui-edge:#9fc0d42e;--ui-edge-strong:#9fc0d466;--ui-text:#e9f0f3;--ui-sub:#afc0ca;--ui-gold:#f4d197;--ui-red:#f2aaa4}
+
+/* Phones get no focus ring from programmatic focus (the primary button of each panel) until a key is used.
+   Text fields keep theirs. */
+@media(pointer:coarse){html:not([data-input=keys]) :focus-visible:not(input,textarea,select){outline:none}}
+
+/* ---------------------------------------------------------------- command screen: disclosure rows */
+.command-screen .mission-setup>summary,.command-screen .campaign-route>summary,.command-screen .briefing>details:not(.mission-setup)>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:var(--ui-tap);color:#e3ecf0;list-style:none;cursor:pointer}
+.command-screen .briefing>details:not(.mission-setup){margin-top:10px;border-top:1px solid var(--ui-edge)}
+.command-screen .briefing>details:not(.mission-setup)>summary::-webkit-details-marker{display:none}
+.command-screen .briefing>details:not(.mission-setup)>summary::after{content:'+';font-size:18px;color:var(--amber)}
+.command-screen .briefing>details[open]:not(.mission-setup)>summary::after{content:'\2212'}
+
+/* ---------------------------------------------------------------- command screen: footer tiles */
+.command-screen footer{--ui-tile-size:13px;display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px}
+.command-screen footer>button,.command-screen .mobile-fullscreen>button,.command-screen .menu-settings>summary{display:flex;align-items:center;gap:10px;min-height:var(--ui-tap);margin:0;padding:8px 14px;border:1px solid var(--ui-edge);border-radius:4px;background:var(--ui-tile);box-shadow:inset 0 1px 0 #ffffff12,0 3px 12px #0003;color:var(--ui-text);font:700 13px/1.2 'Barlow',Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;text-align:left;white-space:normal}
+/* One size per breakpoint for every tile; the shop selector also outranks its older 11 px rule in menu.css. */
+.command-screen footer>button,.command-screen footer>button[data-action=shop],.command-screen .mobile-fullscreen>button,.command-screen .menu-settings>summary{font-size:var(--ui-tile-size)}
+.command-screen footer>button:hover:not(:disabled),.command-screen .mobile-fullscreen>button:hover:not(:disabled),.command-screen .menu-settings>summary:hover{background:var(--ui-tile-hover);border-color:var(--ui-edge-strong)}
+.command-screen footer>button::before,.command-screen .menu-settings>summary::before{content:'';flex:none;width:28px;height:28px;margin:-4px 0;background:center/contain no-repeat}
+.command-screen footer>button[data-action=leaderboard]::before{background-image:url(./ui-icons/trophy.webp)}
+.command-screen footer>button[data-action=shop]::before{background-image:url(./ui-icons/coins.webp)}
+.command-screen .menu-settings>summary::before{background-image:url(./ui-icons/gear.webp)}
+.command-screen footer>button[data-action=shop]{min-height:var(--ui-tap);min-width:0;border-color:#f1cf9166;background:linear-gradient(180deg,#3b2c14,#241a0b);color:var(--ui-gold)}
+.command-screen footer>button[data-action=shop]:hover:not(:disabled){background:linear-gradient(180deg,#4a3818,#2e210e);border-color:#f1cf91aa}
+.command-screen .menu-settings{margin:0 0 0 auto;min-width:150px}
+.command-screen .menu-settings>summary{justify-content:flex-start;list-style:none}
+.command-screen .menu-settings>summary::after{content:'+';margin-left:auto;font-size:18px;color:var(--amber)}
+.command-screen .menu-settings[open]{flex:1 1 360px;max-width:560px;padding:10px 16px 16px;border:1px solid var(--ui-edge-strong);border-radius:6px;background:#0d2031f2;box-shadow:0 10px 30px #0006}
+.command-screen .menu-settings[open]>summary{padding:0;border:0;background:none;box-shadow:none}
+.command-screen .menu-settings .settings{padding-top:4px}
+
+/* Phones, portrait: a 2 x 2 grid of equal tiles; an open settings sheet takes the full width below. */
+@media(max-width:760px) and (orientation:portrait) and (pointer:coarse){
+ .command-screen footer{--ui-tile-size:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:stretch}
+ .command-screen footer>*{min-width:0;margin:0}
+ .command-screen footer>button,.command-screen .mobile-fullscreen>button,.command-screen .menu-settings>summary{width:100%;height:100%;min-width:0;padding:8px 10px;letter-spacing:.05em}
+ .command-screen .menu-settings[open]>summary{height:auto}
+ .command-screen .mobile-fullscreen>button{justify-content:center}
+ .command-screen .menu-settings,.command-screen footer>.menu-settings{min-width:0;margin:0}
+ .command-screen .menu-settings[open]{grid-column:1/-1;max-width:none;padding:10px 14px 14px}
+ .command-screen footer:has(.menu-settings[open])>button[data-action=shop]{grid-column:1/-1}
+}
+@media(max-width:360px) and (pointer:coarse){
+ .command-screen footer{--ui-tile-size:11px}
+ .command-screen footer>button,.command-screen .mobile-fullscreen>button,.command-screen .menu-settings>summary{gap:7px;padding:8px;letter-spacing:.02em}
+ .command-screen footer>button::before,.command-screen .menu-settings>summary::before{width:22px;height:22px}
+}
+/* Phones, landscape: one row of four tiles. */
+@media(pointer:coarse) and (orientation:landscape) and (max-height:600px){
+ .command-screen footer{--ui-tile-size:12px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-items:stretch}
+ .command-screen footer>*{min-width:0;margin:0}
+ .command-screen footer>button,.command-screen .mobile-fullscreen>button,.command-screen .menu-settings>summary{width:100%;height:100%;padding:8px 10px;letter-spacing:.04em}
+ .command-screen .menu-settings[open]>summary{height:auto}
+ .command-screen .mobile-fullscreen>button{justify-content:center}
+ .command-screen .menu-settings,.command-screen footer>.menu-settings{min-width:0;margin:0}
+ .command-screen footer:has(.menu-settings[open]){grid-template-columns:repeat(3,minmax(0,1fr))}
+ .command-screen .menu-settings[open]{grid-column:1/-1;max-width:none}
+}
+
+/* ---------------------------------------------------------------- settings sheet (menu and pause) */
+.settings,.command-screen .settings,.pause-panel .settings{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:0;margin:0}
+.settings>button,.settings>a,.command-screen .settings>button,.command-screen .settings>a{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:var(--ui-tap);margin:0;padding:10px 4px;border:0;border-bottom:1px solid var(--ui-edge);border-radius:0;background:none;box-shadow:none;color:var(--ui-text);font:600 13px/1.25 'Barlow',Arial,sans-serif;letter-spacing:.06em;text-align:left;text-decoration:none;text-transform:none}
+.settings>button:hover:not(:disabled),.settings>a:hover{background:#ffffff08}
+.settings>button b{flex:none;min-width:58px;margin:0;padding:5px 11px;border:1px solid #b5f0cb59;border-radius:999px;background:#b5f0cb17;color:var(--mint);font-weight:800;letter-spacing:.08em;text-align:center}
+.settings>button[data-action=training]::after{content:'\203A';font-size:22px;line-height:1;color:var(--ui-sub)}
+.settings>.fullscreen-button,.command-screen .settings>.fullscreen-button{justify-content:flex-start;min-height:var(--ui-tap)}
+.settings>a{order:6;color:#cfe0e8}
+/* The graphics help sits under its row; older rules gave that row 44 px and a divider. */
+.settings>button[data-action=quality],.command-screen .settings>button[data-action=quality]{order:4;min-height:var(--ui-tap);border-bottom:0}
+.settings #graphics-help,.command-screen .settings #graphics-help{order:5;display:block;padding:6px 4px 12px;border-bottom:1px solid var(--ui-edge);font-size:12px;line-height:1.45;letter-spacing:0;color:var(--ui-sub)}
+.command-screen .menu-settings>.quiet,.command-screen .menu-settings .quiet{display:flex;align-items:center;justify-content:center;width:100%;min-height:var(--ui-tap);margin-top:14px;border:1px solid #f2aaa459;border-radius:4px;background:#f2aaa40f;color:var(--ui-red);font-size:13px;font-weight:700;letter-spacing:.06em}
+.command-screen .menu-settings .quiet:hover{background:#f2aaa41f}
+
+/* ---------------------------------------------------------------- pause, depot and results panels */
+.pause-panel>button:not(.primary),.victory-panel>button:not(.primary){min-height:var(--ui-tap);border-radius:4px;font-size:13px}
+.pause-panel>.quiet,.victory-panel>.quiet,.pause-panel>button.quiet{min-height:44px;font-size:12px;color:#b8c9d1}
+.pause-panel>details>summary{display:flex;align-items:center;justify-content:space-between;min-height:var(--ui-tap);border-block:1px solid var(--ui-edge);font-size:13px;color:#e3ecf0;list-style:none}
+.pause-panel>details>summary::-webkit-details-marker{display:none}
+.pause-panel>details>summary::after{content:'+';font-size:18px;color:var(--amber)}
+.pause-panel>details[open]>summary::after{content:'\2212'}
+.pause-panel .eyebrow,.victory-panel .eyebrow,.depot-panel>.eyebrow{font-size:11px}
+.pause-panel>small,.victory-panel>small,.stage-summary small{font-size:11px}
+
+/* ---------------------------------------------------------------- shop */
+.credit-total{display:grid;grid-template-columns:auto auto;align-items:center;column-gap:8px;line-height:1}
+.credit-total::before{content:'';grid-row:1/3;width:34px;height:34px;background:url(./ui-icons/credit.webp) center/contain no-repeat;filter:drop-shadow(0 2px 3px #0008)}
+.credit-total small{grid-column:2;margin-top:3px;font-size:11px;letter-spacing:.12em;text-align:right}
+.depot-panel .shop-tabs{gap:6px}
+.depot-panel .shop-tabs button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:54px;padding:6px 8px;border-radius:4px;background:var(--ui-tile);border-color:var(--ui-edge);color:#d5e1e7;font-size:13px;font-weight:700;letter-spacing:.02em}
+.depot-panel .shop-tabs button::before{content:'';flex:none;width:32px;height:32px;margin:-4px 0;background:center/contain no-repeat;filter:saturate(.6) brightness(.82);transition:filter .16s,transform .16s}
+.depot-panel .shop-tabs [data-value=equipment]::before{background-image:url(./ui-icons/shell.webp)}
+.depot-panel .shop-tabs [data-value=systems]::before{background-image:url(./ui-icons/tank.webp)}
+.depot-panel .shop-tabs [data-value=support]::before{background-image:url(./ui-icons/supply.webp)}
+.depot-panel .shop-tabs [data-value=skins]::before{background-image:url(./ui-icons/spray.webp)}
+.depot-panel .shop-tabs button:hover:not(:disabled)::before{filter:none}
+.depot-panel .shop-tabs [aria-pressed=true]{border-color:var(--mint);background:linear-gradient(180deg,#1f4a45,#143330);color:var(--mint);box-shadow:inset 0 0 0 1px #b5f0cb66,0 6px 18px #b5f0cb1a}
+.depot-panel .shop-tabs [aria-pressed=true]::before{filter:drop-shadow(0 2px 4px #0009);transform:scale(1.08)}
+.category-help,.shop-weapon-help{font-size:13px;color:#c0cfd6}
+.depot-heading>span,.depot-panel .depot-heading>span{font-size:11px;letter-spacing:.1em}
+.depot-panel .upgrade-card{position:relative;border-radius:4px}
+.depot-panel .upgrade-card .eyebrow,.depot-panel .weapon-info .eyebrow{font-size:11px;letter-spacing:.06em}
+.depot-panel .upgrade-card p,.depot-panel .weapon-stat,.depot-panel .weapon-info p{font-size:12px}
+.depot-panel .upgrade-card h3{font-size:14px}
+.depot-panel .upgrade-card .upgrade-icon{color:var(--mint)}
+/* Owned gear carries a mint edge and a level bar; locked weapons stay muted until bought. */
+.depot-panel .upgrade-card[data-owned=true],.depot-panel [data-shop-section=systems] .upgrade-card{box-shadow:inset 3px 0 0 #b5f0cbaa}
+.depot-panel .upgrade-card[data-owned=false]{background:#0c1a24b8;border-style:dashed;border-color:#9fc0d440}
+.depot-panel .upgrade-card[data-owned=false] .upgrade-icon{color:#8497a3}
+.depot-panel .upgrade-card[data-owned=false] .eyebrow{color:var(--amber)}
+.level-bar{grid-column:1/-1;display:block;height:4px;margin-top:4px;border-radius:2px;background:linear-gradient(90deg,var(--mint) calc(var(--level,0) * 100%),#ffffff14 0)}
+.depot-panel .upgrade-card[data-owned=false] .level-bar{display:none}
+/* Price chips: gold to buy, teal to upgrade or equip, grey when unaffordable, mint text at MAX, READY or EQUIPPED.
+   Every state rule outranks compact.css (.depot-panel .upgrade-card .price-button). */
+.coin-icon{display:inline-block;flex:none;width:20px;height:20px;background:url(./ui-icons/credit.webp) center/contain no-repeat}
+.depot-panel .price-button,.depot-panel .upgrade-card .price-button,.field-pack button,.skin-card button{gap:6px;border-radius:4px;border-color:#f1cf9159;background:linear-gradient(180deg,#34290f,#211a09);color:var(--ui-gold);font:700 15px/1 'Barlow',Arial,sans-serif;letter-spacing:.02em}
+.depot-panel .price-button:hover:not(:disabled),.field-pack button:hover:not(:disabled),.skin-card button:hover:not(:disabled){background:linear-gradient(180deg,#453614,#2b210c);border-color:#f1cf91aa}
+.depot-panel .upgrade-card[data-owned=true] .price-button:not(:disabled),.depot-panel [data-shop-section=systems] .price-button:not(:disabled),.depot-panel .skin-card button[data-action=skin-equip]:not(:disabled){border-color:#b5f0cb66;background:linear-gradient(180deg,#183a36,#102825);color:#e8fff1}
+.depot-panel .upgrade-card[data-owned=true] .price-button:hover:not(:disabled),.depot-panel [data-shop-section=systems] .price-button:hover:not(:disabled),.depot-panel .skin-card button[data-action=skin-equip]:hover:not(:disabled){background:linear-gradient(180deg,#1f4a45,#143330);border-color:var(--mint)}
+.depot-panel .skin-card button[data-action=skin-equip]{font-size:13px;letter-spacing:.08em}
+.depot-panel .price-button:disabled,.field-pack button:disabled,.skin-card button:disabled{opacity:1;border-color:#9fc0d42e;background:#0f1f2a;color:#8c9ea9}
+.depot-panel .price-button:disabled .coin-icon,.field-pack button:disabled .coin-icon,.skin-card button:disabled .coin-icon{filter:grayscale(1) brightness(.75)}
+.depot-panel .price-button:disabled:not(:has(.coin-icon)),.field-pack button:disabled:not(:has(.coin-icon)),.skin-card button:disabled:not(:has(.coin-icon)){color:var(--mint);font-size:12px;letter-spacing:.1em}
+/* The weapon details toggle: a round chevron that turns when open. */
+.detail-cue{display:inline-grid;place-items:center;flex:none;width:24px;height:24px;margin-left:auto;border:1px solid var(--ui-edge-strong);border-radius:50%;font-size:0;color:var(--ui-sub);transition:transform .18s}
+.detail-cue::before{content:'';width:6px;height:6px;margin-top:-3px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)}
+.weapon-info[open] .detail-cue{transform:rotate(180deg)}
+.field-pack small,.flag-picker small{font-size:11px}
+.depot-panel .skin-card p{font-size:12px}
+
+/* ---------------------------------------------------------------- type floor: nothing in a menu below 11 px */
+.panel>.eyebrow,.profile-head .eyebrow,.profile-tag,.skirmish-panel .setup-label,.skirmish-maps button b,.route-item small,.stage-metrics span,.stage-rating small,.stage-rewards small,.control-guide kbd,.control-guide span{font-size:11px}
+.profile-actions button,.profile-actions .quiet{font-size:12px}
+.command-screen .skirmish-entry small,.command-screen .profile-chip span{font-size:11px}
+.skirmish-panel small{font-size:12px;line-height:1.45}
+
+/* ---------------------------------------------------------------- phones and touch tablets: type floor and touch sizes */
+@media(max-width:760px),(pointer:coarse){
+ .command-screen .brand{font-size:11px}
+ .command-screen .brand small{font-size:11px}
+ .command-screen .profile-chip{min-height:44px;font-size:12px}
+ .command-screen .profile-chip span{font-size:11px}
+ .command-screen .panel-top .eyebrow,.command-screen .showcase-caption .eyebrow,.command-screen .route-heading .eyebrow,.command-screen .setup-label{font-size:11px}
+ .command-screen .showcase-caption span,.command-screen .hangar-button small,.command-screen .skirmish-entry small,.command-screen .route-item small{font-size:11px}
+ .command-screen .mode-hint,.command-screen .deploy.quiet,.command-screen .briefing>small{font-size:12px}
+ .command-screen .difficulty button,.command-screen .level-select button{min-height:44px;font-size:12px}
+ .command-screen .mission-setup>summary,.command-screen .campaign-route>summary,.command-screen .briefing>details:not(.mission-setup)>summary{font-size:13px}
+ .command-screen .mission-setup>summary span,.command-screen .campaign-route>summary span{font-size:11px;color:var(--ui-sub)}
+ .depot-panel .shop-tabs button{flex-direction:column;gap:3px;min-height:62px;padding:6px 4px;font-size:12px}
+ .depot-panel .shop-tabs button::before{width:30px;height:30px;margin:0}
+ .depot-panel .upgrade-card .price-button{min-width:78px;min-height:var(--ui-tap)}
+ .field-pack button,.skin-card button{min-height:var(--ui-tap)}
+ .skirmish-maps button,.skirmish-choice button{min-height:44px;font-size:12px}
+ .skirmish-panel .eyebrow,.profiles-panel .eyebrow{font-size:11px}
+ .profile-actions button,.profile-actions .quiet{min-height:44px}
+ .quiet,#rank-save,#rank-back,#rank-name,#overlay select{min-height:44px}
+}
+/* Narrow screens only: touch tablets keep the larger subtitle from menu.css. */
+@media(max-width:760px){.command-screen .hero h1>span{font-size:11px}}
+@media(pointer:coarse) and (orientation:landscape) and (max-height:600px){
+ .depot-panel .shop-tabs button{flex-direction:row;min-height:50px}
+}
+/* Desktop: tiles match the 14 px summaries of menu.css, and the help text its 13 px. */
+@media(pointer:fine) and (min-width:761px){
+ .command-screen footer{--ui-tile-size:14px}
+ .command-screen .settings #graphics-help{font-size:13px}
+}

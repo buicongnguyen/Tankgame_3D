@@ -73,6 +73,20 @@ Tap **Graphics** on the command screen or in **Pause** to choose **Detailed** or
 
 Only the selected model tier downloads on startup. Low detail contains 33 models totaling 1.76 MB; the tank uses 1,692 triangles instead of 5,712. Switch back to Detailed whenever desired. Actual frame rate depends on the phone.
 
+## Menus on phones
+
+The command screen, shop, settings, pause and results panels share one design layer, `src/three/ui-polish.css`, loaded after the other stylesheets. It restyles the existing markup, so the English text that translations match stays the same.
+- **Touch and type:** on touch screens every control is at least 44 px and settings rows are 48 px. No menu text is smaller than 11 px.
+- **Command screen:** Leaderboard, Fullscreen, Shop and Settings are equal tiles: a 2 × 2 grid on portrait phones and one row on landscape phones. Settings opens as a sheet with one row per option and its current value on the right. **Reset this profile** sits apart, in red. The pause screen uses the same rows.
+- **Shop:** each tab has a rendered icon, and prices show a gold credit coin. Owned gear has a mint edge, a level bar and a teal upgrade button. Locked weapons have a dashed border and a gold buy button. Prices you cannot afford turn grey.
+- **Taps:** a tap that closes a panel, such as **Deploy** or **Resume**, no longer triggers the HUD button underneath it. On phones, focus rings appear only after a key is pressed.
+
+The eight icons are Blender renders from `tools/blender/build_ui_icons.py`: credit coin, coin stack, trophy, gear, shells, tank, supply crate and spray can. The tank icon reuses `tank.glb` in the Cobalt Kestrel paint from `skin-palettes.ts`, and the crate icon reuses `crate.glb`. The icons are 160 px transparent WebP files in `src/three/ui-icons/`, 47 KB in total, and `npm run test:assets` checks their size and format.
+
+```powershell
+& 'C:\Users\n\source\repos\3d_astra\.tools\blender-4.5.3-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_ui_icons.py
+```
+
 ## Rebuild the Blender assets
 
 Editable sources include `assets/blender/steel-front.blend` and `assets/blender/frontier-environments.blend`. Generators include `tools/blender/build_assets.py`, `tools/blender/build_frontier.py` and `tools/blender/build_extreme_bosses.py`. The last generator writes four separate editable scenes for the helicopter, spider, laser tank and white pine. Runtime exports: `public/models/*.glb`. After the base and extreme boss generators, run `tools/blender/build_reinforcement_bosses.py` to create the two humanoids and missile truck and add light guns to all six older boss scenes. It saves editable meshes before merging runtime surfaces. Run `tools/blender/build_scout_jeep.py` for the crewed light jeep, then run `tools/blender/build_low_detail.py` with Blender to rebuild `public/models/low/*.glb`.

@@ -113,15 +113,22 @@ export class Game {
     this.world.renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();this.graphicsLost=true;if(this.phase==='playing')this.pause();this.input.reset();this.input.active=false;this.save.low=true;this.save.graphicsChosen=true;this.persist();this.overlay.hidden=false;this.overlay.innerHTML='<section class="panel"><h1>Graphics connection lost</h1><p>Your campaign checkpoint is saved. Reload with low detail to reduce graphics load.</p><button onclick="location.reload()">Reload in low detail</button></section>';});
   }
   private bindActions(root:HTMLElement,run:(button:HTMLButtonElement)=>void,selector='button'){
-    const presses=new Map<number,{button:HTMLButtonElement;x:number;y:number}>();let pendingTouchClick=false;
+    const presses=new Map<number,{button:HTMLButtonElement|null;x:number;y:number}>();let pendingTouchClick=false;
     const buttonAt=(target:EventTarget|null)=>target instanceof Element?target.closest<HTMLButtonElement>(selector):null;
-    root.addEventListener('pointerdown',e=>{pendingTouchClick=false;const button=buttonAt(e.target);if(e.pointerType==='touch'&&button&&!button.disabled){presses.set(e.pointerId,{button,x:e.clientX,y:e.clientY});button.setPointerCapture(e.pointerId);}});
-    root.addEventListener('pointercancel',e=>presses.delete(e.pointerId));
-    root.addEventListener('pointerup',e=>{
-      const press=presses.get(e.pointerId);presses.delete(e.pointerId);if(!press||press.button.disabled||!root.contains(press.button))return;
-      const r=press.button.getBoundingClientRect();if(Math.hypot(e.clientX-press.x,e.clientY-press.y)>12||e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)return;
-      pendingTouchClick=true;e.preventDefault();run(press.button);
-    });
+    root.addEventListener('pointerdown',e=>{pendingTouchClick=false;if(e.pointerType!=='touch')return;const button=buttonAt(e.target),live=button&&!button.disabled?button:null;presses.set(e.pointerId,{button:live,x:e.clientX,y:e.clientY});live?.setPointerCapture(e.pointerId);});
+    // Window level: a panel can close, or a mission end, under a finger that is still down; its lift must still be seen.
+    addEventListener('pointercancel',e=>presses.delete(e.pointerId),true);
+    addEventListener('pointerup',e=>{
+      const press=presses.get(e.pointerId);presses.delete(e.pointerId);if(!press)return;
+      const button=press.button,r=button?.getBoundingClientRect();
+      if(button&&r&&!button.disabled&&root.contains(button)&&Math.hypot(e.clientX-press.x,e.clientY-press.y)<=12&&e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){pendingTouchClick=true;e.preventDefault();run(button);}
+      // Whatever this touch did, its compatibility click must not fire a control outside this root: DEPLOY and
+      // RESUME hide the overlay, and a mission that ends under a held finger hides the HUD. The next touch disarms it.
+      const x=e.clientX,y=e.clientY,disarm=()=>{removeEventListener('click',stray,true);removeEventListener('pointerdown',disarm,true);},
+        stray=(click:MouseEvent)=>{if(click.detail===0||Math.hypot(click.clientX-x,click.clientY-y)>24)return;disarm();
+          if(!root.contains(click.target as Node)){pendingTouchClick=false;click.preventDefault();click.stopPropagation();}};
+      addEventListener('click',stray,true);addEventListener('pointerdown',disarm,true);setTimeout(disarm,700);
+    },true);
     // A handled touch can replace its button with a link before the browser sends its compatibility click.
     root.addEventListener('click',e=>{if(pendingTouchClick&&e.detail!==0){pendingTouchClick=false;e.preventDefault();e.stopPropagation();return;}const button=buttonAt(e.target);if(!button||button.disabled)return;run(button);});
   }

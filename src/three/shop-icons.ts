@@ -10,7 +10,10 @@ export function upgradeIcon(id:Upgrade){
  return `<svg class="upgrade-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths[id]}</svg>`;
 }
 
-export const coin=(cost:number)=>`<svg class="coin-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 8h-3l-2 4 2 4h3M7 12h8" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>${cost}</span>`;
+// The rendered credit coin comes from ui-polish.css (tools/blender/build_ui_icons.py).
+export const coin=(cost:number)=>`<span class="coin-icon" aria-hidden="true"></span><span>${cost}</span>`;
+/** A slim progress bar for an upgrade level; decorative, the eyebrow text states the level. */
+export const levelBar=(level:number,cap:number)=>`<span class="level-bar" style="--level:${Math.max(0,Math.min(1,level/cap)).toFixed(3)}" aria-hidden="true"></span>`;
 export function weaponIcon(id:number){
  const paths=[
  'M5 25h22M8 22V12h13v10M16 12V3',
