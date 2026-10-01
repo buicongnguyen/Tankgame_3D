@@ -37,7 +37,7 @@ test('phone defaults to High, legacy progress and manual Low choice persist',asy
 test('effect resources are reused and retired enemy graphics leave the scene',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(()=>{
   const g=(window as any).__steel,w=g.world;g.frame=()=>{};w.settings(true);w.fx.clear();const first=new Set(),second=new Set();
-  for(let round=0;round<50;round++){for(let i=0;i<48;i++)w.fx.smoke(g.player.visual.root.position);for(const p of w.fx.particles)(round===0?first:second).add(p.mesh.material.uuid);w.fx.update(2,w.camera);}
+  for(let round=0;round<50;round++){for(let i=0;i<48;i++)w.fx.smoke(g.player.visual.root.position);for(const p of w.fx.particles)(round===0?first:second).add(p);w.fx.update(2,w.camera);}
   const reused=first.size===48&&second.size===48&&[...second].every(id=>first.has(id)),bounded=w.fx.particles.length+w.fx.pooled<=48;
   const enemies=g.enemies.slice();for(const e of enemies)g.damageUnit(e,1e9,g.player.visual.root.position,true);const retired=enemies.every(e=>e.visual.root.parent===null&&e.visual.beam.parent===null&&e.visual.bar.parent===null);
   const wrecks=w.wrecks.length;w.update(21,g.player.visual.root.position);const expired=w.wrecks.length===0;g.start(0);return {reused,bounded,retired,wrecks,expired,cleared:w.fx.pooled===0&&w.fx.particles.length===0,live:g.enemies.every(e=>e.visual.root.parent!==null)};

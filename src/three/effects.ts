@@ -1,46 +1,61 @@
 import * as T from 'three';
 type Kind='flash'|'smoke'|'spark'|'ring'|'scorch';
 export type Surface='metal'|'wood'|'stone'|'fuel';
-interface Particle {mesh:T.Mesh;age:number;life:number;size:number;velocity:T.Vector3;kind:Kind;}
-/** Shared geometry and bounded transient particles; no external texture requests. */
+/** `mesh` is a transform record only (never added to the scene); every particle of a kind draws through one
+ *  InstancedMesh, with its colour and fade per instance. */
+interface Particle {mesh:T.Object3D;age:number;life:number;size:number;velocity:T.Vector3;kind:Kind;color:T.Color;alpha:number;}
+const KINDS:Kind[]=['scorch','ring','spark','smoke','flash'];
+/** Bounded transient particles drawn as one instanced draw per kind (at most five draws however big the fight),
+ *  with shared geometry and no external texture requests. */
 export class CombatEffects {
   particles:Particle[]=[];low=false;
-  private pool=new Map<Kind,T.Mesh[]>();private pooled=0;
+  /** Retired particle records kept for reuse (no allocation in sustained fire). */
+  private pool:Particle[]=[];get pooled(){return this.pool.length;}
   get limit(){return this.low?48:230;}
-  private trimPool(max:number){
-    for(const meshes of this.pool.values())while(meshes.length&&this.pooled>max){(meshes.pop()!.material as T.Material).dispose();this.pooled--;}
-  }
-  private recycle(p:Particle){
-    p.mesh.removeFromParent();let meshes=this.pool.get(p.kind);if(!meshes){meshes=[];this.pool.set(p.kind,meshes);}meshes.push(p.mesh);this.pooled++;
-    this.trimPool(Math.max(0,this.limit-this.particles.length));
-  }
+  private trimPool(max:number){if(this.pool.length>max)this.pool.length=max;}
+  private recycle(p:Particle){this.pool.push(p);this.trimPool(Math.max(0,this.limit-this.particles.length));}
   fires:{position:T.Vector3;age:number;next:number;life:number}[]=[];
   plane=new T.PlaneGeometry(1,1);shard=new T.IcosahedronGeometry(1,0);ring=new T.RingGeometry(.86,1,48);
   texture:T.CanvasTexture;root=new T.Group();
+  readonly batches=new Map<Kind,T.InstancedMesh>();
   constructor(scene:T.Scene){
     scene.add(this.root);
     const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;
     const ctx=canvas.getContext('2d')!;
     const gradient=ctx.createRadialGradient(64,64,3,64,64,64);gradient.addColorStop(0,'rgba(255,255,255,1)');gradient.addColorStop(.25,'rgba(255,255,255,.8)');gradient.addColorStop(.65,'rgba(255,255,255,.25)');gradient.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
     this.texture=new T.CanvasTexture(canvas);
+    for(const kind of KINDS){
+      const soft=kind==='flash'||kind==='smoke'||kind==='scorch',source=soft?this.plane:kind==='ring'?this.ring:this.shard;
+      // Own geometry wrapper so each kind carries its own per-instance fade attribute.
+      const geometry=new T.InstancedBufferGeometry();geometry.index=source.index;for(const [name,attr] of Object.entries(source.attributes))geometry.setAttribute(name,attr);
+      geometry.setAttribute('aAlpha',new T.InstancedBufferAttribute(new Float32Array(230),1).setUsage(T.DynamicDrawUsage));
+      const material=new T.MeshBasicMaterial({transparent:true,depthWrite:false,map:soft?this.texture:null,blending:kind==='flash'?T.AdditiveBlending:T.NormalBlending,side:T.DoubleSide,
+        // One pass: a transparent double-sided material otherwise draws twice and is rebuilt twice every frame.
+        forceSinglePass:true,polygonOffset:kind==='ring'||kind==='scorch',polygonOffsetFactor:-1,polygonOffsetUnits:-2});
+      material.onBeforeCompile=shader=>{
+        shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nattribute float aAlpha;\nvarying float vAlpha;').replace('#include <begin_vertex>','#include <begin_vertex>\nvAlpha=aAlpha;');
+        shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying float vAlpha;').replace('#include <alphamap_fragment>','#include <alphamap_fragment>\ndiffuseColor.a*=vAlpha;');};
+      material.customProgramCacheKey=()=>'combat-particles';
+      const mesh=new T.InstancedMesh(geometry,material,230);mesh.name=`CombatEffects:${kind}`;mesh.count=0;mesh.frustumCulled=false;
+      mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);mesh.setColorAt(0,new T.Color());mesh.instanceColor!.setUsage(T.DynamicDrawUsage);
+      if(kind==='scorch')mesh.renderOrder=-1;
+      this.batches.set(kind,mesh);this.root.add(mesh);
+    }
   }
   emit(p:T.Vector3,kind:Kind,color:number,size:number,life:number,velocity=new T.Vector3()){
     if(this.particles.length>=this.limit)return;
-    const soft=kind==='flash'||kind==='smoke'||kind==='scorch';
-    let mesh=this.pool.get(kind)?.pop();
-    if(mesh)this.pooled--;
-    else{
-      this.trimPool(Math.max(0,this.limit-this.particles.length-1));
-      const material=new T.MeshBasicMaterial({color,transparent:true,opacity:1,depthWrite:false,map:soft?this.texture:null,blending:kind==='flash'?T.AdditiveBlending:T.NormalBlending,side:T.DoubleSide,
-        // One pass: a transparent double-sided material otherwise draws twice and is rebuilt twice every frame.
-        forceSinglePass:true,polygonOffset:kind==='ring'||kind==='scorch',polygonOffsetFactor:-1,polygonOffsetUnits:-2});
-      mesh=new T.Mesh(soft?this.plane:kind==='ring'?this.ring:this.shard,material);
-    }
-    const material=mesh.material as T.MeshBasicMaterial;material.color.setHex(color);material.opacity=1;
-    mesh.rotation.set(0,0,0);mesh.position.copy(p);mesh.scale.setScalar(size);
+    const particle=this.pool.pop()??{mesh:new T.Object3D(),age:0,life:0,size:0,velocity:new T.Vector3(),kind,color:new T.Color(),alpha:1};
+    const mesh=particle.mesh;mesh.rotation.set(0,0,0);mesh.position.copy(p);mesh.scale.setScalar(size);
     if(kind==='ring'||kind==='scorch')mesh.rotation.x=-Math.PI/2;
-    if(kind==='scorch')mesh.renderOrder=-1;
-    this.root.add(mesh);this.particles.push({mesh,age:0,life,size,velocity,kind});
+    particle.age=0;particle.life=life;particle.size=size;particle.velocity.copy(velocity);particle.kind=kind;particle.color.setHex(color);particle.alpha=1;
+    this.particles.push(particle);   // drawn by the next update(), once per frame however many were emitted
+  }
+  /** Write every live particle into its kind's instance buffers. */
+  private draw(){
+    for(const mesh of this.batches.values())mesh.count=0;
+    for(const p of this.particles){const mesh=this.batches.get(p.kind)!,i=mesh.count++;
+      p.mesh.updateMatrix();mesh.setMatrixAt(i,p.mesh.matrix);mesh.setColorAt(i,p.color);(mesh.geometry.getAttribute('aAlpha').array as Float32Array)[i]=p.alpha;}
+    for(const mesh of this.batches.values()){mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor!.needsUpdate=true;mesh.geometry.getAttribute('aAlpha').needsUpdate=true;(mesh.geometry as T.InstancedBufferGeometry).instanceCount=mesh.count;}
   }
   muzzle(p:T.Vector3,heading:number,rocket=false){
     this.emit(p,'flash',rocket?0xff7735:0xffdd83,rocket?3:2.1,.1);
@@ -98,8 +113,9 @@ export class CombatEffects {
       if(p.kind==='spark'){p.velocity.y-=dt*16;p.mesh.rotation.x+=dt*6;if(p.mesh.position.y<.1){p.mesh.position.y=.1;p.velocity.y=Math.abs(p.velocity.y)*.2;p.velocity.multiplyScalar(.7);}}
       if(p.kind==='flash'||p.kind==='smoke')p.mesh.quaternion.copy(camera.quaternion);
       p.mesh.scale.setScalar(p.size*(p.kind==='smoke'?1+t*2.7:p.kind==='ring'?1+t*5:p.kind==='flash'?1+t*.7:1));
-      (p.mesh.material as T.MeshBasicMaterial).opacity=(1-t)*(p.kind==='smoke'?.62:1);
+      p.alpha=(1-t)*(p.kind==='smoke'?.62:1);
     }
+    this.draw();
   }
-  clear(){for(const p of this.particles){p.mesh.removeFromParent();(p.mesh.material as T.Material).dispose();}this.particles=[];this.fires=[];this.trimPool(0);this.pool.clear();}
+  clear(){this.particles=[];this.fires=[];this.pool=[];this.draw();}
 }

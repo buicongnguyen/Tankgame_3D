@@ -53,3 +53,13 @@ test('scenery built with the stage is frozen; pickups still hover and battle add
  expect(r.frozen).toBeGreaterThan(20);expect(r.live).toBe(0);expect(r.placed).toBe(true);expect(r.moved).toBe(true);expect(r.roots).toBe(true);
  if(r.bob!==null)expect(r.bob).toBeGreaterThan(.001);
 });
+
+test('a heavy explosion barrage draws its particles in at most five instanced draws',async({page})=>{
+ await battle(page,13,2);
+ const r=await page.evaluate(()=>{const g=(window as any).__steel,fx=g.world.fx,p=g.player.visual.root.position.clone();fx.clear();
+  for(let i=0;i<12;i++)fx.impact(p.clone().setX(p.x+i),true);fx.update(1/60,g.world.camera);
+  const draws=fx.root.children.filter((m:any)=>m.isInstancedMesh&&m.count>0).length,meshes=fx.root.children.length;
+  const live=fx.particles.length,drawn=fx.root.children.reduce((s:number,m:any)=>s+m.count,0);
+  fx.update(10,g.world.camera);return {draws,meshes,live,drawn,after:fx.root.children.reduce((s:number,m:any)=>s+m.count,0)};});
+ expect(r.live).toBeGreaterThan(100);expect(r.drawn).toBe(r.live);expect(r.draws).toBeLessThanOrEqual(5);expect(r.meshes).toBe(5);expect(r.after).toBe(0);
+});

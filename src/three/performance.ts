@@ -41,7 +41,7 @@ class ContactShadows{
    this.spot.set(x-sun.x*radius*.45,.05,z-sun.z*radius*.45);this.size.set(radius*2.7,radius*2.7*long,1);
    this.turn.setFromAxisAngle(this.up,heading).multiply(this.flat);this.matrix.compose(this.spot,this.turn,this.size);mesh.setMatrixAt(count++,this.matrix);};
   for(const unit of [game.player,...game.enemies,...game.allies.tanks.map(a=>a.unit)]){
-   if(!unit||unit.dead||unit.pending||!unit.visual.root.visible||game.airborne(unit))continue;
+   if(!unit||unit.dead||unit.pending||!unit.visual.root.visible||game.airborne(unit)||unit.perch)continue;
    // Vehicles are longer than wide and face their heading (the hull turns, not the root); soldiers get a round shadow.
    const p=unit.visual.root.position;add(p.x,p.z,game.unitRadius(unit),unit.heading,game.isInfantry(unit)?1:1.45);
   }

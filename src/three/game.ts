@@ -57,9 +57,10 @@ import type { Save } from './campaign';
 import { armorMultiplier, clamp, circleBox, distance, purchase, segmentBox, segmentCircle, turnToward } from './rules';
 import type { Point, Upgrade } from './rules';
 import { reducedMotion } from './media';
+import { dropLookouts, placeLookouts, type Perch } from './lookouts';
 type Phase='menu'|'finishing'|'playing'|'paused'|'depot'|'failed'|'victory';
-export interface Unit { team?:'ally';squad?:number;pending?:boolean;aboard?:Unit; patrol?:PatrolOrder; burstLeft?:number; lastSeen?:Point; searchUntil?:number; encounter?:EncounterOrder; bossKind?:BossKind; mudTime?:number; velocity:Point; visual:TankVisual; hp:number; max:number; heading:number; aim:number; cooldown:number; role:'player'|'raider'|'sentry'|'heavy'|'boss'|'rifleman'|'rocketeer'|'jeep'|'airlift'; dead:boolean; }
-interface Shot { homing?:Unit;alliedSafe?:boolean; height?:{start:number;range:number;traveled:number}; mesh:T.Mesh; p:Point; from:Point; dx:number; dz:number; speed:number; damage:number; life:number; friendly:boolean; splash:number; }
+export interface Unit { /** Posted on a rooftop (lookouts.ts). */ perch?:Perch; team?:'ally';squad?:number;pending?:boolean;aboard?:Unit; patrol?:PatrolOrder; burstLeft?:number; lastSeen?:Point; searchUntil?:number; encounter?:EncounterOrder; bossKind?:BossKind; mudTime?:number; velocity:Point; visual:TankVisual; hp:number; max:number; heading:number; aim:number; cooldown:number; role:'player'|'raider'|'sentry'|'heavy'|'boss'|'rifleman'|'rocketeer'|'jeep'|'airlift'; dead:boolean; }
+interface Shot { /** The shooter's own rooftop: never blocks its shot. */ ignore?:Cover; homing?:Unit;alliedSafe?:boolean; height?:{start:number;range:number;traveled:number}; mesh:T.Mesh; p:Point; from:Point; dx:number; dz:number; speed:number; damage:number; life:number; friendly:boolean; splash:number; }
 export class Game {
   training:TrainingSession|null=null;campaignSave:Save|null=null;waves=new DefenseWaves();allies=new Allies();
   /** Skirmish series state; the setup draft persists separately from the campaign save. */
@@ -344,7 +345,7 @@ export class Game {
     for(let i=0;i<encounter.riflemen;i++)deploy(i,encounter.riflemen,'rifleman');
     for(let i=0;i<encounter.rocketeers;i++)deploy(i,encounter.rocketeers,'rocketeer');
     for(let i=0;i<encounter.jeeps;i++)deploy(i,encounter.jeeps,'jeep');
-    this.escortDeploying=false;this.deploying=false;this.skirmish?.deploy(this);this.enemies.forEach((u,i)=>{if(!this.training&&!this.skirmish&&!u.pending)assignPatrol(this,u,i);});this.allies.setup(this);
+    this.escortDeploying=false;this.deploying=false;this.skirmish?.deploy(this);this.enemies.forEach((u,i)=>{if(!this.training&&!this.skirmish&&!u.pending)assignPatrol(this,u,i);});if(!this.training&&!this.skirmish)placeLookouts(this);this.allies.setup(this);
     this.world.shield.visible=false;this.world.cursor.visible=false;
     this.syncVisual(this.player);this.enemies.forEach(e=>this.syncVisual(e));this.updateHud();
   }
@@ -376,7 +377,7 @@ export class Game {
   weaponStats(){return WEAPONS[this.weapon];}
   reloadDuration(){return reloadSeconds(this.save,this.weapon);}
   moveUnit(unit:Unit,dx:number,dz:number,dt=1/60){
-    if(unit.dead||dt<=0)return;
+    if(unit.dead||dt<=0||unit.perch)return;   // a lookout holds its roof
     if(this.hazards.quaking&&!this.isInfantry(unit)){unit.velocity.x=unit.velocity.z=0;unit.visual.root.userData.walking=false;return;}
     const p=unit.visual.root.position,r=this.unitRadius(unit),previous=p.clone();
     const mud=this.world.terrainKind(p)==='mud';unit.mudTime=mud?(unit.mudTime??0)+dt:0;
@@ -440,7 +441,7 @@ export class Game {
       if(friendly&&[1,5].includes(this.weapon))mesh.scale.set(this.weapon===5?.32:.5,this.weapon===5?.32:.5,.6);
       if(unit.role==='rifleman'||unit.role==='jeep')mesh.scale.set(.35,.35,.5);if(rocket)mesh.scale.setScalar(friendly?(this.weapon===6?.65:1.2):.85);
       unit.visual.muzzle.getWorldPosition(mesh.position);mesh.position.x+=Math.cos(unit.aim)*offset;mesh.position.z-=Math.sin(unit.aim)*offset;this.world.entities.add(mesh);
-      this.shots.push({mesh,p:{x:p.x,z:p.z},from:{x:p.x,z:p.z},dx:direction.x,dz:direction.z,speed:stats.speed,damage:stats.damage*(friendly?this.playerDamageMultiplier():1),life:unit.role==='rifleman'||unit.role==='jeep'?.9:2.5,friendly,splash:stats.splash});
+      this.shots.push({mesh,p:{x:p.x,z:p.z},from:{x:p.x,z:p.z},dx:direction.x,dz:direction.z,speed:stats.speed,damage:stats.damage*(friendly?this.playerDamageMultiplier():1),life:unit.role==='rifleman'||unit.role==='jeep'?.9:2.5,friendly,splash:stats.splash,ignore:unit.perch?.cover,height:unit.perch?{start:mesh.position.y,range:18,traveled:0}:undefined});
       if(unit.role==='rifleman'||unit.role==='jeep'||friendly&&this.weapon===5)this.world.fx.emit(mesh.position.clone(),'flash',0xffd494,.3,.07);else this.world.fx.muzzle(mesh.position,heading,!!rocket);
     }
     if(friendly){this.shotsFired++;this.reload=this.reloadDuration();this.tone([1,5].includes(this.weapon)?110:65,.1,.05);}
@@ -495,8 +496,8 @@ export class Game {
       const investigating=target===e.lastSeen,capturing=objectiveTarget&&m.kind==='capture';
       const dist=distance(p,target),desired=Math.atan2(target.x-p.x,target.z-p.z);
       e.aim=turnToward(e.aim,desired,dt*2*(this.skirmish?.pace??1));
-      const obstruction=this.world.covers.some(c=>c.hp>0&&segmentBox(p,target,c,this.unitRadius(e)+.2)!==null);
-      if(!ordered&&(e.role!=='sentry'||dist>26||obstruction)){
+      const obstruction=this.world.covers.some(c=>c.hp>0&&c!==e.perch?.cover&&segmentBox(p,target,c,this.unitRadius(e)+.2)!==null);
+      if(!ordered&&!e.perch&&(e.role!=='sentry'||dist>26||obstruction)){
         const advance=dist>(investigating?2:capturing?4:17)||obstruction?1:dist<10&&!investigating&&!capturing?-.55:0;
         const side=investigating||capturing?0:e.role==='raider'?.5:obstruction?.7:0;
         const detour=obstruction?this.navigation.next(this.world,p,target):null;
@@ -506,7 +507,7 @@ export class Game {
         this.moveUnit(e,dx,dz,dt);if(Math.abs(dx)+Math.abs(dz)>.001)e.heading=turnToward(e.heading,Math.atan2(dx,dz),dt*2);
       }
       if(!ordered&&e.role==='sentry'&&dist<=26&&!obstruction&&terrainAt(this.world.environment.biome,p)==='ice')this.moveUnit(e,0,0,dt);
-      const canFire=(target===playerPos||target===this.convoy?.position||this.allies.active.some(a=>target===a.visual.root.position)||objectiveTarget&&!capturing)&&clearSight(this,p,target);
+      const canFire=(target===playerPos||target===this.convoy?.position||this.allies.active.some(a=>target===a.visual.root.position)||objectiveTarget&&!capturing)&&clearSight(this,p,target,e.perch?.cover);
       const range=objectiveTarget?24:38;
       if(dist<range&&canFire)e.cooldown-=dt;else e.cooldown=Math.max(e.cooldown,AIM_WARNING_SECONDS);
       const beam=e.visual.beam;beam.visible=canFire&&e.cooldown<AIM_WARNING_SECONDS&&dist<range;beam.scale.z=dist;beam.position.set(p.x+Math.sin(e.aim)*dist/2,.12,p.z+Math.cos(e.aim)*dist/2);beam.rotation.y=e.aim;
@@ -549,7 +550,7 @@ export class Game {
     // A 14 m landmark shows each hit on the struck face, not buried at its centre.
     const landmark=cover.kind==='concrete-block',where=landmark?(at?new T.Vector3(clamp(at.x,cover.x-cover.w/2,cover.x+cover.w/2),1.4,clamp(at.z,cover.z-cover.d/2,cover.z+cover.d/2)):cover.mesh.position.clone().setY(3.6)):cover.mesh.position.clone().setY(.7);
     if(hitEffect||cover.hp<=0)this.world.fx.surface(where,surface,cover.hp<=0);
-    if(cover.hp<=0){cover.mesh.visible=false;this.world.navigationRevision++;
+    if(cover.hp<=0){cover.mesh.visible=false;this.world.navigationRevision++;dropLookouts(this,cover);
 if(landmark)for(const [dx,dz] of [[-.3,-.3],[.3,-.3],[-.3,.3],[.3,.3]])this.world.fx.surface(new T.Vector3(cover.x+dx*cover.w,1.6,cover.z+dz*cover.d),'stone',true);
 if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kind==='fuelcrate'?7:5,cover.kind==='fuelcrate'?110:65);}}
   }
@@ -568,7 +569,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
       if(s.homing&&!s.homing.dead){const target=s.homing.visual.root.position,heading=turnToward(Math.atan2(s.dx,s.dz),Math.atan2(target.x-s.mesh.position.x,target.z-s.mesh.position.z),dt*4);s.dx=Math.sin(heading);s.dz=Math.cos(heading);s.mesh.rotation.y=heading;}
       const b={x:s.mesh.position.x+s.dx*s.speed*dt,z:s.mesh.position.z+s.dz*s.speed*dt};
       let first=Infinity,hit:(()=>void)|null=null;
-      for(const c of this.world.covers){if(c.hp<=0)continue;const t=segmentBox(s.p,b,c,.12);if(t!==null&&t<first){first=t;hit=()=>this.hitCover(c,s.damage,false,true,{x:s.p.x+(b.x-s.p.x)*t,z:s.p.z+(b.z-s.p.z)*t});}}
+      for(const c of this.world.covers){if(c.hp<=0||c===s.ignore)continue;const t=segmentBox(s.p,b,c,.12);if(t!==null&&t<first){first=t;hit=()=>this.hitCover(c,s.damage,false,true,{x:s.p.x+(b.x-s.p.x)*t,z:s.p.z+(b.z-s.p.z)*t});}}
       for(const unit of s.friendly?this.enemies:[this.player,...this.allies.active]){if(unit.dead||unit.pending||this.airborne(unit))continue;const t=segmentCircle(s.p,b,unit.visual.root.position,this.unitRadius(unit));if(t!==null&&t<first){first=t;hit=()=>this.damageUnit(unit,s.damage,s.from);}}
       if(!s.friendly){
         if(this.convoy){const t=segmentCircle(s.p,b,this.convoy.position,1.9);if(t!==null&&t<first){first=t;hit=()=>{this.damageConvoy(s.damage);};}}

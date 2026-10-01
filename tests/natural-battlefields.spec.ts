@@ -43,7 +43,7 @@ test('all 48 maps remove broad roads, add central cover and preserve sign and co
    g.start(stage,level);const w=g.world,l=w.layout,extras=w.covers.filter((c:any)=>c.scenery&&!c.scenery.parts[0].name.startsWith('CoverBatch')),covers=w.covers.filter((c:any)=>c.hp>0);counts.push({stage,level,total:extras.length,near:extras.filter((c:any)=>Math.abs(c.x)<22).length});
    if(w.arena.getObjectByName('StageRoad'))issues.push({stage,level,road:true});
    for(let i=1;i<l.points.length;i++)if(covers.some((c:any)=>segmentBox(l.points[i-1],l.points[i],c,g.convoy?2.3:1.25)!==null))issues.push({stage,level,blocked:true});
-   for(const e of [g.player,...g.enemies])if(covers.some((c:any)=>circleBox(e.visual.root.position,g.unitRadius(e),c)))issues.push({stage,level,spawn:e.role});
+   for(const e of [g.player,...g.enemies])if(!e.perch&&covers.some((c:any)=>circleBox(e.visual.root.position,g.unitRadius(e),c)))issues.push({stage,level,spawn:e.role});
    if(!g.convoy&&w.firmRoad(l.points[0]))issues.push({stage,level,invisibleRoad:true});
   }return {issues,counts};
  });expect(r.issues).toEqual([]);for(const row of r.counts){if(row.stage===0&&row.level===0)continue;expect(row.total,`${row.stage}/${row.level}`).toBeGreaterThanOrEqual(4);expect(row.total).toBeLessThanOrEqual(64);expect(row.near,`${row.stage}/${row.level} center`).toBeGreaterThanOrEqual(2);}

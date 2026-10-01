@@ -84,7 +84,7 @@ Only the selected model tier downloads on startup. Low detail contains 33 models
 **Fewer draw calls everywhere** (`src/three/route-scenery.ts`, `src/three/instancing.ts`):
 - **Covers draw instanced.** Houses, city blocks, crates, barrels, fuel crates, walls and trees placed as whole models now draw as one instanced mesh per model surface, per quadrant on Large maps. They keep their damage tint, destruction, town flags and hit effects. Street and terrain decals merge per colour.
 - **No shader switching.** An instanced mesh draws with its own copy of its material. A material shared by plain and instanced meshes made three.js re-derive the shader program on every draw, about 6% of a phone frame on the city map.
-- **Single-pass transparency.** Explosion particles and ground rings were drawn twice per frame and rebuilt twice per frame, as transparent double-sided materials. Now they draw once.
+- **Batched explosions.** All combat particles (flashes, smoke, sparks, rings and scorch marks) draw as one instanced mesh per kind, so a fight costs at most five particle draws however much explodes. Before, each puff was its own transparent double-sided mesh, drawn twice and rebuilt twice per frame. Ground rings now draw in one pass too (`src/three/effects.ts`).
 - **Frozen scenery.** Everything placed with a stage, except pickups, skips its per-frame matrix update. Patrol checks read covers from the cover grid.
 
 Measured on a phone profile (390 × 844, CPU slowed 4×, raw WebGL draws including the shadow pass). Frame CPU is the median of four alternating runs per build:
@@ -119,6 +119,13 @@ The eight icons are Blender renders from `tools/blender/build_ui_icons.py`: cred
 - **Smooth movement.** The game simulates at a fixed 60 Hz. Tanks, soldiers, the transport and shells are now drawn between their last two steps, so they glide at any frame rate. Jumps such as respawns and airlift drops are drawn where they land (`src/three/smoothing.ts`).
 - **Phones use the light soldier.** A soldier is about 20 px tall on any screen, where the 504-triangle body looks the same as the 1,324-triangle one. Touch devices therefore use the light body in Detailed too, which saves about 81k triangles on the busiest map.
 - **Town life.** Village houses and city blocks get rooftop flags streaming downwind, smoke from house chimneys and gulls circling over town. Each kind is one draw call with no shadow, costing about 0.03 ms per frame on a 4× slowed phone CPU. Flags and smoke disappear with their building, and placement is seeded per stage. Phones and Low detail get fewer, and reduced motion keeps only still flags (`src/three/town-life.ts`).
+
+## Rooftop lookouts
+
+On Normal and harder, riflemen from a stage's own roster take up posts on the roofs of houses and city blocks beside the road, or overlooking the objective on capture and defence maps. Normal has up to 2, Hard 3 and Crazy 4, so enemy counts stay as designed. Easy, training and skirmish have none (`src/three/lookouts.ts`).
+- A lookout holds its roof. It wakes with its encounter group and fires from the rooftop, and its own building never blocks its view or its shots.
+- Shots travel along the ground, so direct fire at a lookout hits the building. Bring it down with splash damage, such as rockets, artillery or a strike, or knock the building down, which drops the lookout with it.
+- Lookouts never stand over the deployment area or the convoy's starting ground.
 
 ## Living battlefields
 
