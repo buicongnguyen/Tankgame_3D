@@ -1,5 +1,6 @@
 import * as T from 'three';
 import type {Cover,World} from './world';
+import {coarsePointer,reducedMotion} from './media';
 
 /** Life around buildings, decoration only: flags on rooftops, smoke from house chimneys and a few birds
  *  circling over town. Each kind is ONE instanced draw that never enters the shadow pass; flags and wings move
@@ -8,9 +9,7 @@ import type {Cover,World} from './world';
  *  smoke. Motion pattern after the lightweight-game-objects skill (templates/living-swarm.js). */
 const HOUSE_CHIMNEY=new T.Vector3(1.8,4.95,-1.3),HOUSE_RIDGE=new T.Vector3(0,4.38,2.25);
 const TAU=Math.PI*2;
-function mulberry32(seed:number){let a=seed>>>0;return ()=>{a=(a+0x6d2b79f5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
-const quiet=()=>typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-const touch=()=>typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches;
+export function mulberry32(seed:number){let a=seed>>>0;return ()=>{a=(a+0x6d2b79f5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
 
 /** Lambert with a vertex motion injected before instancing; the cache key keeps it out of other programs. */
 function moving(key:string,uniforms:Record<string,{value:unknown}>,motion:string){
@@ -20,7 +19,7 @@ function moving(key:string,uniforms:Record<string,{value:unknown}>,motion:string
    .replace('#include <begin_vertex>',`#include <begin_vertex>\n{ ${motion} }`);};
  material.customProgramCacheKey=()=>key;return material;
 }
-function geometryOf(tris:[number[],number[],number[],number[]][]){
+export function geometryOf(tris:[number[],number[],number[],number[]][]){
  const pos:number[]=[],col:number[]=[];for(const [a,b,c,k] of tris){pos.push(...a,...b,...c);col.push(...k,...k,...k);}
  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('color',new T.Float32BufferAttribute(col,3));g.computeVertexNormals();return g;
 }
@@ -41,14 +40,14 @@ function birdGeometry(){
  return geometryOf([[n,l,h,body],[n,h,r,body],[h,l,t,body],[h,t,r,body],[l,[-s*.27,0,s*.05],wb,wing],[[-s*.27,0,s*.05],[-s*.5,0,-s*.06],wb,tip],[r,wb,[s*.27,0,s*.05],wing],[[s*.27,0,s*.05],wb,[s*.5,0,-s*.06],tip],[t,[-s*.1,0,-s*.42],[s*.1,0,-s*.42],wing]]);
 }
 let puffTexture:T.CanvasTexture|null=null;
-function smokeTexture(){
+export function smokeTexture(){
  if(puffTexture)return puffTexture;
  const canvas=document.createElement('canvas');canvas.width=canvas.height=64;const ctx=canvas.getContext('2d')!,g=ctx.createRadialGradient(32,32,2,32,32,31);
  g.addColorStop(0,'rgba(255,255,255,0.9)');g.addColorStop(.6,'rgba(255,255,255,0.45)');g.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=g;ctx.fillRect(0,0,64,64);
  puffTexture=new T.CanvasTexture(canvas);puffTexture.colorSpace=T.SRGBColorSpace;return puffTexture;   // shared for the session, never disposed
 }
 /** Writes yaw + uniform scale straight into an instance buffer (no allocation). */
-function place(m:ArrayLike<number>&{[i:number]:number},i:number,x:number,y:number,z:number,yaw:number,s:number,bank=0){
+export function place(m:ArrayLike<number>&{[i:number]:number},i:number,x:number,y:number,z:number,yaw:number,s:number,bank=0){
  const cy=Math.cos(yaw),sy=Math.sin(yaw),cb=Math.cos(bank)*s,sb=Math.sin(bank)*s,o=i*16;
  m[o]=cy*cb;m[o+1]=sb;m[o+2]=-sy*cb;m[o+3]=0;m[o+4]=-cy*sb;m[o+5]=cb;m[o+6]=sy*sb;m[o+7]=0;m[o+8]=sy*s;m[o+9]=0;m[o+10]=cy*s;m[o+11]=0;m[o+12]=x;m[o+13]=y;m[o+14]=z;m[o+15]=1;
 }
@@ -76,7 +75,7 @@ export class TownLife{
   this.rng=mulberry32(0x7a11+stage*977);const rng=this.rng;
   const angle=rng()*TAU;this.wind={x:Math.sin(angle),z:Math.cos(angle)};
   // Phones and Low detail get fewer flags, puffs and birds; reduced motion keeps only still flags.
-  const share=(world.low?.6:1)*(touch()?.75:1),still=quiet();
+  const share=(world.low?.6:1)*(coarsePointer()?.75:1),still=reducedMotion();
   const roof=this.roofPoint(world);
   const picked=buildings.filter(()=>rng()<.55).slice(0,Math.round(10*share));
   for(const host of picked){const p=host.kind==='house'?HOUSE_RIDGE:roof;if(p)this.flagHosts.push(host);}

@@ -39,7 +39,8 @@ test('all 48 maps remove broad roads, add central cover and preserve sign and co
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(async()=>{
   const g=(window as any).__steel;g.frame=()=>{};const {segmentBox,circleBox}=await import('/src/three/rules.ts');const issues:any[]=[],counts=[];
   for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++){
-   g.start(stage,level);const w=g.world,l=w.layout,extras=w.covers.filter((c:any)=>c.scenery),covers=w.covers.filter((c:any)=>c.hp>0);counts.push({stage,level,total:extras.length,near:extras.filter((c:any)=>Math.abs(c.x)<22).length});
+   // Route props and landmarks; covers placed as whole models also draw instanced (CoverBatch) but are not extras.
+   g.start(stage,level);const w=g.world,l=w.layout,extras=w.covers.filter((c:any)=>c.scenery&&!c.scenery.parts[0].name.startsWith('CoverBatch')),covers=w.covers.filter((c:any)=>c.hp>0);counts.push({stage,level,total:extras.length,near:extras.filter((c:any)=>Math.abs(c.x)<22).length});
    if(w.arena.getObjectByName('StageRoad'))issues.push({stage,level,road:true});
    for(let i=1;i<l.points.length;i++)if(covers.some((c:any)=>segmentBox(l.points[i-1],l.points[i],c,g.convoy?2.3:1.25)!==null))issues.push({stage,level,blocked:true});
    for(const e of [g.player,...g.enemies])if(covers.some((c:any)=>circleBox(e.visual.root.position,g.unitRadius(e),c)))issues.push({stage,level,spawn:e.role});

@@ -11,12 +11,13 @@ async function battle(browser:Browser,low=false,options:object=PHONE){
  await page.locator('[data-action=deploy]').click();await expect(page.locator('body')).toHaveAttribute('data-phase','playing');
  return {context,page,errors};
 }
-/** Feeds `seconds` of animation frames. `gap` is the frame time in ms, as a number or as a function of the current
- *  pixel ratio (a GPU-bound device renders faster at a lower ratio); with `every` > 1 only every n-th frame renders. */
+/** Feeds `seconds` of animation frames. `gap` is the frame time in ms, as a number or as an expression of the current
+ *  pixel ratio `ratio` and shadow map size `shadow` (a GPU-bound device renders faster with fewer pixels or texels);
+ *  with `every` > 1 only every n-th frame renders. */
 function drive(page:Page,seconds:number,gap:number|string,every=1){
  return page.evaluate(({seconds,gap,every})=>{const g=(window as any).__steel,w=window as any,ratio=()=>g.world.renderer.getPixelRatio();
-  const time=typeof gap==='number'?()=>gap:new Function('ratio',`return ${gap}`) as (r:number)=>number;
-  w.__t??=performance.now();for(let spent=0;spent<seconds*1000;){const step=time(ratio());spent+=step;w.__t+=step;w.__n=(w.__n??0)+1;g.budget.frame(g,w.__t,w.__n%every===0);}
+  const time=typeof gap==='number'?()=>gap:new Function('ratio','shadow',`return ${gap}`) as (r:number,s:number)=>number;
+  w.__t??=performance.now();for(let spent=0;spent<seconds*1000;){const step=time(ratio(),g.world.sun.shadow.mapSize.x);spent+=step;w.__t+=step;w.__n=(w.__n??0)+1;g.budget.frame(g,w.__t,w.__n%every===0);}
   return ratio();},{seconds,gap,every});
 }
 const hints=(page:Page)=>page.locator('.perf-hint');
@@ -47,6 +48,7 @@ test('a 30 Hz power-saving cap keeps full resolution and never suggests Low deta
  expect([...seen].some(r=>r<1.6)).toBe(true);                 // one drop was tried...
  expect(await drive(page,1,1000/30)).toBe(1.6);               // ...undone because frames did not speed up
  expect(await drive(page,15,1000/30)).toBe(1.6);              // and not tried again this battle
+ expect(await page.evaluate(()=>(window as any).__steel.world.sun.shadow.mapSize.x)).toBe(2048);   // nor shadow detail
  await expect(hints(page)).toHaveCount(0);
  expect(errors).toEqual([]);await context.close();
 });
@@ -59,6 +61,28 @@ test('Low detail sharpens only while the phone keeps up, not back to a rate that
  const recovered=await drive(page,30,1000/60,2);expect(recovered).toBeGreaterThan(dropped);expect(recovered).toBeLessThan(1.19);
  // Leaving the battle while sharpened restores the tier ratio (0.8x, at most 960 px on the long side).
  await page.evaluate(()=>(window as any).__steel.showMenu());expect(await drive(page,.2,1000/60)).toBeCloseTo(.8,5);
+ expect(errors).toEqual([]);await context.close();
+});
+
+test('resolution goes first; a phone still late at its lowest resolution halves the shadow map if that helps, for that battle only',async({browser})=>{
+ const {context,page,errors}=await battle(browser);
+ const size=()=>page.evaluate(()=>(window as any).__steel.world.sun.shadow.mapSize.x);
+ // Frame time grows with pixels and with shadow texels: 42 ms at 1x with the full map, 36 ms with the small one.
+ const gpu='(30+12*shadow/2048)*ratio*ratio';
+ expect(await drive(page,2,gpu)).toBeGreaterThan(1);expect(await size()).toBe(2048);   // still trading resolution: shadows untouched
+ expect(await drive(page,12,gpu)).toBe(1);await drive(page,8,gpu);expect(await size()).toBe(1024);   // tried, and kept: frames got faster
+ // The shadow map is rebuilt at the new size, and the next battle starts sharp again.
+ expect(await page.evaluate(()=>{const g=(window as any).__steel;g.world.update(1/60,g.player.visual.root.position);return g.world.sun.shadow.map?.width;})).toBe(1024);
+ await page.evaluate(()=>(window as any).__steel.showMenu());await drive(page,.2,1000/60);expect(await size()).toBe(2048);
+ // A device whose frames do not speed up gets its shadows back, and the budget stops trying.
+ await page.locator('[data-action=deploy]').click();await expect(page.locator('body')).toHaveAttribute('data-phase','playing');
+ expect(await drive(page,16,'42*ratio*ratio')).toBe(1);await drive(page,10,'42*ratio*ratio');expect(await size()).toBe(2048);
+ // Restarting from pause starts at full resolution again.
+ await page.evaluate(()=>{const g=(window as any).__steel;g.pause();g.start(g.mission,g.level);});expect(await drive(page,.2,1000/60)).toBe(1.6);
+ await page.evaluate(()=>(window as any).__steel.showMenu());await drive(page,.2,1000/60);
+ // A device that keeps up never loses shadow detail.
+ await page.locator('[data-action=deploy]').click();await expect(page.locator('body')).toHaveAttribute('data-phase','playing');
+ await drive(page,20,1000/60);expect(await size()).toBe(2048);
  expect(errors).toEqual([]);await context.close();
 });
 

@@ -70,7 +70,7 @@ export class Airlifts {
   *  ramp comes down so the player can see where troops will step off. Rotate the group to the landing heading. */
  private marker(css:string){
   const color=new T.Color(css),group=new T.Group();group.name='AirliftLZ';
-  const material=()=>new T.MeshBasicMaterial({color,transparent:true,opacity:.6,depthWrite:false,side:T.DoubleSide});
+  const material=()=>new T.MeshBasicMaterial({color,transparent:true,opacity:.6,depthWrite:false,side:T.DoubleSide,forceSinglePass:true});
   for(const [inner,outer,z] of [[AIRLIFT.clearance-1.1,AIRLIFT.clearance-.3,0],[1.3,1.8,-AIRLIFT.rampReach]] as const){const ring=new T.Mesh(new T.RingGeometry(inner,outer,48),material());ring.rotation.x=-Math.PI/2;ring.position.z=z;ring.renderOrder=2;ring.userData.owned=true;group.add(ring);}
   return group;
  }

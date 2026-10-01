@@ -1,5 +1,6 @@
 import * as T from 'three';
 import type {Game} from './game';
+import {coarsePointer} from './media';
 
 /** Pixel ratios per detail tier. `base` is the fixed ratio used outside battle (and always on desktop);
  *  touch screens may move between `lo` and `hi` while a battle runs. High starts at its top and only gives
@@ -11,12 +12,13 @@ export function ratioRange(low:boolean){
  const base=Math.min(dpr,1.6);return {base,lo:Math.min(base,1),hi:base};
 }
 
-const touch=()=>matchMedia('(pointer:coarse)').matches;
 const BATTLE=['playing','paused','finishing'];
 /** Slower than this (under 25 FPS) at the lowest resolution, High detail offers Low detail. A browser that
  *  caps animation frames at 30 Hz (power saving) stays under it, since Low would be capped the same way. */
 const HINT_MS=40;
 const SHADOWS=256;
+/** Shadow map sizes: the tier's own, and the step a late phone takes at its lowest resolution. */
+const SHADOW_MAP=2048,SHADOW_MAP_LATE=1024;
 
 /** Soft drop shadows under units in Low detail, which renders without shadow maps: an ellipse along each
  *  vehicle's heading, nudged away from the sun so it shows past the hull from the high camera. One draw. */
@@ -57,6 +59,8 @@ export class FrameBudget{
  private last=0;private raf=1000/60;private rendered=0;private interval=1000/60;
  private logicStart=0;private renderStart=0;private logicMs=0;private renderMs=0;
  private over=0;private under=0;private changed=0;private slow=0;private ceiling=Infinity;private tier:boolean|null=null;private hinted=false;
+ /** The shadow step is a trial too: kept only if frames get at least 10% faster within three seconds. */
+ private shadowCut=false;private shadowTrial:{interval:number;at:number}|null=null;private shadowFutile=false;
  /** A resolution drop on trial: kept only if frames get at least 10% faster within three seconds. */
  private trial:{from:number;interval:number;at:number}|null=null;private futile=false;
  private note?:HTMLElement;private readout?:HTMLElement;private shown=0;
@@ -75,11 +79,11 @@ export class FrameBudget{
 
  private setRatio(game:Game,ratio:number|null,now:number){game.world.renderRatio=ratio;game.world.resize();this.changed=now;this.over=this.under=0;}
  /** Back to the tier's own ratio with a clean slate (a new battle, a detail change, or leaving touch mode). */
- private settle(game:Game,now:number){if(game.world.renderRatio!==null)this.setRatio(game,null,now);this.over=this.under=this.slow=0;this.ceiling=Infinity;this.trial=null;this.futile=false;}
+ private settle(game:Game,now:number){if(game.world.renderRatio!==null)this.setRatio(game,null,now);if(this.shadowCut){this.shadowCut=false;game.world.shadowDetail(SHADOW_MAP);}this.shadowTrial=null;this.shadowFutile=false;this.over=this.under=this.slow=0;this.ceiling=Infinity;this.trial=null;this.futile=false;}
  private adapt(game:Game,now:number,interval:number){
   const world=game.world;
   if(world.low!==this.tier){this.tier=world.low;this.settle(game,now);}
-  if(!BATTLE.includes(game.phase)||!touch()){this.closeNote();this.settle(game,now);return;}
+  if(!BATTLE.includes(game.phase)||!coarsePointer()){this.closeNote();this.settle(game,now);return;}
   if(game.phase!=='playing'){this.over=this.under=0;return;}
   const budget=1000/(world.low?30:60),range=ratioRange(world.low),current=world.renderRatio??range.base;
   if(this.interval>budget*1.25){this.over+=interval;this.under=0;}
@@ -92,10 +96,17 @@ export class FrameBudget{
    this.trial={from:current,interval:this.interval,at:now};this.ceiling=current;this.setRatio(game,Math.max(range.lo,current*.85),now);
   }
   else if(!this.trial&&this.under>5000&&now-this.changed>5000&&current<range.hi-.01&&current*1.1<this.ceiling-.01)this.setRatio(game,Math.min(range.hi,current*1.1),now);
+  // Resolution first, then shadows: High still late at its lowest useful resolution draws a quarter of the
+  // shadow texels for the rest of this battle (the next battle starts sharp again).
+  // Never after a futile resolution trial: the limit is then a frame cap or the CPU, which fewer texels do not lift.
+  if(this.shadowTrial&&now-this.shadowTrial.at>3000){const trial=this.shadowTrial;this.shadowTrial=null;if(this.interval>trial.interval*.9){this.shadowFutile=true;this.shadowCut=false;world.shadowDetail(SHADOW_MAP);}}
+  if(!world.low&&!this.shadowCut&&!this.shadowFutile&&!this.trial&&!this.futile&&current<=range.lo+.01&&this.over>3000){this.shadowCut=true;this.shadowTrial={interval:this.interval,at:now};world.shadowDetail(SHADOW_MAP_LATE);this.over=0;}
   // High that stays under 25 FPS at its lowest useful resolution: offer Low detail, once.
-  if(!world.low&&(current<=range.lo+.01||this.futile)&&this.interval>HINT_MS){this.slow+=interval;if(this.slow>6000&&!this.hinted&&this.hints){this.hinted=true;this.hint(game);}}
+  if(!world.low&&(current<=range.lo+.01||this.futile)&&this.interval>HINT_MS){this.slow+=interval;if(this.slow>6000&&!this.hinted&&this.hints&&!this.shadowTrial){this.hinted=true;this.hint(game);}}
   else this.slow=0;
  }
+ /** A new battle (deploy, retry, restart from pause): the tier's own resolution and shadows again, a clean slate. */
+ newBattle(game:Game){this.closeNote();this.settle(game,performance.now());}
  private closeNote(){this.note?.remove();this.note=undefined;}
  private hint(game:Game){
   const note=document.createElement('section');note.className='perf-hint';note.setAttribute('aria-label','Performance tip');

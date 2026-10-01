@@ -28,3 +28,11 @@ export function coversNear(world:World,x1:number,z1:number,x2:number,z2:number):
  for(let ix=ix1;ix<=ix2;ix++)for(let iz=iz1;iz<=iz2;iz++){const list=g.cells.get(key(ix,iz));if(list)for(const c of list)out.push(c);}
  return out;
 }
+/** Whether any cover near the rectangle passes `test`: the same cells as coversNear, walked without building a
+ *  list, for checks that run every step or frame. */
+export function someCoverNear(world:World,x1:number,z1:number,x2:number,z2:number,test:(cover:Cover)=>boolean):boolean{
+ const g=grid(world),ix1=Math.floor(x1/CELL),ix2=Math.floor(x2/CELL),iz1=Math.floor(z1/CELL),iz2=Math.floor(z2/CELL);
+ if((ix2-ix1+1)*(iz2-iz1+1)>64){for(const c of g.all)if(test(c))return true;return false;}
+ for(let ix=ix1;ix<=ix2;ix++)for(let iz=iz1;iz<=iz2;iz++){const list=g.cells.get(key(ix,iz));if(list)for(const c of list)if(test(c))return true;}
+ return false;
+}

@@ -3,6 +3,7 @@ import type {Game,Unit} from './game';
 import type {Point} from './rules';
 import {circleBox,distance,segmentBox,segmentCircle,turnToward} from './rules';
 import {projectRoute,routeSample} from './stage-layout';
+import {someCoverNear} from './cover-grid';
 export interface PatrolOrder {home:Point;radius:number;points:Point[];index:number;wait:number;repath:number;waypoint?:Point;revision:number;stuck:number;returning?:boolean;}
 export function assignPatrol(g:Game,u:Unit,index:number){
  if(u.role==='boss'||u.role==='rocketeer'||u.encounter?.wakeAt!==undefined)return;
@@ -26,7 +27,8 @@ export function updatePatrol(g:Game,u:Unit,dt:number){
  const p=u.visual.root.position,target=patrol.points[patrol.index];
  const next=()=>{patrol.index=(patrol.index+1)%patrol.points.length;patrol.wait=1.4;patrol.stuck=0;patrol.waypoint=undefined;};
  if(distance(p,target)<.8){patrol.returning=false;next();return;}
- const blocked=g.world.covers.some(c=>c.hp>0&&segmentBox(p,target,c,g.unitRadius(u)+.15)!==null);
+ // Only covers near the leg can block it: read them from the grid, not the whole stage, every step.
+ const pad=g.unitRadius(u)+.15,blocked=someCoverNear(g.world,Math.min(p.x,target.x)-pad,Math.min(p.z,target.z)-pad,Math.max(p.x,target.x)+pad,Math.max(p.z,target.z)+pad,c=>c.hp>0&&segmentBox(p,target,c,pad)!==null);
  patrol.repath-=dt;let toward=target;
  if(blocked){
   if(!patrol.waypoint||patrol.repath<=0||distance(p,patrol.waypoint)<.6||patrol.revision!==g.world.navigationRevision){patrol.waypoint=g.navigation.next(g.world,p,target)??undefined;patrol.repath=.65;patrol.revision=g.world.navigationRevision;}

@@ -1,4 +1,5 @@
 import * as T from 'three';
+import {instancedMaterial} from './instancing';
 
 interface Source {root:T.Group;parts:T.Mesh[];}
 interface Batch {mesh:T.InstancedMesh;capacity:number;}
@@ -29,7 +30,7 @@ export class EnemyBatches {
   for(const [key,parts] of groups){
    let batch=this.batches.get(key);
    if(!batch||batch.capacity<parts.length){if(batch){batch.mesh.removeFromParent();batch.mesh.dispose();}const capacity=2**Math.ceil(Math.log2(Math.max(16,parts.length))),first=parts[0];
-    const mesh=new T.InstancedMesh(first.geometry,first.material,capacity);mesh.name='EnemySurfaceBatch';mesh.castShadow=first.castShadow;mesh.receiveShadow=first.receiveShadow;mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);this.scene.add(mesh);batch={mesh,capacity};this.batches.set(key,batch);
+    const mesh=new T.InstancedMesh(first.geometry,instancedMaterial(first.material as T.Material,false),capacity);mesh.name='EnemySurfaceBatch';mesh.castShadow=first.castShadow;mesh.receiveShadow=first.receiveShadow;mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);this.scene.add(mesh);batch={mesh,capacity};this.batches.set(key,batch);
    }
    batch.mesh.count=parts.length;parts.forEach((part,i)=>batch!.mesh.setMatrixAt(i,part.matrixWorld));batch.mesh.instanceMatrix.needsUpdate=true;batch.mesh.computeBoundingSphere();
   }

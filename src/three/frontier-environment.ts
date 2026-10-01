@@ -5,6 +5,8 @@ import type {World,Cover} from './world';
 
 import {terrainRegions} from './terrain';
 import type {Biome} from './terrain';
+/** Ground cracks on the quake map; dust puffs rise from them (biome-life.ts). A crack runs along (cos angle, -sin angle). */
+export const QUAKE_CRACKS=Array.from({length:22},(_,i)=>({x:(i%2?1:-1)*(17+i*13%48),z:-52+i*17%104,length:5+i%4,angle:Math.sin(i)*.8}));
 export const VOLCANO={x:-28,z:-38,width:23,scale:.85,height:11};
 export const FRONTIER_BIOMES:Biome[]=['glacier','volcanic','desert','jungle','city','quake','marsh'];
 export const GROUND_COLORS:Partial<Record<Biome,number>>={glacier:0xc9dce0,volcanic:0x51454a,desert:0xc6a465,jungle:0x566a40,city:0x68777a,quake:0x877663,marsh:0x535f3d};
@@ -16,7 +18,8 @@ export function buildFrontier(world:World,biome:Biome){
   const mesh=world.clone(kind);mesh.position.set(x,0,z);if(['white-pine','jungle-tree','palm'].includes(kind)){mesh.rotation.y=x*12.31+z*4.21;mesh.scale.y=.82+(Math.sin(x*7+z*11)+1)*.17;}world.arena.add(mesh);world.covers.push({kind,x,z,w,d,hp,mesh});return mesh;
  };
  const plane=(geometry:T.BufferGeometry,color:number,x:number,z:number,y=.035,roughness=.9)=>{
-  const mesh=new T.Mesh(geometry,new T.MeshStandardMaterial({color,roughness}));mesh.rotation.x=-Math.PI/2;mesh.position.set(x,y,z);mesh.userData.owned=true;mesh.receiveShadow=true;world.arena.add(mesh);return mesh;
+  // Flat decals merge per colour with the static scenery once the stage is built (one draw per colour).
+  const mesh=new T.Mesh(geometry,new T.MeshStandardMaterial({color,roughness}));mesh.rotation.x=-Math.PI/2;mesh.position.set(x,y,z);mesh.userData.owned=true;mesh.userData.staticBatch=true;mesh.castShadow=false;mesh.receiveShadow=true;world.arena.add(mesh);return mesh;
  };
  for(const [regionIndex,region] of terrainRegions(biome).entries()){
   const surfaceY=.04+regionIndex*.003; // Stable overlap: every pool has a distinct shallow surface.
@@ -72,7 +75,7 @@ export function buildFrontier(world:World,biome:Biome){
  }
  if(biome==='quake'){
   for(let i=0;i<12;i++)add('volcanic-rock',(i%2?1:-1)*(18+i*11%46),-51+i*19%102,2.6,2.2,Infinity);
-  for(let i=0;i<22;i++){const x=(i%2?1:-1)*(17+i*13%48),z=-52+i*17%104;const crack=plane(new T.PlaneGeometry(5+i%4,.16),0x393329,x,z,.07);crack.rotation.z=Math.sin(i)*.8;}
+  for(const c of QUAKE_CRACKS){const crack=plane(new T.PlaneGeometry(c.length,.16),0x393329,c.x,c.z,.07);crack.rotation.z=c.angle;}
   for(const [x,z] of [[-24,46],[25,-45],[-47,-20]])add('house',x,z,6,5,220);
  }
  if(biome==='marsh'){

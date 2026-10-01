@@ -31,7 +31,9 @@ export class CombatEffects {
     if(mesh)this.pooled--;
     else{
       this.trimPool(Math.max(0,this.limit-this.particles.length-1));
-      const material=new T.MeshBasicMaterial({color,transparent:true,opacity:1,depthWrite:false,map:soft?this.texture:null,blending:kind==='flash'?T.AdditiveBlending:T.NormalBlending,side:T.DoubleSide,polygonOffset:kind==='ring'||kind==='scorch',polygonOffsetFactor:-1,polygonOffsetUnits:-2});
+      const material=new T.MeshBasicMaterial({color,transparent:true,opacity:1,depthWrite:false,map:soft?this.texture:null,blending:kind==='flash'?T.AdditiveBlending:T.NormalBlending,side:T.DoubleSide,
+        // One pass: a transparent double-sided material otherwise draws twice and is rebuilt twice every frame.
+        forceSinglePass:true,polygonOffset:kind==='ring'||kind==='scorch',polygonOffsetFactor:-1,polygonOffsetUnits:-2});
       mesh=new T.Mesh(soft?this.plane:kind==='ring'?this.ring:this.shard,material);
     }
     const material=mesh.material as T.MeshBasicMaterial;material.color.setHex(color);material.opacity=1;

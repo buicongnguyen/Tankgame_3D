@@ -39,7 +39,7 @@ export class SpecialWeapons{
     const side=i-(count-1)/2,from=start.clone().addScaledVector(lateral,side*.85),landing=target.clone().addScaledVector(lateral,side*3.2);
     landing.x=clamp(landing.x,-g.world.bounds.x,g.world.bounds.x);landing.z=clamp(landing.z,-g.world.bounds.z,g.world.bounds.z);
     const mesh=g.world.rocket();mesh.scale.setScalar(w===7?.9:1.25);mesh.position.copy(from);g.world.entities.add(mesh);
-    const marker=new T.Mesh(new T.RingGeometry(info.splash-.16,info.splash,48),new T.MeshBasicMaterial({color:0xc392ff,side:T.DoubleSide,transparent:true,opacity:.65,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1}));marker.rotation.x=-Math.PI/2;marker.position.copy(landing).y=.12;g.world.entities.add(marker);
+    const marker=new T.Mesh(new T.RingGeometry(info.splash-.16,info.splash,48),new T.MeshBasicMaterial({color:0xc392ff,side:T.DoubleSide,forceSinglePass:true,transparent:true,opacity:.65,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1}));marker.rotation.x=-Math.PI/2;marker.position.copy(landing).y=.12;g.world.entities.add(marker);
     this.arcs.push({mesh,marker,from,target:landing,age:0,duration:1.5,damage,radius:info.splash});
    }
    g.tone(140,.18,.05);

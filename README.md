@@ -78,7 +78,26 @@ Only the selected model tier downloads on startup. Low detail contains 33 models
 - **A one-time hint.** When Detailed stays under 25 FPS for six seconds after lowering its resolution, the game offers Low detail. **LOW DETAIL** pauses and switches in place, and **KEEP** dismisses the offer for the session. The hint closes when the battle ends.
 - **Contact shadows.** Low detail has no shadow maps, so soft drop shadows (one instanced draw) keep tanks, soldiers and the transport grounded.
 - **Lighter battle logic.** Pathfinding finds the nearest open cell ring by ring and tests the best route candidates first, and movement checks only the cover near each unit. A Large three-team skirmish went from about 2.3 ms to 0.4 ms of game logic per step on a desktop CPU; the chosen routes are identical.
+- **Shadows after resolution.** When Detailed still runs late at its lowest resolution, the shadow map drops from 2048 to 1024 texels for the rest of that battle. The next battle starts sharp again.
 - **`?perf`** adds a live readout: frame rate, logic and render time, draw calls, triangles and the current pixel ratio.
+
+**Fewer draw calls everywhere** (`src/three/route-scenery.ts`, `src/three/instancing.ts`):
+- **Covers draw instanced.** Houses, city blocks, crates, barrels, fuel crates, walls and trees placed as whole models now draw as one instanced mesh per model surface, per quadrant on Large maps. They keep their damage tint, destruction, town flags and hit effects. Street and terrain decals merge per colour.
+- **No shader switching.** An instanced mesh draws with its own copy of its material. A material shared by plain and instanced meshes made three.js re-derive the shader program on every draw, about 6% of a phone frame on the city map.
+- **Single-pass transparency.** Explosion particles and ground rings were drawn twice per frame and rebuilt twice per frame, as transparent double-sided materials. Now they draw once.
+- **Frozen scenery.** Everything placed with a stage, except pickups, skips its per-frame matrix update. Patrol checks read covers from the cover grid.
+
+Measured on a phone profile (390 × 844, CPU slowed 4×, raw WebGL draws including the shadow pass). Frame CPU is the median of four alternating runs per build:
+
+| Scene | Draws before → after | Frame CPU before → after |
+|---|---:|---:|
+| City (Citadel Dawn, level 3) | 281 → 166 | 21.5 → 13.3 ms |
+| City under constant heavy explosions | 361 (peak 443) → 205 (peak 245) | 63 → 20.8 ms |
+| Village (Open Frequency) | 210 → 190 | 27.9 → 18.5 ms |
+| Snow (Frozen Pass) | 186 → 127 | — |
+| Large city skirmish | 328 → 241 | — |
+
+Triangle counts rose, for example 339k to 460k on the city. Each batch now draws its off-screen copies too, which costs vertex work but no pixels. Phones were CPU-bound on draw calls, so that trade pays.
 
 ## Menus on phones
 
@@ -100,6 +119,22 @@ The eight icons are Blender renders from `tools/blender/build_ui_icons.py`: cred
 - **Smooth movement.** The game simulates at a fixed 60 Hz. Tanks, soldiers, the transport and shells are now drawn between their last two steps, so they glide at any frame rate. Jumps such as respawns and airlift drops are drawn where they land (`src/three/smoothing.ts`).
 - **Phones use the light soldier.** A soldier is about 20 px tall on any screen, where the 504-triangle body looks the same as the 1,324-triangle one. Touch devices therefore use the light body in Detailed too, which saves about 81k triangles on the busiest map.
 - **Town life.** Village houses and city blocks get rooftop flags streaming downwind, smoke from house chimneys and gulls circling over town. Each kind is one draw call with no shadow, costing about 0.03 ms per frame on a 4× slowed phone CPU. Flags and smoke disappear with their building, and placement is seeded per stage. Phones and Low detail get fewer, and reduced motion keeps only still flags (`src/three/town-life.ts`).
+
+## Living battlefields
+
+Every map has small life that suits it (`src/three/biome-life.ts`):
+
+| Map | Life |
+|---|---|
+| Grove, village, ridge, jungle (and the Easy intro arena) | Butterflies flutter beside the road and scatter when your tank comes close |
+| River, marsh | Dragonflies hover over the water and mud pools, then dart to a new spot |
+| Volcanic, wastes | Glowing embers drift up around you and spit from the volcano's crater |
+| Industrial, city | Steam rises from vents and from manholes beside the city crossings |
+| Quake | Dust puffs out of the ground cracks |
+| Desert | Tumbleweeds roll downwind, bounce off cover and fade in and out at the map edge |
+| Snow, glacier | Diamond-dust glints twinkle on the snow |
+
+Each map's life is one instanced draw with no shadow. Butterflies, dragonflies and tumbleweeds steer on the CPU, a few dozen numbers per frame. Embers, steam, dust and glints move entirely on the GPU. It is decoration only: it does not collide, block sight or use the game's random numbers. Placement is seeded per stage, and flyers keep clear of trees and buildings so they never hide under a canopy. Phones and Low detail get fewer, and reduced motion shows none.
 
 ## Rebuild the Blender assets
 

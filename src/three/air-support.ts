@@ -49,7 +49,7 @@ export class AirSupport {
   const canopy=new T.Mesh(new T.SphereGeometry(2.2,12,6,0,Math.PI*2,0,Math.PI/2),new T.MeshStandardMaterial({color:0xd2eedf,roughness:1,side:T.DoubleSide}));canopy.position.y=3;canopy.scale.y=.55;rig.add(canopy);
   const ropes:number[]=[];for(let i=0;i<4;i++){const angle=Math.PI/4+i*Math.PI/2;ropes.push(Math.cos(angle)*.65,.6,Math.sin(angle)*.65,Math.cos(angle)*2.2,3,Math.sin(angle)*2.2);}
   const lines=new T.LineSegments(new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute(ropes,3)),new T.LineBasicMaterial({color:0x394f4d}));rig.add(lines);
-  const marker=new T.Mesh(new T.RingGeometry(2.9,3.1,32),new T.MeshBasicMaterial({color:0x86ffdf,side:T.DoubleSide,transparent:true,opacity:.8,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));marker.rotation.x=-Math.PI/2;marker.position.set(site.x,.13,site.z);g.world.entities.add(marker);
+  const marker=new T.Mesh(new T.RingGeometry(2.9,3.1,32),new T.MeshBasicMaterial({color:0x86ffdf,side:T.DoubleSide,forceSinglePass:true,transparent:true,opacity:.8,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));marker.rotation.x=-Math.PI/2;marker.position.set(site.x,.13,site.z);g.world.entities.add(marker);
   this.drops.push({activity,rig,marker,time:0,quiet});
  }
  dispose(drop:Drop){

@@ -5,6 +5,7 @@ import {terrainRegions} from './terrain';
 import {projectRoute,overlapsReservation} from './stage-layout';
 import {circleBox,distance} from './rules';
 import {insideRegion} from './terrain';
+import {instancedMaterial} from './instancing';
 
 /** Reused Hoshi Valley (KITEFALL) trees. Tree cover keeps its 'pine' gameplay everywhere; temperate maps
  *  only render a share of it as broadleaf, maple or cedar. Scales keep each canopy close to the pine's
@@ -88,7 +89,7 @@ function instance(world:World,model:string,items:Tuft[],tint:T.Color){
  const template=world.templates.get(model);if(!template||!items.length)return 0;
  template.updateMatrixWorld(true);const inverse=template.matrixWorld.clone().invert(),q=new T.Quaternion(),m=new T.Matrix4(),up=new T.Vector3(0,1,0),color=new T.Color();
  template.traverse(o=>{if(!(o instanceof T.Mesh))return;
-  const mesh=new T.InstancedMesh(o.geometry,o.material,items.length);mesh.name=`GroundDressing:${model}`;mesh.userData={...o.userData};
+  const mesh=new T.InstancedMesh(o.geometry,instancedMaterial(o.material as T.Material,true),items.length);mesh.name=`GroundDressing:${model}`;mesh.userData={...o.userData};
   mesh.castShadow=false;mesh.receiveShadow=true;
   const local=inverse.clone().multiply(o.matrixWorld);
   items.forEach((it,i)=>{q.setFromAxisAngle(up,it.rotation);m.compose(new T.Vector3(it.x,0,it.z),q,new T.Vector3(it.scale,it.scale,it.scale)).multiply(local);mesh.setMatrixAt(i,m);mesh.setColorAt(i,color.copy(tint).multiplyScalar(it.shade));});

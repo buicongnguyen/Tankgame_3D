@@ -56,6 +56,7 @@ import { MISSIONS, LEVEL_NAMES, levelMission, unlockedLevel, encounterSize, fres
 import type { Save } from './campaign';
 import { armorMultiplier, clamp, circleBox, distance, purchase, segmentBox, segmentCircle, turnToward } from './rules';
 import type { Point, Upgrade } from './rules';
+import { reducedMotion } from './media';
 type Phase='menu'|'finishing'|'playing'|'paused'|'depot'|'failed'|'victory';
 export interface Unit { team?:'ally';squad?:number;pending?:boolean;aboard?:Unit; patrol?:PatrolOrder; burstLeft?:number; lastSeen?:Point; searchUntil?:number; encounter?:EncounterOrder; bossKind?:BossKind; mudTime?:number; velocity:Point; visual:TankVisual; hp:number; max:number; heading:number; aim:number; cooldown:number; role:'player'|'raider'|'sentry'|'heavy'|'boss'|'rifleman'|'rocketeer'|'jeep'|'airlift'; dead:boolean; }
 interface Shot { homing?:Unit;alliedSafe?:boolean; height?:{start:number;range:number;traveled:number}; mesh:T.Mesh; p:Point; from:Point; dx:number; dz:number; speed:number; damage:number; life:number; friendly:boolean; splash:number; }
@@ -315,6 +316,8 @@ export class Game {
   }
   defenseSpawn(i:number,role:Unit['role'],kind?:BossKind){const corners=[[-66,-52],[66,52],[66,-52],[-66,52]];const [x,z]=corners[i%4];return this.makeUnit(x,z,role,kind);}
   prepare(index:number,level=unlockedLevel(this.save,index)){
+    // Every battle (also a retry or a restart from pause) starts at full resolution and shadow detail.
+    this.budget?.newBattle(this);
     this.level=clamp(level,0,2);this.mission=index;const m=this.missionData();this.allies.clear();this.waves.reset();this.clearLesson();
     this.finishDelay=0;this.finishDeadline=0;this.stageResult=null;
     this.airSupport.clear();this.hazards.reset(index);this.bosses.clear();this.airlifts.clear();this.flame.clear();this.special.clear();this.auto.clear();this.specialAmmo=ammoCaps(this.save.skin).map((cap,i)=>this.save.weapons.includes(WEAPONS.findIndex(w=>w.ammoSlot===i))?cap:0);this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.clearBarrage();this.mission=index;if(this.training)this.world.buildCompact(this.training.id);else if(this.skirmish){this.world.build(index,'assault',this.level,this.save.difficulty,this.skirmish.scale);this.world.ring.visible=false;}else if(index===0&&this.level===0&&this.save.difficulty==='easy')this.world.buildCompact(3);else this.world.build(index,m.kind,this.level,this.save.difficulty);this.encounters.reset();this.salvageDrops=0;this.shots=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;this.convoyDistance=0;this.convoyReverse=null;this.world.loopReverse=false;
@@ -790,7 +793,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     if(this.phase==='finishing')this.accumulator=0;
     else if(this.phase==='playing'){this.accumulator+=dt;let steps=0;while(this.phase==='playing'&&this.accumulator>=1/60&&steps++<3){this.smoother.capture(this);this.step(1/60);this.accumulator-=1/60;}this.accumulator=Math.min(this.accumulator,1/60);}
     else {this.accumulator=0;if(this.phase==='menu')this.player.visual.turret.rotation.y=Math.PI+Math.sin(now*.0003)*.45;}
-    this.hurtTimer=Math.max(0,this.hurtTimer-dt);document.body.classList.toggle('hurt',this.hurtTimer>0&&!matchMedia('(prefers-reduced-motion: reduce)').matches);
+    this.hurtTimer=Math.max(0,this.hurtTimer-dt);document.body.classList.toggle('hurt',this.hurtTimer>0&&!reducedMotion());
     this.flame.render(this,this.phase!=='paused'?dt:0);
     // Draw moving things between the last two steps, then put the exact logic transforms back.
     const smooth=this.phase==='playing';if(smooth)this.smoother.apply(this.accumulator*60);

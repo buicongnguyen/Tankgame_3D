@@ -26,7 +26,7 @@ export class Flamethrower {
   if(this.mesh)return;
   let source:T.Mesh|undefined;g.world.templates.get('flame')!.traverse(o=>{if(o instanceof T.Mesh)source=o;});
   if(!source)throw new Error('Missing Blender flame geometry');
-  const material=new T.MeshBasicMaterial({color:0xffdfa0,vertexColors:true,transparent:true,opacity:.8,depthWrite:false,blending:T.NormalBlending,side:T.DoubleSide,toneMapped:false});
+  const material=new T.MeshBasicMaterial({color:0xffdfa0,vertexColors:true,transparent:true,opacity:.8,depthWrite:false,blending:T.NormalBlending,side:T.DoubleSide,forceSinglePass:true,toneMapped:false});
   // Fade transparency per instance; fading RGB would turn cooling flames black.
   material.onBeforeCompile=shader=>{
    shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nattribute float flameFade; varying float vFlameFade;').replace('#include <begin_vertex>','#include <begin_vertex>\nvFlameFade = flameFade;');

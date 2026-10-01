@@ -19,7 +19,7 @@ export class BiomeHazards{
   if(this.rocks.length>=ROCKFALL.maxActive)return false;
   const bx=g.world.bounds.x-5,bz=g.world.bounds.z-5,x=clamp(p.x,-bx,bx),z=clamp(p.z,-bz,bz);
   if(g.world.covers.some(c=>c.kind==='volcano'&&circleBox({x,z},ROCKFALL.radius,c)))return false;
-  const marker=new T.Mesh(this.ring,new T.MeshBasicMaterial({color:0xff553b,transparent:true,opacity:.9,side:T.DoubleSide,depthWrite:false}));marker.rotation.x=-Math.PI/2;marker.position.set(x,.13,z);g.world.entities.add(marker);
+  const marker=new T.Mesh(this.ring,new T.MeshBasicMaterial({color:0xff553b,transparent:true,opacity:.9,side:T.DoubleSide,forceSinglePass:true,depthWrite:false}));marker.rotation.x=-Math.PI/2;marker.position.set(x,.13,z);g.world.entities.add(marker);
   const rock=g.world.clone('volcanic-rock');rock.scale.setScalar(1.1);rock.position.copy(ORIGIN);g.world.entities.add(rock);
   this.rocks.push({x,z,age:0,duration:Math.max(ROCKFALL.warning,duration),trail:0,marker,rock});return true;
  }
