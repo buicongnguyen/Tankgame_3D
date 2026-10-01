@@ -40,7 +40,8 @@ test('soldiers stay in the game: legs swing, the muzzle leads the shot and units
  const r=await page.evaluate(async()=>{const g=(window as any).__steel;g.start(0,1);g.clearOpening();
   const rifle=g.enemies.find((e:any)=>e.role==='rifleman'),rocket=g.enemies.find((e:any)=>e.role==='rocketeer');
   const out:any={};
-  for(const u of [rifle,rocket]){const l=u.visual.root.getObjectByName('LeftLeg');u.visual.root.userData.walking=true;g.elapsed=.4;g.syncVisual(u);out[u.role]={swing:Math.abs(l.rotation.x)>.1,muzzle:!!u.visual.muzzle};}
+  // Strides advance with distance walked, so walk each soldier a few steps and watch the leg swing.
+  for(const u of [rifle,rocket]){const l=u.visual.root.getObjectByName('LeftLeg');let swing=0;for(let k=0;k<12;k++){u.visual.root.position.x+=.1;u.visual.root.userData.walking=true;g.syncVisual(u);swing=Math.max(swing,Math.abs(l.rotation.x));}out[u.role]={swing:swing>.1,muzzle:!!u.visual.muzzle};}
   await g.world.load(true);g.world.settings(true);
   const stillVisible=g.enemies.filter((e:any)=>!e.dead&&(e.role==='rifleman'||e.role==='rocketeer')).every((e:any)=>e.visual.root.children.length>0&&e.visual.root.getObjectByName('Muzzle'));
   await g.world.load(false);g.world.settings(false);out.back=g.enemies.filter((e:any)=>(e.role==='rifleman'||e.role==='rocketeer')).every((e:any)=>!!e.visual.root.getObjectByName('Muzzle'));out.stillVisible=stillVisible;

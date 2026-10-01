@@ -25,6 +25,8 @@ import {UPGRADES} from './rules';
 import {AirSupport} from './air-support';
 import {coversNear} from './cover-grid';
 import {FrameBudget} from './performance';
+import {animateRig,restPose,noteShot,noteHit} from './soldier-life';
+import {RenderSmoother} from './smoothing';
 import {MINE_TRIGGER_RADIUS,AIM_WARNING_SECONDS} from './combat-ranges';
 import {assignPatrol,updatePatrol} from './patrols';
 import type {PatrolOrder} from './patrols';
@@ -73,6 +75,7 @@ export class Game {
   qualityChanging=false;qualityError=false;graphicsLost=false;renderPacer=new RenderPacer();
   /** Phone frame budget: adaptive render resolution, the ?perf readout and Low detail contact shadows. */
   budget=new FrameBudget();
+  smoother=new RenderSmoother();
   navigation=new GroundNavigation();convoyDistance=0;convoyReverse:boolean|null=null;
   weapon=0; reload=0; shieldTime=0; shieldCooldown=0; relayHealth=300; convoyHealth=ESCORT.health; convoy:T.Group|null=null;convoyBlocked=false;
   overlay:HTMLElement; hud:HTMLElement; radio:HTMLElement; mini:HTMLCanvasElement;
@@ -400,9 +403,9 @@ export class Game {
     unit.visual.root.userData.walking=p.distanceToSquared(previous)>.000001;
   }
   syncVisual(unit:Unit){
-    if(this.isInfantry(unit)){const swing=unit.visual.root.userData.walking?Math.sin(this.elapsed*9)*.5:0;for(const [name,sign] of [['LeftLeg',1],['RightLeg',-1]] as const){const leg=unit.visual.root.getObjectByName(name);if(leg)leg.rotation.x=swing*sign;}}
-    if(unit.role==='jeep'&&unit.visual.root.userData.walking)for(const name of ['WheelFL','WheelFR','WheelRL','WheelRR']){const wheel=unit.visual.root.getObjectByName(name);if(wheel)wheel.rotation.x=-this.elapsed*7;}
     unit.visual.hull.rotation.y=unit.heading;unit.visual.turret.rotation.y=unit.aim;
+    // Strides, bob, lean, breathing, look-around, kick and stagger: visual only (soldier-life.ts).
+    animateRig(this,unit);
     unit.visual.bar.scale.x=Math.max(.001,unit.hp/unit.max);unit.visual.bar.visible=!unit.dead;
     unit.visual.root.visible=!unit.dead&&!unit.pending;unit.visual.bar.visible=!unit.dead&&!unit.pending;
   }
@@ -415,6 +418,8 @@ export class Game {
     this.radioMessage(`ARMORY / Ammo empty. ${WEAPONS[this.weapon].name} selected.`,3);
   }
   shoot(unit:Unit,friendly:boolean){
+    // The shot leaves from the aimed muzzle, whatever the idle or recoil pose was.
+    restPose(unit);noteShot(unit,this.elapsed);
     if(friendly&&this.training&&!this.training.canFire())return;
     const info=WEAPONS[this.weapon],ammo=info.ammoSlot;
     if(friendly&&ammo!==undefined){
@@ -469,7 +474,9 @@ export class Game {
     if(this.training)this.training.update(this);else if(this.skirmish)this.skirmish.update(this,dt);else {this.waves.update(this);this.encounters.update(this);}
     this.airlifts.update(this,dt);
     for(let i=0;i<this.enemies.length;i++){
-      const e=this.enemies[i];if(e.dead||e.pending||e.role==='airlift')continue;if(e.encounter&&!e.encounter.active){if(!this.training)updatePatrol(this,e,dt);continue;}if(e.role==='boss'){this.bosses.update(this,e,dt);continue;}
+      const e=this.enemies[i];if(e.dead||e.pending||e.role==='airlift')continue;if(e.encounter&&!e.encounter.active){if(!this.training)updatePatrol(this,e,dt);
+        // Guards waiting at their post still breathe and look around, but only near the player (on screen).
+        if(!e.patrol&&e.visual.root.position.distanceToSquared(this.player.visual.root.position)<3600)this.syncVisual(e);continue;}if(e.role==='boss'){this.bosses.update(this,e,dt);continue;}
       const p=e.visual.root.position;e.visual.root.userData.walking=false;
       const playerVisible=seesTarget(this,e,playerPos),convoyVisible=!!this.convoy&&seesTarget(this,e,this.convoy.position);
       let target:Point|undefined,objectiveTarget=false;
@@ -514,6 +521,7 @@ export class Game {
     if(unit!==this.player&&unit.team!=='ally'&&damage>0)this.encounters.alert(this,unit,source);
     const multiplier=this.isInfantry(unit)||unit.role==='jeep'||unit.role==='airlift'?1:armorMultiplier(unit.visual.root.position,unit.heading,source);
     unit.hp-=damage*multiplier*(unit.role==='boss'?this.bosses.multiplier(unit):1);
+    if(this.isInfantry(unit))noteHit(unit,this.elapsed);
     const impact=unit.visual.root.position.clone();impact.y+=1.4;if(hitEffect)this.world.fx.impact(impact);
     if(unit===this.player){this.hurtTimer=.2;this.tone(45,.07,.03);}
     if(unit.hp<=0){unit.hp=0;unit.dead=true;if(unit.role==='boss')this.bosses.cancel(unit);if(unit.role==='airlift')this.airlifts.lost(this,unit);unit.visual.beam.visible=false;if(this.isInfantry(unit)){this.infantryKills++;this.world.burst(unit.visual.root.position,2,5);}else this.world.destroyTank(unit.visual);this.tone(45,.22,.06);
@@ -780,11 +788,14 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     // A queued RAF timestamp can predate start/resume after a slow render.
     const frameTime=Math.max(now,this.last),dt=Math.min((frameTime-this.last)/1000,.1);this.last=frameTime;
     if(this.phase==='finishing')this.accumulator=0;
-    else if(this.phase==='playing'){this.accumulator+=dt;let steps=0;while(this.phase==='playing'&&this.accumulator>=1/60&&steps++<3){this.step(1/60);this.accumulator-=1/60;}this.accumulator=Math.min(this.accumulator,1/60);}
+    else if(this.phase==='playing'){this.accumulator+=dt;let steps=0;while(this.phase==='playing'&&this.accumulator>=1/60&&steps++<3){this.smoother.capture(this);this.step(1/60);this.accumulator-=1/60;}this.accumulator=Math.min(this.accumulator,1/60);}
     else {this.accumulator=0;if(this.phase==='menu')this.player.visual.turret.rotation.y=Math.PI+Math.sin(now*.0003)*.45;}
     this.hurtTimer=Math.max(0,this.hurtTimer-dt);document.body.classList.toggle('hurt',this.hurtTimer>0&&!matchMedia('(prefers-reduced-motion: reduce)').matches);
     this.flame.render(this,this.phase!=='paused'?dt:0);
-    this.budget.beforeRender(this);this.world.update(this.phase!=='paused'?dt:0,this.player.visual.root.position,this.phase==='menu');this.budget.afterRender(this);
+    // Draw moving things between the last two steps, then put the exact logic transforms back.
+    const smooth=this.phase==='playing';if(smooth)this.smoother.apply(this.accumulator*60);
+    try{this.budget.beforeRender(this);this.world.update(this.phase!=='paused'?dt:0,this.player.visual.root.position,this.phase==='menu');}finally{if(smooth)this.smoother.restore();}
+    this.budget.afterRender(this);
     this.projectRelay();requestAnimationFrame(t=>this.frame(t));
   }
 }

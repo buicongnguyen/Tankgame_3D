@@ -94,6 +94,13 @@ The eight icons are Blender renders from `tools/blender/build_ui_icons.py`: cred
 & 'C:\Users\n\source\repos\3d_astra\.tools\blender-4.5.3-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_ui_icons.py
 ```
 
+## Soldiers and towns
+
+- **Soldiers move like individuals.** Each soldier's stride advances with the distance it walks, starting from a phase set by where it spawned, so no two march in step and their feet keep pace with the ground. Soldiers bob as they walk and lean into turns. While calm they breathe and look around, their rifles kick when they fire, and a hit staggers them. All of this is visual only: a shot always leaves from the aimed muzzle (`src/three/soldier-life.ts`).
+- **Smooth movement.** The game simulates at a fixed 60 Hz. Tanks, soldiers, the transport and shells are now drawn between their last two steps, so they glide at any frame rate. Jumps such as respawns and airlift drops are drawn where they land (`src/three/smoothing.ts`).
+- **Phones use the light soldier.** A soldier is about 20 px tall on any screen, where the 504-triangle body looks the same as the 1,324-triangle one. Touch devices therefore use the light body in Detailed too, which saves about 81k triangles on the busiest map.
+- **Town life.** Village houses and city blocks get rooftop flags streaming downwind, smoke from house chimneys and gulls circling over town. Each kind is one draw call with no shadow, costing about 0.03 ms per frame on a 4× slowed phone CPU. Flags and smoke disappear with their building, and placement is seeded per stage. Phones and Low detail get fewer, and reduced motion keeps only still flags (`src/three/town-life.ts`).
+
 ## Rebuild the Blender assets
 
 Editable sources include `assets/blender/steel-front.blend` and `assets/blender/frontier-environments.blend`. Generators include `tools/blender/build_assets.py`, `tools/blender/build_frontier.py` and `tools/blender/build_extreme_bosses.py`. The last generator writes four separate editable scenes for the helicopter, spider, laser tank and white pine. Runtime exports: `public/models/*.glb`. After the base and extreme boss generators, run `tools/blender/build_reinforcement_bosses.py` to create the two humanoids and missile truck and add light guns to all six older boss scenes. It saves editable meshes before merging runtime surfaces. Run `tools/blender/build_scout_jeep.py` for the crewed light jeep, then run `tools/blender/build_low_detail.py` with Blender to rebuild `public/models/low/*.glb`.

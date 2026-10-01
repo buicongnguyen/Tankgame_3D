@@ -23,6 +23,8 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { buildGroundDressing } from './scenery-variety';
 import { ratioRange } from './performance';
+import { TownLife } from './town-life';
+const SOLDIERS=new Set(['rifleman','rocketeer']);
 import type { Box } from './rules';
 import { BIOMES, Environment } from './environment';
 import { CombatEffects } from './effects';
@@ -119,7 +121,9 @@ export class World {
       const loader=new GLTFLoader();if(MeshoptDecoder.supported)loader.setMeshoptDecoder(MeshoptDecoder);
       await Promise.all(MODEL_NAMES.map(async name=>{
         // Reused scenery is decoration: without WebAssembly (some locked-down browsers) it is skipped and pines stay.
-        const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/${low?'low/':''}${name}.glb`).catch(error=>{if(name in REUSED_MODELS)return null;throw error;});
+        // Soldiers stand about 20 px tall on any screen; touch devices use the 504-triangle body even in Detailed.
+        const lowFile=low||(SOLDIERS.has(name)&&matchMedia('(pointer:coarse)').matches);
+        const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/${lowFile?'low/':''}${name}.glb`).catch(error=>{if(name in REUSED_MODELS)return null;throw error;});
         if(!gltf)return;
         const root=gltf.scene;
         if(['rifleman','rocketeer','scout-jeep'].includes(name))packCrewSurfaces(root,this.crewMaterial);
@@ -222,7 +226,7 @@ export class World {
       const key=`team${team}:${visual.root.userData.model}:${name}`;let mat=this.enemyMaterials.get(key);if(!mat){mat=o.material.clone();mat.color.set(color);this.enemyMaterials.set(key,mat);}o.material=mat;
     });
   }
-  clear() { this.leadReady=false;this.enemyBatches.clear();this.environment.clear();this.fx.clear();this.wrecks=[];this.activities=[];this.pendingLandmarks=[];
+  clear() { this.leadReady=false;this.townLife.reset();this.enemyBatches.clear();this.environment.clear();this.fx.clear();this.wrecks=[];this.activities=[];this.pendingLandmarks=[];
     for(const effect of this.effects){effect.mesh.removeFromParent();(effect.mesh.material as T.Material).dispose();}
     this.effects=[];
     // Only dispose runtime-created resources; GLB geometry/materials are shared templates.
@@ -290,7 +294,7 @@ export class World {
     // Extraction pylons frame the road.
     const previous=this.layout.points.at(-2)!,angle=Math.atan2(exit.x-previous.x,exit.z-previous.z);
     for(const side of [-4,4]){const x=exit.x+Math.cos(angle)*side,z=exit.z-Math.sin(angle)*side;this.box(.45,3.2,.45,0x3e5751,x,1.6,z);this.box(.65,.2,.65,0x98f3bf,x,3.3,z);}
-    this.environment.build(this,index);if(ring.length)buildOuterRing(this,ring);if(scale>1)this.environment.weather?.scale.set(scale,1,scale);this.buildLandmarkBlocks();buildRouteScenery(this);buildGuardLandmarks(this,kind);buildGroundDressing(this,index);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
+    this.environment.build(this,index);if(ring.length)buildOuterRing(this,ring);if(scale>1)this.environment.weather?.scale.set(scale,1,scale);this.buildLandmarkBlocks();buildRouteScenery(this);buildGuardLandmarks(this,kind);buildGroundDressing(this,index);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.townLife.build(this,index);this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
     this.target.set(0,0,0);
   }
   buildCompact(id:number){
@@ -376,6 +380,8 @@ export class World {
     }
   }
   settings(low:boolean){this.scene.environment=low?null:this.studioEnvironment;this.low=low;this.fx.low=low;this.renderer.shadowMap.enabled=!low;document.body.dataset.graphics=low?'low':'detailed';this.renderRatio=null;this.resize();}
+  /** Flags, chimney smoke and birds around buildings (decoration only). */
+  townLife=new TownLife();
   /** Set by the phone frame budget during battle; null keeps the detail tier's own ratio. */
   renderRatio:number|null=null;
   resize(){const w=window.innerWidth,h=window.innerHeight;this.renderer.setPixelRatio(this.renderRatio??ratioRange(this.low).base);this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}
@@ -431,6 +437,7 @@ export class World {
     for(let i=this.wrecks.length-1;i>=0;i--){const wreck=this.wrecks[i];wreck.age+=dt;if(wreck.age>(this.low?20:60)){wreck.root.removeFromParent();wreck.scorch.removeFromParent();this.wrecks.splice(i,1);continue;}wreck.root.position.y=Math.max(0,wreck.root.position.y-dt*(4+wreck.age*12));wreck.emit-=dt;if(wreck.age<(this.low?5:12)&&wreck.emit<=0){wreck.emit=this.low?.4:.18;const p=wreck.root.position.clone();p.y+=1.3;this.fx.smoke(p,1.8);if(wreck.age<4)this.fx.emit(p,'flash',0xff6b23,1.4,.35);}}
     for(const a of this.activities)if(a.hover!==undefined&&!a.spent&&!a.airborne){a.hoverTime=(a.hoverTime??0)+dt;a.mesh.position.y=a.hover+Math.sin(a.hoverTime*2)*.2;}
     this.environment.update(dt,this.low);this.fx.update(dt,this.camera);
+    this.townLife.update(menu?0:dt);
     this.renderer.render(this.scene,this.camera);
   }
 }
