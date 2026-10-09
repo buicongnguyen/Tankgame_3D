@@ -282,6 +282,15 @@ The generator writes five editable `assets/blender/skin-*.blend` files, transpar
 
 The combat weapon panel always shows **Switch Gun**. Click or tap it to select a weapon, press **C** to open the same selector on PC, or use **1–9** directly. Buying a weapon sets it as the next mission's starting gun. Selecting an owned gun in combat remembers that choice for reloads, retries and later missions; temporary map pickups do not become permanent purchases. Owned lasers receive 12 shots and arc rockets 6 rounds each mission. An empty special weapon is labeled **Empty · next mission**, and its last shot selects the next usable advanced slot to its right, then the nearest usable lower slot. Collect a cache or start the next mission to replenish it.
 
+## Arc rockets come late
+
+Arc rockets fly over cover and are the hardest weapon to aim, so they are weapon **9**, the last key and the last card in the shop. The other weapons keep their order: 1 cannon, 2 autocannon, 3 siege rockets, 4 laser, 5 machine gun, 6 micro missiles, 7 triple arc, 8 flamethrower. Beginners don't get them:
+- **Shop:** Arc rockets unlock after you clear **Glass Road** (mission 5). Until then the card reads *Clear Glass Road to unlock*.
+- **Maps and salvage:** the first five missions place laser caches where arc caches used to be, and wreck salvage drops laser cells instead of arc rockets until Glass Road is cleared.
+- **Easy's free starter cache:** 4 laser shots plus a shield cache. It holds 2 arc rockets once Glass Road is cleared.
+
+Pilots who already own arc rockets keep them (`src/three/armory.ts`: `WEAPON_ORDER`, `arcUnlocked`).
+
 ## Arc rocket range assistance
 
 Arc rockets now adapt their landing distance to live enemies within 18° either side of the aim line when aiming with the touch stick or I/J/K/L. Assistance considers targets 10–45 meters away, favoring nearer aligned enemies; with no target the normal 28-meter aim remains. Mouse aim only snaps within 3 meters of an enemy, preserving deliberate ground targeting. The purple aim ring previews the seven-meter blast radius. Destinations stay fixed after launch; rockets still cross cover and blasts can hurt either side. Ordinary siege rockets remain direct-fire projectiles.

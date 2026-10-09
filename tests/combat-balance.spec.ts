@@ -29,7 +29,7 @@ test('fuel counts trigger bursts, refuses empty fire, prefers higher ammo and re
  const before=g.shotsFired;for(let i=0;i<79;i++)g.shoot(g.player,true);const penultimate=g.specialAmmo[3]===1&&g.weapon===8;g.shoot(g.player,true);
  const empty=g.specialAmmo[3]===0&&g.weapon===7&&g.shotsFired===before+80&&g.reload>0&&g.save.equippedWeapon===8;
  g.weapon=8;g.shoot(g.player,true);const refused=g.shotsFired===before+80&&g.weapon===7;
- g.weapon=3;g.specialAmmo[0]=1;g.shoot(g.player,true);const higher=g.weapon===4;
+ g.weapon=3;g.specialAmmo[0]=1;g.shoot(g.player,true);const higher=g.weapon===7;   // next usable higher slot; arc rockets are never auto-selected
  g.save.skin='quartermaster';g.start(0);const bonus=g.specialAmmo[3];g.shoot(g.player,true);g.pause();await g.changeQuality();g.resume();const quality=g.specialAmmo[3]===199;g.start(0);
  return {full,penultimate,empty,refused,higher,bonus,quality,refill:g.specialAmmo[3]===200};});
  expect(r).toEqual({full:80,penultimate:true,empty:true,refused:true,higher:true,bonus:200,quality:true,refill:true});

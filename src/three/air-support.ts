@@ -4,6 +4,7 @@ import {createActivity} from './activities';
 import type {Activity} from './activities';
 import {distance,segmentBox} from './rules';
 import {MINE_TRIGGER_RADIUS} from './combat-ranges';
+import {arcUnlocked} from './armory';
 
 interface Drop {activity:Activity;rig:T.Group;marker:T.Mesh;time:number;quiet?:boolean;}
 /** A small mission allowance, independent of wreck loot, sharing the missile radio cooldown. */
@@ -24,11 +25,12 @@ export class AirSupport {
   const payload=this.payload(g);this.launch(g,payload.kind,payload.amount,site);this.used++;g.artilleryCooldown=28;
   g.radioMessage(`AIR SUPPORT / ${payload.kind==='health'?'Medical':payload.kind==='shield'?'Shield':'Ammo'} crate inbound. Collect at the mint circle.`,4);return true;
  }
- /** Easy opens with a small free cache beside the tank: a few laser shots and arc rockets, usable even
-  *  before either weapon is bought. It uses neither the mission's drops nor the radio cooldown. */
+ /** Easy opens with a small free cache beside the tank: a few laser shots, usable even before the laser is
+  *  bought, plus arc rockets once Glass Road is cleared (they are hard to aim, so beginners get a shield cache
+  *  instead). It uses neither the mission's drops nor the radio cooldown. */
  starter(g:Game){
   const laser=this.site(g,[],[6,8,10,12,14]),arc=laser&&this.site(g,[laser],[6,8,10,12,14]);
-  if(laser)this.launch(g,'laser',4,laser,true);if(arc)this.launch(g,'arc',2,arc,true);
+  if(laser)this.launch(g,'laser',4,laser,true);if(arc){if(arcUnlocked(g.save.cleared))this.launch(g,'arc',2,arc,true);else this.launch(g,'shield',4,arc,true);}
   return !!laser;
  }
  /** A visible, reachable nearby landing site ahead of the tank; never behind cover, on a mine or by fuel. */

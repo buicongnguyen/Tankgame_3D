@@ -36,7 +36,7 @@ test('a deployment shield absorbs the opening fire, then expires; training start
  expect(r.firstHit).toBeGreaterThanOrEqual(5);expect(r.status).toBe('DEPLOYMENT SHIELD · 5s');
 });
 
-test('Easy opens with a free starter cache of 4 laser shots and 2 arc rockets; other modes do not',async({page})=>{
+test('Easy opens with a free starter cache of 4 laser shots and, before Glass Road, a shield cache instead of arc rockets; other modes do not',async({page})=>{
  await ready(page);
  const r=await page.evaluate(()=>{const g=(window as any).__steel;g.save.difficulty='normal';g.start(5,0);const normal=g.airSupport.drops.length;
   g.save.difficulty='easy';g.save.weapons=[];g.start(5,0);
@@ -46,7 +46,7 @@ test('Easy opens with a free starter cache of 4 laser shots and 2 arc rockets; o
   const crate=g.world.activities.find((a:any)=>a.kind==='laser'&&a.amount===4&&!a.spent);
   g.player.visual.root.position.set(crate.x,0,crate.z);g.updateActivities(.01);
   return {normal,inbound,budget,laser:g.specialAmmo[0],usable:g.weaponAvailable(3),radioKept:document.querySelector('#radio')!.textContent===radio||!document.querySelector('#radio')!.textContent!.includes('Crate landed')};});
- expect(r.normal).toBe(0);expect(r.inbound).toEqual(['arc:2','laser:4']);
+ expect(r.normal).toBe(0);expect(r.inbound).toEqual(['laser:4','shield:4']);
  expect(r.budget).toEqual({used:0,remaining:2,cooldown:0});
  expect(r.laser).toBe(4);expect(r.usable).toBe(true);expect(r.radioKept).toBe(true);
 });

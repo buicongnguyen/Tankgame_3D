@@ -1,4 +1,4 @@
-import {WEAPONS,weaponUpgradeCost} from './armory';
+import {WEAPONS,weaponUpgradeCost,arcUnlocked} from './armory';
 import {UPGRADES,UPGRADE_CAP} from './rules';
 import {routePattern} from './route-patterns';
 import {normalizeDifficulty,mode} from './difficulty';
@@ -101,7 +101,7 @@ export function weaponCount(save: Save): number { return save.cleared[2]?3:save.
 
 export const weaponPrices:Record<number,number>=Object.fromEntries(WEAPONS.map((w,i)=>[i,w.price]));
 export function ownsWeapon(save:Save,id:number){return Number.isInteger(id)&&!!WEAPONS[id]&&(id<3&&id<weaponCount(save)||save.weapons.includes(id));}
-export function buyWeapon(save:Save,id:number){const cost=weaponPrices[id];if(!Number.isInteger(id)||!WEAPONS[id]||!cost||ownsWeapon(save,id)||save.credits<cost)return false;save.credits-=cost;save.weapons.push(id);save.equippedWeapon=id;return true;}
+export function buyWeapon(save:Save,id:number){const cost=weaponPrices[id];if(!Number.isInteger(id)||!WEAPONS[id]||!cost||ownsWeapon(save,id)||save.credits<cost||id===4&&!arcUnlocked(save.cleared))return false;save.credits-=cost;save.weapons.push(id);save.equippedWeapon=id;return true;}
 
 export function upgradeWeapon(save:Save,id:number){
  if(!Number.isInteger(id)||!WEAPONS[id]||!ownsWeapon(save,id))return false;

@@ -92,12 +92,12 @@ for(const view of [VIEWS[0],VIEWS[1]])test(`a new pilot's command screen keeps t
 test('price chips show buy, upgrade, unaffordable and maxed states apart',async({browser})=>{
  const {context,page}=await open(browser,VIEWS[0]);
  await page.locator('footer>[data-action=shop]').tap();await expect(page.getByRole('heading',{name:'Field shop'})).toBeVisible();
- const look=()=>page.evaluate(()=>Object.fromEntries(['0','4'].map(id=>{const b=document.querySelector<HTMLButtonElement>(`[data-weapon-card="${id}"] .price-button`)!,s=getComputedStyle(b);return [id,{disabled:b.disabled,image:s.backgroundImage==='none'?'none':s.backgroundImage.includes('rgb(24, 58, 54)')?'teal':s.backgroundImage.includes('rgb(52, 41, 15)')?'gold':'other',color:s.color}];})));
- // Rich pilot: the owned cannon upgrades in teal, the locked arc rocket buys in gold.
- expect(await look()).toEqual({'0':{disabled:false,image:'teal',color:'rgb(232, 255, 241)'},'4':{disabled:false,image:'gold',color:'rgb(244, 209, 151)'}});
+ const look=()=>page.evaluate(()=>Object.fromEntries(['0','6'].map(id=>{const b=document.querySelector<HTMLButtonElement>(`[data-weapon-card="${id}"] .price-button`)!,s=getComputedStyle(b);return [id,{disabled:b.disabled,image:s.backgroundImage==='none'?'none':s.backgroundImage.includes('rgb(24, 58, 54)')?'teal':s.backgroundImage.includes('rgb(52, 41, 15)')?'gold':'other',color:s.color}];})));
+ // Rich pilot: the owned cannon upgrades in teal, the locked micro missiles buy in gold.
+ expect(await look()).toEqual({'0':{disabled:false,image:'teal',color:'rgb(232, 255, 241)'},'6':{disabled:false,image:'gold',color:'rgb(244, 209, 151)'}});
  // Broke pilot: both prices grey out, including the owned weapon.
  await page.evaluate(()=>{const g=(window as any).__steel;g.save.credits=0;g.showShop();});
- expect(await look()).toEqual({'0':{disabled:true,image:'none',color:'rgb(140, 158, 169)'},'4':{disabled:true,image:'none',color:'rgb(140, 158, 169)'}});
+ expect(await look()).toEqual({'0':{disabled:true,image:'none',color:'rgb(140, 158, 169)'},'6':{disabled:true,image:'none',color:'rgb(140, 158, 169)'}});
  // A maxed weapon shows MAX in mint on the grey chip.
  await page.evaluate(()=>{const g=(window as any).__steel;g.save.weaponLevels[0]=20;g.showShop();});
  expect(await page.evaluate(()=>{const b=document.querySelector<HTMLButtonElement>('[data-weapon-card="0"] .price-button')!,s=getComputedStyle(b);return {text:b.textContent,image:s.backgroundImage,color:s.color};})).toEqual({text:'MAX',image:'none',color:'rgb(181, 240, 203)'});

@@ -19,7 +19,7 @@ import {Flamethrower,FLAME} from './flamethrower';
 import {enemyHealth} from './unit-health';
 import {GuidedBarrage} from './barrage';
 import {ESCORT,escortStartClear,escortEncounterMeters} from './escort';
-import {WEAPONS,weaponLevel,weaponDamage,barrels,powerMultiplier,reloadSeconds,engineMultiplier,shieldDuration,shieldCooldown as upgradedShieldCooldown} from './armory';
+import {WEAPONS,weaponLevel,weaponDamage,barrels,powerMultiplier,reloadSeconds,engineMultiplier,shieldDuration,shieldCooldown as upgradedShieldCooldown,WEAPON_ORDER,weaponNumber,arcUnlocked} from './armory';
 import {workshop} from './workshop';
 import {UPGRADES} from './rules';
 import {AirSupport} from './air-support';
@@ -367,7 +367,7 @@ export class Game {
     if(action==='shield'&&this.shieldCooldown<=0){this.shieldTime=Math.max(this.shieldTime,shieldDuration(this.save));this.deployShieldUntil=0;this.shieldCooldown=upgradedShieldCooldown(this.save);this.radioMessage(`KESTREL / ${this.convoy?'Both vehicles shielded':'Protective field active'} · ${this.shieldTime.toFixed(1)}s of cover.`,3);this.tone(620,.2,.04);}
     if(action==='auto')this.auto.fire(this);
     if(action==='switch'){this.weaponPickerOpen=!this.weaponPickerOpen;}
-    if(/^[1-9]$/.test(action)){const w=Number(action)-1;if(this.weaponAvailable(w)){this.weapon=w;this.weaponPickerOpen=false;if(ownsWeapon(this.save,w)){this.save.equippedWeapon=w;this.persist();}}else if(w>=3)this.radioMessage(w===8?'ARMORY / Flamethrower fuel refills next mission. Buy in the shop.':w===7?'ARMORY / Triple arc: buy in the shop. Three volleys refill next mission.':ownsWeapon(this.save,w)?'ARMORY / Ammo empty. Collect a map cache or resupply next mission.':w>=5?'ARMORY / Buy this weapon in the shop.':'ARMORY / Buy in the shop or collect a map cache.',3);else this.radioMessage(`ARMORY / ${w===1?'Autocannon unlocks after First Light.':'Rockets unlock after Homeward.'}`,3);}
+    if(/^[1-9]$/.test(action)){const w=WEAPON_ORDER[Number(action)-1];if(this.weaponAvailable(w)){this.weapon=w;this.weaponPickerOpen=false;if(ownsWeapon(this.save,w)){this.save.equippedWeapon=w;this.persist();}}else if(w>=3)this.radioMessage(w===8?'ARMORY / Flamethrower fuel refills next mission. Buy in the shop.':w===7?'ARMORY / Triple arc: buy in the shop. Three volleys refill next mission.':ownsWeapon(this.save,w)?'ARMORY / Ammo empty. Collect a map cache or resupply next mission.':w>=5?'ARMORY / Buy this weapon in the shop.':'ARMORY / Buy in the shop or collect a map cache.',3);else this.radioMessage(`ARMORY / ${w===1?'Autocannon unlocks after First Light.':'Rockets unlock after Homeward.'}`,3);}
     this.training?.action(this,action);this.updateHud();
   }
   isInfantry(unit:Unit){return unit.role==='rifleman'||unit.role==='rocketeer';}
@@ -416,9 +416,12 @@ export class Game {
   private selectFallbackWeapon(){
     // Automatic fallback must not replace the preferred loadout for the next mission.
     // Prefer the next available advanced slot, then the nearest usable lower slot.
-    let next=this.weapon+1;while(next<WEAPONS.length&&!this.weaponAvailable(next))next++;
-    if(next===WEAPONS.length){next=this.weapon-1;while(next>0&&!this.weaponAvailable(next))next--;}
-    this.weapon=Math.max(0,next);
+    // In the offered order (WEAPON_ORDER), not by id. Arc rockets are never picked automatically: they are the
+    // hardest to aim, so they stay a deliberate choice (the cannon is always there as a last resort).
+    const usable=(n:number)=>WEAPON_ORDER[n]!==4&&this.weaponAvailable(WEAPON_ORDER[n]);
+    const slot=WEAPON_ORDER.indexOf(this.weapon);let next=slot+1;while(next<WEAPON_ORDER.length&&!usable(next))next++;
+    if(next===WEAPON_ORDER.length){next=slot-1;while(next>0&&!usable(next))next--;}
+    this.weapon=WEAPON_ORDER[Math.max(0,next)];
     this.radioMessage(`ARMORY / Ammo empty. ${WEAPONS[this.weapon].name} selected.`,3);
   }
   shoot(unit:Unit,friendly:boolean){
@@ -536,7 +539,7 @@ export class Game {
   }
   dropSalvage(source:Point){
     if(this.salvageDrops>=mode(this.save.difficulty).salvageLimit||this.lootRandom()>=DROP_CHANCE)return;
-    const reward=salvageReward(this.lootRandom(),this.save.difficulty,this.level);
+    const reward=salvageReward(this.lootRandom(),this.save.difficulty,this.level,arcUnlocked(this.save.cleared));
     for(const radius of [0,2,4,6,8])for(let i=0;i<(radius?12:1);i++){
       const p={x:source.x+Math.cos(i*Math.PI/6)*radius,z:source.z+Math.sin(i*Math.PI/6)*radius};
       if(Math.abs(p.x)>this.world.bounds.x-4||Math.abs(p.z)>this.world.bounds.z-4||this.world.covers.some(c=>c.hp>0&&(circleBox(p,2.85,c)||segmentBox(source,p,c,1.3)!==null))||this.world.activities.some(a=>!a.spent&&distance(a,p)<(a.kind==='mine'?6:3.5))||this.navigation.next(this.world,p,this.player.visual.root.position)===null)continue;
@@ -696,7 +699,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     const picker=this.el('weapon-picker');picker.hidden=!this.weaponPickerOpen;
     // Rebuild only when selection/unlocks change so held touch buttons retain pointer ownership.
     const state=`${available}:${this.weapon}:${this.specialAmmo.join()}:${this.save.weapons.join()}:${this.save.weaponLevels.join()}`;
-    if(picker.dataset.state!==state){picker.dataset.state=state;this.el('weapon-shortcuts').innerHTML=WEAPONS.map((w,i)=>`<button data-quick-weapon="${i+1}" aria-label="Weapon ${i+1}: ${w.name}" title="${i+1} · ${w.name}" aria-pressed="${this.weapon===i}" ${!this.weaponAvailable(i)?'disabled':''}>${i+1}</button>`).join('');picker.innerHTML=WEAPONS.map((info,i)=>{const ammo=info.ammoSlot,available=this.weaponAvailable(i),owned=ownsWeapon(this.save,i),level=weaponLevel(this.save,i);return `<button data-weapon="${i+1}" aria-pressed="${this.weapon===i}" ${!available?'disabled':''}><strong>${i+1} · ${info.label}</strong><small>${ammo!==undefined?available?`${this.specialAmmo[ammo]} ${i===7?'volleys':i===8?'bursts':'shots'}`:owned?'Empty · next mission':i>=7?'Buy in shop':'Shop / map cache':available?i===5?`${barrels(this.save,i)} rounds together`:`LEVEL ${level} / 20`:i===1?'Clear First Light':i===2?'Clear Homeward':'Buy in shop'}</small></button>`;}).join('');}
+    if(picker.dataset.state!==state){picker.dataset.state=state;this.el('weapon-shortcuts').innerHTML=WEAPON_ORDER.map(i=>[WEAPONS[i],i] as const).map(([w,i])=>`<button data-quick-weapon="${weaponNumber(i)}" aria-label="Weapon ${weaponNumber(i)}: ${w.name}" title="${weaponNumber(i)} · ${w.name}" aria-pressed="${this.weapon===i}" ${!this.weaponAvailable(i)?'disabled':''}>${weaponNumber(i)}</button>`).join('');picker.innerHTML=WEAPON_ORDER.map(i=>[WEAPONS[i],i] as const).map(([info,i])=>{const ammo=info.ammoSlot,available=this.weaponAvailable(i),owned=ownsWeapon(this.save,i),level=weaponLevel(this.save,i);return `<button data-weapon="${weaponNumber(i)}" aria-pressed="${this.weapon===i}" ${!available?'disabled':''}><strong>${weaponNumber(i)} · ${info.label}</strong><small>${ammo!==undefined?available?`${this.specialAmmo[ammo]} ${i===7?'volleys':i===8?'bursts':'shots'}`:owned?'Empty · next mission':i>=7?'Buy in shop':'Shop / map cache':available?i===5?`${barrels(this.save,i)} rounds together`:`LEVEL ${level} / 20`:i===1?'Clear First Light':i===2?'Clear Homeward':'Buy in shop'}</small></button>`;}).join('');}
     const info=WEAPONS[this.weapon],ammo=info.ammoSlot;
     this.el('weapon-label').textContent=(this.weapon===5?(barrels(this.save,5)===4?'Quad machine gun':'Twin machine gun'):info.name)+(ammo!==undefined?' · '+this.specialAmmo[ammo]+(this.weapon===7?' volleys':this.weapon===8?' fuel':''):'')+' ▴';this.el('weapon').setAttribute('aria-label','Choose weapon: '+info.name);this.el('reload-label').textContent=this.reload>0?`${this.reload.toFixed(1)}s`:'READY';this.el('reload-fill').style.width=`${(1-clamp(this.reload/this.reloadDuration(),0,1))*100}%`;
     this.el('shield-label').textContent=this.shieldCooldown>0?`SHIELD ${Math.ceil(this.shieldCooldown)}s`:'SHIELD';
