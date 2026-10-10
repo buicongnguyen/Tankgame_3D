@@ -1,0 +1,10 @@
+{
+  "name": "Steel Front",
+  "short_name": "Steel Front",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#172528",
+  "theme_color": "#172528"
+}

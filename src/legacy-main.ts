@@ -1,3 +1,4 @@
+import './mobile-game-init.mjs';
 import Phaser from 'phaser';
 import './style.css';
 import { BattleMusic } from './game/audio/BattleMusic';

@@ -25,6 +25,8 @@ export class Input {
     canvas.addEventListener('contextmenu',e=>e.preventDefault());
     window.addEventListener('resize',()=>this.reset());
     window.addEventListener('blur',()=>{this.reset();this.onBackground();});
+    window.addEventListener('pagehide',()=>{this.reset();this.onBackground();});
+    window.addEventListener('mobile-game-interruption',()=>{this.reset();this.onBackground();});
     document.addEventListener('visibilitychange',()=>{if(document.hidden){this.reset();this.onBackground();}});
   }
   reset(){for(const reset of this.resetters)reset();this.hasTouchAim=false;this.hasMouse=false;this.keys.clear();this.firing=false;this.pendingFire=false;this.touchFiring=false;this.touchAiming=false;this.move={x:0,z:0};document.querySelectorAll<HTMLElement>('.stick-nub').forEach(n=>n.style.transform='translate(0px, 0px)');}

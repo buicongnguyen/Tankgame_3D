@@ -1,3 +1,4 @@
+import './mobile-game-init.mjs';
 import './three/style.css';
 import './three/training.css';
 import './three/compact.css';

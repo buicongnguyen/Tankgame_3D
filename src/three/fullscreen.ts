@@ -13,9 +13,9 @@ export function installFullscreen(){
  document.addEventListener('click',async event=>{
   if(!(event.target instanceof Element)||!event.target.closest('[data-action="fullscreen"]')||busy)return;
   if(!document.fullscreenElement&&(!document.documentElement.requestFullscreen||document.fullscreenEnabled===false)){
-   message('Fullscreen is unavailable here. Rotate your phone to landscape. On iPhone, use Share → Add to Home Screen for an app-style view.');return;
+   message('Fullscreen is unavailable here. Rotate your phone to landscape. On iPhone, open in Safari, use Share → Add to Home Screen, enable Open as Web App if shown, then launch the new icon. System gestures still apply.');return;
   }
-  busy=true;sync();
+  const initiating=event.target.closest<HTMLElement>('[data-action="fullscreen"]');initiating?.focus({preventScroll:true});busy=true;sync();
   try{
    if(document.fullscreenElement){await document.exitFullscreen();}
    else{
