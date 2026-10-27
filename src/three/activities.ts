@@ -1,3 +1,4 @@
+import {t} from './i18n';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import * as T from 'three';
 import {MINE_TRIGGER_RADIUS} from './combat-ranges';
@@ -19,10 +20,20 @@ export function createActivity(parent:T.Group,kind:ActivityKind,x:number,z:numbe
    const marks=kind==='repair'?[[2,.4,0],[.4,2,0]]:kind==='health'?[[1.1,.3,0],[.3,1.1,0]]:kind==='shield'?[[.85,.14,-.35],[.14,.7,0],[.55,.14,.35]]:kind==='supply'?[[.18,.9,-.1],[.65,.16,.35]]:kind==='laser'?[[.65,.3,0],[.18,.7,-.25]]:kind==='arc'?[[.22,1,0],[.7,.2,.3]]:[[1,.22,0],[.22,1,0]];
    if(kind==='shield'){const shape=new T.Shape();shape.moveTo(-.5,.45);shape.lineTo(.5,.45);shape.lineTo(.38,-.25);shape.lineTo(0,-.55);shape.lineTo(-.38,-.25);shape.closePath();const emblem=new T.Mesh(new T.ShapeGeometry(shape),new T.MeshBasicMaterial({color:0xc4e7ff,side:T.DoubleSide}));emblem.rotation.x=-Math.PI/2;emblem.position.y=.805;emblem.userData.owned=true;mesh.add(emblem);}
    for(const [w,d,z] of kind==='shield'?[]:marks){const cross=new T.Mesh(new T.BoxGeometry(w,.04,d),new T.MeshBasicMaterial({color:kind==='health'?0x23915e:color}));cross.position.set(0,kind==='repair'?.27:kind==='health'?1.01:kind==='shield'?.805:.655,z);cross.userData.owned=true;mesh.add(cross);}
-   const canvas=document.createElement('canvas');canvas.width=256;canvas.height=64;const ctx=canvas.getContext('2d')!;ctx.font='bold 28px sans-serif';ctx.textAlign='center';ctx.fillStyle=kind==='repair'?'#95ffcc':'#8de6ff';const text=kind==='repair'?'REPAIR CENTER':kind==='health'?`HEALTH +${amount}`:kind==='shield'?`SHIELD ${amount}s`:kind==='laser'?'LASER':kind==='arc'?'ARC ROCKET':'SUPPLY';ctx.strokeStyle='#183030';ctx.lineWidth=4;ctx.strokeText(text,128,42);ctx.fillText(text,128,42);
-   const texture=new T.CanvasTexture(canvas);const label=new T.Sprite(new T.SpriteMaterial({map:texture,depthTest:false}));label.position.y=2;label.scale.set(5,1.25,1);label.userData.activityLabel=true;mesh.add(label);
+   const canvas=document.createElement('canvas');canvas.width=256;canvas.height=64;const ctx=canvas.getContext('2d')!;ctx.font='bold 28px sans-serif';ctx.textAlign='center';ctx.fillStyle=kind==='repair'?'#95ffcc':'#8de6ff';const text=kind==='repair'?'REPAIR CENTER':kind==='health'?`HEALTH +${amount}`:kind==='shield'?`SHIELD ${amount}s`:kind==='laser'?'LASER':kind==='arc'?'ARC ROCKET':'SUPPLY';ctx.strokeStyle='#183030';ctx.lineWidth=4;ctx.strokeText(t(text),128,42,244);ctx.fillText(t(text),128,42,244);
+   const texture=new T.CanvasTexture(canvas);const label=new T.Sprite(new T.SpriteMaterial({map:texture,depthTest:false}));label.position.y=2;label.scale.set(5,1.25,1);label.userData.activityLabel=true;label.userData.activityText=text;mesh.add(label);
   }
   const model=pickupModels.get(kind);
   if(model){for(const child of [...mesh.children])if(child!==marker&&!child.userData.activityLabel){mesh.remove(child);if(child instanceof T.Mesh){child.geometry.dispose();const materials=Array.isArray(child.material)?child.material:[child.material];materials.forEach(m=>m.dispose());}}mesh.add(model.clone(true));const label=mesh.children.find(c=>c.userData.activityLabel);if(label)label.position.y=kind==='repair'?4.4:2.2;}
   return {kind,x,z,mesh,spent:false,remaining:kind==='repair'?amount:1,amount};
+}
+
+/** Refresh labels in place; changing language allocates no new GPU textures. */
+export function refreshActivityLabels(activities:Activity[]){
+ for(const activity of activities)activity.mesh.traverse(object=>{
+  if(!(object instanceof T.Sprite)||!object.userData.activityLabel)return;
+  const texture=object.material.map,canvas=texture?.image as HTMLCanvasElement|undefined;if(!texture||!canvas)return;
+  const ctx=canvas.getContext('2d');if(!ctx)return;ctx.clearRect(0,0,canvas.width,canvas.height);
+  const text=t(object.userData.activityText);ctx.strokeText(text,128,42,244);ctx.fillText(text,128,42,244);texture.needsUpdate=true;
+ });
 }

@@ -1,4 +1,5 @@
 import * as T from 'three';
+import {writeMatrix,writeColor,writeScalar,uploadRange} from './buffer-updates';
 import type {Game,Unit} from './game';
 import type {Cover} from './world';
 import {clamp,segmentBox} from './rules';
@@ -34,6 +35,7 @@ export class Flamethrower {
   };
   material.customProgramCacheKey=()=> 'blender-flame-fade-v1';
   this.mesh=new T.InstancedMesh(source.geometry,material,96);this.mesh.name='FlameStream';this.mesh.userData={...source.userData};
+  this.mesh.instanceColor=new T.InstancedBufferAttribute(new Float32Array(96*3).fill(1),3).setUsage(T.DynamicDrawUsage);
   this.mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);this.mesh.frustumCulled=false;this.mesh.count=0;g.world.entities.add(this.mesh);
  }
  add(g:Game,p:T.Vector3,heading:number,limit:number,rise=false){
@@ -94,15 +96,19 @@ export class Flamethrower {
    const move=Math.min(t.limit-t.travel,dt*(t.rise?0:t.speed));t.travel+=move;t.p.x+=Math.sin(t.heading)*move;t.p.z+=Math.cos(t.heading)*move;t.p.y+=dt*(t.rise?2:1.3);
   }
   if(!this.mesh)return;
-  this.mesh.geometry.setAttribute('flameFade',this.fade);
+  if(this.mesh.geometry.getAttribute('flameFade')!==this.fade)this.mesh.geometry.setAttribute('flameFade',this.fade);
   this.mesh.count=this.tongues.length;this.mesh.visible=this.mesh.count>0;
+  if(!this.mesh.count)return;
+  let matrixChanged=false,colorChanged=false,fadeChanged=false;
   this.tongues.forEach((t,i)=>{
    const life=t.age/t.life,fade=Math.sin(Math.PI*life)**.45,size=t.size*(1+life*2)*fade;
    this.dummy.position.copy(t.p);this.dummy.rotation.set(t.rise?-Math.PI/2:0,t.heading,Math.sin(t.seed+t.age*8)*.3);
    // Shorten tongues at solid obstacles so the visible stream agrees with cover tests.
-   this.dummy.scale.set(size,size,Math.min(size,t.rise?size:Math.max(.01,(t.limit-t.travel)/1.9)));this.dummy.updateMatrix();this.mesh!.setMatrixAt(i,this.dummy.matrix);
-   this.color.setRGB(1,1-life*.15,1-life*.4);this.mesh!.setColorAt(i,this.color);this.fade.setX(i,Math.min(1,life*12)*(1-life)**.65);
+   this.dummy.scale.set(size,size,Math.min(size,t.rise?size:Math.max(.01,(t.limit-t.travel)/1.9)));this.dummy.updateMatrix();matrixChanged=writeMatrix(this.mesh!.instanceMatrix,i,this.dummy.matrix)||matrixChanged;
+   this.color.setRGB(1,1-life*.15,1-life*.4);colorChanged=writeColor(this.mesh!.instanceColor!,i,this.color)||colorChanged;fadeChanged=writeScalar(this.fade,i,Math.min(1,life*12)*(1-life)**.65)||fadeChanged;
   });
-  this.fade.needsUpdate=true;this.mesh.instanceMatrix.needsUpdate=true;if(this.mesh.instanceColor)this.mesh.instanceColor.needsUpdate=true;
+  if(fadeChanged)uploadRange(this.fade,0,this.mesh.count);
+  if(matrixChanged)uploadRange(this.mesh.instanceMatrix,0,this.mesh.count*16);
+  if(colorChanged)uploadRange(this.mesh.instanceColor!,0,this.mesh.count*3);
  }
 }

@@ -119,8 +119,11 @@ export class Airlifts {
  private release(g:Game,f:Flight,r:Unit){
   const p=f.unit.visual.root.position,back=f.unit.heading+Math.PI,k=f.passengers.indexOf(r),side=(k%3-1)*1.3,base=rampFoot(p,f.unit.heading,AIRLIFT.rampReach+.6);
   const foot={x:base.x+Math.cos(back)*side,z:base.z-Math.sin(back)*side};
-  let spot=foot;
-  if(!g.canSpawnUnit(foot.x,foot.z,r.role))search:for(let d=1;d<=6;d++)for(let a=0;a<8;a++){const q={x:foot.x+Math.cos(a*Math.PI/4)*d,z:foot.z+Math.sin(a*Math.PI/4)*d};if(g.canSpawnUnit(q.x,q.z,r.role)){spot=q;break search;}}
+  let spot:Point|null=g.canSpawnUnit(foot.x,foot.z,r.role)?foot:null;
+  if(!spot)search:for(let d=1;d<=6;d++)for(let a=0;a<8;a++){const q={x:foot.x+Math.cos(a*Math.PI/4)*d,z:foot.z+Math.sin(a*Math.PI/4)*d};if(g.canSpawnUnit(q.x,q.z,r.role)){spot=q;break search;}}
+  // Traffic may fill the ramp after landing. Keep the soldier aboard and retry on
+  // the next unload tick instead of placing it inside a vehicle or obstacle.
+  if(!spot)return;
   r.visual.root.position.set(spot.x,0,spot.z);r.heading=r.aim=back;r.pending=false;r.aboard=undefined;r.cooldown=Math.max(r.cooldown,1.2);g.syncVisual(r);
  }
  /** A blocked zone moves at least 20 m from the player, behind cover when possible, nose toward the

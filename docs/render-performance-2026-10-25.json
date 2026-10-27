@@ -1,0 +1,398 @@
+{
+  "date": "2026-10-25",
+  "three": "0.186.0",
+  "baseline": "Local working tree before the rendering optimization; pre-existing edits retained.",
+  "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 SUPER (0x00002702) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "seed": 42,
+  "difficulty": "crazy",
+  "levelIndex": 2,
+  "cameraTarget": [
+    0,
+    0,
+    0
+  ],
+  "simulation": "frozen",
+  "samplesAfterWarmup": 6,
+  "framesWarmup": 3,
+  "selectedCellMetres": 24,
+  "counts": [
+    {
+      "id": "desktop-high-0",
+      "cpuThrottle": 1,
+      "drawsBefore": 416,
+      "drawsAfter": 359,
+      "trianglesBefore": 750200,
+      "trianglesAfter": 752788,
+      "shadowBefore": 142,
+      "shadowAfter": 140,
+      "uniqueSceneGeometryBytesBefore": 2132128,
+      "uniqueSceneGeometryBytesAfter": 2132268,
+      "allSceneInstanceBytesAfter": 93260,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    },
+    {
+      "id": "desktop-high-9",
+      "cpuThrottle": 1,
+      "drawsBefore": 719,
+      "drawsAfter": 549,
+      "trianglesBefore": 772318,
+      "trianglesAfter": 774562,
+      "shadowBefore": 267,
+      "shadowAfter": 246,
+      "uniqueSceneGeometryBytesBefore": 2159892,
+      "uniqueSceneGeometryBytesAfter": 2160032,
+      "allSceneInstanceBytesAfter": 103352,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    },
+    {
+      "id": "desktop-high-12",
+      "cpuThrottle": 1,
+      "drawsBefore": 643,
+      "drawsAfter": 324,
+      "trianglesBefore": 379950,
+      "trianglesAfter": 455414,
+      "shadowBefore": 355,
+      "shadowAfter": 171,
+      "uniqueSceneGeometryBytesBefore": 1957656,
+      "uniqueSceneGeometryBytesAfter": 1957656,
+      "allSceneInstanceBytesAfter": 29988,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    },
+    {
+      "id": "desktop-high-13",
+      "cpuThrottle": 1,
+      "drawsBefore": 655,
+      "drawsAfter": 519,
+      "trianglesBefore": 816264,
+      "trianglesAfter": 828518,
+      "shadowBefore": 211,
+      "shadowAfter": 185,
+      "uniqueSceneGeometryBytesBefore": 2279496,
+      "uniqueSceneGeometryBytesAfter": 2279636,
+      "allSceneInstanceBytesAfter": 87192,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    },
+    {
+      "id": "desktop-low-0",
+      "cpuThrottle": 1,
+      "drawsBefore": 274,
+      "drawsAfter": 220,
+      "trianglesBefore": 149464,
+      "trianglesAfter": 150656,
+      "shadowBefore": 0,
+      "shadowAfter": 0,
+      "uniqueSceneGeometryBytesBefore": 939098,
+      "uniqueSceneGeometryBytesAfter": 939238,
+      "allSceneInstanceBytesAfter": 93260,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    },
+    {
+      "id": "desktop-low-9",
+      "cpuThrottle": 1,
+      "drawsBefore": 451,
+      "drawsAfter": 302,
+      "trianglesBefore": 131828,
+      "trianglesAfter": 132147,
+      "shadowBefore": 0,
+      "shadowAfter": 0,
+      "uniqueSceneGeometryBytesBefore": 934494,
+      "uniqueSceneGeometryBytesAfter": 934634,
+      "allSceneInstanceBytesAfter": 103352,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    },
+    {
+      "id": "desktop-low-12",
+      "cpuThrottle": 1,
+      "drawsBefore": 285,
+      "drawsAfter": 151,
+      "trianglesBefore": 33597,
+      "trianglesAfter": 39606,
+      "shadowBefore": 0,
+      "shadowAfter": 0,
+      "uniqueSceneGeometryBytesBefore": 811808,
+      "uniqueSceneGeometryBytesAfter": 811808,
+      "allSceneInstanceBytesAfter": 29988,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    },
+    {
+      "id": "desktop-low-13",
+      "cpuThrottle": 1,
+      "drawsBefore": 444,
+      "drawsAfter": 334,
+      "trianglesBefore": 139959,
+      "trianglesAfter": 141076,
+      "shadowBefore": 0,
+      "shadowAfter": 0,
+      "uniqueSceneGeometryBytesBefore": 927172,
+      "uniqueSceneGeometryBytesAfter": 927312,
+      "allSceneInstanceBytesAfter": 87192,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    },
+    {
+      "id": "mobile-high-0",
+      "cpuThrottle": 4,
+      "drawsBefore": 467,
+      "drawsAfter": 379,
+      "trianglesBefore": 859750,
+      "trianglesAfter": 859770,
+      "shadowBefore": 142,
+      "shadowAfter": 140,
+      "uniqueSceneGeometryBytesBefore": 2132128,
+      "uniqueSceneGeometryBytesAfter": 2132268,
+      "allSceneInstanceBytesAfter": 93260,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    },
+    {
+      "id": "mobile-high-9",
+      "cpuThrottle": 4,
+      "drawsBefore": 763,
+      "drawsAfter": 590,
+      "trianglesBefore": 783124,
+      "trianglesAfter": 785940,
+      "shadowBefore": 267,
+      "shadowAfter": 246,
+      "uniqueSceneGeometryBytesBefore": 2159892,
+      "uniqueSceneGeometryBytesAfter": 2160032,
+      "allSceneInstanceBytesAfter": 103352,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    },
+    {
+      "id": "mobile-high-12",
+      "cpuThrottle": 4,
+      "drawsBefore": 729,
+      "drawsAfter": 365,
+      "trianglesBefore": 428218,
+      "trianglesAfter": 498350,
+      "shadowBefore": 355,
+      "shadowAfter": 171,
+      "uniqueSceneGeometryBytesBefore": 1957656,
+      "uniqueSceneGeometryBytesAfter": 1957656,
+      "allSceneInstanceBytesAfter": 29988,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    },
+    {
+      "id": "mobile-high-13",
+      "cpuThrottle": 4,
+      "drawsBefore": 734,
+      "drawsAfter": 556,
+      "trianglesBefore": 895516,
+      "trianglesAfter": 913232,
+      "shadowBefore": 211,
+      "shadowAfter": 185,
+      "uniqueSceneGeometryBytesBefore": 2279496,
+      "uniqueSceneGeometryBytesAfter": 2279636,
+      "allSceneInstanceBytesAfter": 87192,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    },
+    {
+      "id": "mobile-low-0",
+      "cpuThrottle": 4,
+      "drawsBefore": 325,
+      "drawsAfter": 239,
+      "trianglesBefore": 168221,
+      "trianglesAfter": 168241,
+      "shadowBefore": 0,
+      "shadowAfter": 0,
+      "uniqueSceneGeometryBytesBefore": 939098,
+      "uniqueSceneGeometryBytesAfter": 939238,
+      "allSceneInstanceBytesAfter": 93260,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    },
+    {
+      "id": "mobile-low-9",
+      "cpuThrottle": 4,
+      "drawsBefore": 495,
+      "drawsAfter": 343,
+      "trianglesBefore": 136073,
+      "trianglesAfter": 136561,
+      "shadowBefore": 0,
+      "shadowAfter": 0,
+      "uniqueSceneGeometryBytesBefore": 934494,
+      "uniqueSceneGeometryBytesAfter": 934634,
+      "allSceneInstanceBytesAfter": 103352,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    },
+    {
+      "id": "mobile-low-12",
+      "cpuThrottle": 4,
+      "drawsBefore": 372,
+      "drawsAfter": 191,
+      "trianglesBefore": 43403,
+      "trianglesAfter": 47971,
+      "shadowBefore": 0,
+      "shadowAfter": 0,
+      "uniqueSceneGeometryBytesBefore": 811808,
+      "uniqueSceneGeometryBytesAfter": 811808,
+      "allSceneInstanceBytesAfter": 29988,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    },
+    {
+      "id": "mobile-low-13",
+      "cpuThrottle": 4,
+      "drawsBefore": 523,
+      "drawsAfter": 371,
+      "trianglesBefore": 153043,
+      "trianglesAfter": 154745,
+      "shadowBefore": 0,
+      "shadowAfter": 0,
+      "uniqueSceneGeometryBytesBefore": 927172,
+      "uniqueSceneGeometryBytesAfter": 927312,
+      "allSceneInstanceBytesAfter": 87192,
+      "rawEqualsThreeCounter": true,
+      "constantSamples": true,
+      "errors": []
+    }
+  ],
+  "pixelDiff": [
+    {
+      "name": "desktop-high-12",
+      "control": true,
+      "pixels": 1296000,
+      "changed": 0,
+      "over2": 0,
+      "over8": 0,
+      "max": 0
+    },
+    {
+      "name": "desktop-high-12",
+      "control": false,
+      "pixels": 1296000,
+      "changed": 326,
+      "over2": 119,
+      "over8": 49,
+      "max": 22
+    },
+    {
+      "name": "desktop-high-13",
+      "control": true,
+      "pixels": 1296000,
+      "changed": 0,
+      "over2": 0,
+      "over8": 0,
+      "max": 0
+    },
+    {
+      "name": "desktop-high-13",
+      "control": false,
+      "pixels": 1296000,
+      "changed": 368,
+      "over2": 161,
+      "over8": 145,
+      "max": 38
+    },
+    {
+      "name": "mobile-high-12",
+      "control": true,
+      "pixels": 1316640,
+      "changed": 0,
+      "over2": 0,
+      "over8": 0,
+      "max": 0
+    },
+    {
+      "name": "mobile-high-12",
+      "control": false,
+      "pixels": 1316640,
+      "changed": 1154,
+      "over2": 342,
+      "over8": 57,
+      "max": 24
+    },
+    {
+      "name": "mobile-high-13",
+      "control": true,
+      "pixels": 1316640,
+      "changed": 0,
+      "over2": 0,
+      "over8": 0,
+      "max": 0
+    },
+    {
+      "name": "mobile-high-13",
+      "control": false,
+      "pixels": 1316640,
+      "changed": 616,
+      "over2": 317,
+      "over8": 115,
+      "max": 23
+    }
+  ],
+  "cellComparisons": [
+    {
+      "metres": 16,
+      "scenes": [
+        {
+          "id": "mobile-high-12",
+          "calls": 441,
+          "triangles": 487194
+        },
+        {
+          "id": "mobile-high-13",
+          "calls": 596,
+          "triangles": 896676
+        }
+      ]
+    },
+    {
+      "metres": 24,
+      "scenes": [
+        {
+          "id": "mobile-high-12",
+          "calls": 365,
+          "triangles": 498350
+        },
+        {
+          "id": "mobile-high-13",
+          "calls": 556,
+          "triangles": 913232
+        }
+      ]
+    },
+    {
+      "metres": 32,
+      "source": "Earlier probe output, before the 16 m and 24 m comparisons",
+      "scenes": [
+        {
+          "id": "mobile-high-12",
+          "calls": 320,
+          "triangles": 560802
+        },
+        {
+          "id": "mobile-high-13",
+          "calls": 495,
+          "triangles": 920292
+        }
+      ]
+    }
+  ]
+}

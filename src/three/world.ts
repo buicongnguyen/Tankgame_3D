@@ -1,5 +1,9 @@
+import {setAttribute} from './i18n';
 import {compactLayout,TRAINING} from './training';
 import {EnemyBatches} from './enemy-batches';
+import {SceneryBatches} from './scenery-batches';
+import {cacheTransformChildren} from './transform-cache';
+import {CoverGrid} from './cover-grid';
 import {mode} from './difficulty';
 import {crewMaterial,packCrewSurfaces} from './crew-material';
 import {buildRouteScenery} from './route-scenery';
@@ -34,6 +38,7 @@ export class World {
   bounds={...BOUNDS};
   scene = new T.Scene();
   enemyBatches=new EnemyBatches(this.scene);
+  sceneryBatches=new SceneryBatches(this.scene);
   environment=new Environment();
   fx=new CombatEffects(this.scene); activities:Activity[]=[]; wrecks:{root:T.Group;scorch:T.Mesh;age:number;emit:number}[]=[];
   burnt=new T.MeshStandardMaterial({color:0x292b28,roughness:.96});
@@ -45,6 +50,8 @@ export class World {
   templates = new Map<string, T.Group>();
   private modelPacks = new Map<boolean, Map<string, T.Group>>();
   covers: Cover[] = [];
+  private coverGrid=new CoverGrid<Cover>();
+  blockedByCover(x:number,z:number,radius:number){return this.coverGrid.blocked(this.covers,this.navigationRevision,x,z,radius); }
   missionKind='assault';
   layout=stageLayout(0);navigationRevision=0;loopReverse=false;
   firmRoad(p:Box|{x:number;z:number}){return this.missionKind==='escort'&&['snow','glacier','desert','marsh'].includes(this.environment.biome)&&roadDistance(this.layout.points,p)<=3.2;}
@@ -76,7 +83,7 @@ export class World {
     this.studioEnvironment=pmrem.fromScene(room,.04,.1,100,{size:64}).texture;this.scene.environment=this.studioEnvironment;this.scene.environmentIntensity=.45;
     room.dispose();pmrem.dispose();
     container.append(this.renderer.domElement);
-    this.renderer.domElement.setAttribute('aria-label','3D battlefield');
+    setAttribute(this.renderer.domElement,'aria-label','3D battlefield');
     this.scene.background = new T.Color('#b1ad90');
     this.scene.fog = new T.Fog('#b1ad90', 80, 150);
     this.scene.add(new T.HemisphereLight(0xd5eee8,0x61513d,1.6));
@@ -93,7 +100,8 @@ export class World {
     this.cursor.renderOrder=4;this.cursor.rotation.x=-Math.PI/2; this.cursor.position.y=.08; this.scene.add(this.cursor);
     this.shield = new T.Mesh(new T.SphereGeometry(2.6,20,12),new T.MeshBasicMaterial({color:0x76ffe0,transparent:true,opacity:.12,wireframe:true}));
     this.scene.add(this.shield); this.shield.visible=false;
-    this.scene.onBeforeRender=(_renderer,_scene,camera)=>this.enemyBatches.update(camera);
+    this.scene.onBeforeRender=(_renderer,_scene,camera)=>{this.enemyBatches.update(camera);this.sceneryBatches.update();};
+    for(const root of [this.scene,this.arena,this.entities,this.fx.root])cacheTransformChildren(root);
     window.addEventListener('resize',()=>this.resize()); this.settings(low);
   }
   async load(low=false) {
@@ -155,7 +163,7 @@ export class World {
       const geometry=surfaces.get(`${o.userData.modelAsset}/${o.userData.surfaceKey}`);
       if(geometry){o.geometry=geometry;if(o instanceof T.InstancedMesh)o.computeBoundingSphere();}
     }});
-    this.templates=templates;
+    this.templates=templates;this.sceneryBatches.rebuild(this.arena);
   }
   clone(name:string):T.Group { return this.templates.get(name)!.clone(true); }
   tank(enemy=false,boss=false,model='tank'):TankVisual {
@@ -170,7 +178,7 @@ export class World {
     }});
     if(boss&&model==='tank')root.scale.setScalar(1.55);
     const bar=new T.Mesh(new T.PlaneGeometry(2.8,.16),new T.MeshBasicMaterial({color:enemy?0xff795c:0x8efad6,depthTest:false}));
-    bar.userData.owned=true;bar.rotation.x=-Math.PI/3;bar.position.y=model==='airlift'?5.8:model==='scout-jeep'?3.4:model.includes('mech')?7.4:boss?4.6:3;bar.renderOrder=5;root.add(bar);bar.visible=enemy;
+    bar.userData.owned=true;bar.userData.batchHealthBar=true;bar.rotation.x=-Math.PI/3;bar.position.y=model==='airlift'?5.8:model==='scout-jeep'?3.4:model.includes('mech')?7.4:boss?4.6:3;bar.renderOrder=5;root.add(bar);bar.visible=enemy;
     const beam=new T.Mesh(new T.BoxGeometry(.08,.02,1),new T.MeshBasicMaterial({color:0xff5849,transparent:true,opacity:.55}));
     beam.userData.owned=true;beam.visible=false;this.entities.add(beam);
     this.entities.add(root);
@@ -204,7 +212,7 @@ export class World {
       const key=`team${team}:${visual.root.userData.model}:${name}`;let mat=this.enemyMaterials.get(key);if(!mat){mat=o.material.clone();mat.color.set(color);this.enemyMaterials.set(key,mat);}o.material=mat;
     });
   }
-  clear() { this.leadReady=false;this.enemyBatches.clear();this.environment.clear();this.fx.clear();this.wrecks=[];this.activities=[];this.pendingLandmarks=[];
+  clear() { this.coverGrid.clear();this.leadReady=false;this.enemyBatches.clear();this.sceneryBatches.clear();this.environment.clear();this.fx.clear();this.wrecks=[];this.activities=[];this.pendingLandmarks=[];
     for(const effect of this.effects){effect.mesh.removeFromParent();(effect.mesh.material as T.Material).dispose();}
     this.effects=[];
     // Only dispose runtime-created resources; GLB geometry/materials are shared templates.
@@ -272,7 +280,7 @@ export class World {
     // Extraction pylons frame the road.
     const previous=this.layout.points.at(-2)!,angle=Math.atan2(exit.x-previous.x,exit.z-previous.z);
     for(const side of [-4,4]){const x=exit.x+Math.cos(angle)*side,z=exit.z-Math.sin(angle)*side;this.box(.45,3.2,.45,0x3e5751,x,1.6,z);this.box(.65,.2,.65,0x98f3bf,x,3.3,z);}
-    this.environment.build(this,index);if(ring.length)buildOuterRing(this,ring);if(scale>1)this.environment.weather?.scale.set(scale,1,scale);this.buildLandmarkBlocks();buildRouteScenery(this);buildGuardLandmarks(this,kind);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
+    this.environment.build(this,index);if(ring.length)buildOuterRing(this,ring);if(scale>1)this.environment.weather?.scale.set(scale,1,scale);this.buildLandmarkBlocks();buildRouteScenery(this);buildGuardLandmarks(this,kind);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.sceneryBatches.rebuild(this.arena);this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
     this.target.set(0,0,0);
   }
   buildCompact(id:number){
@@ -283,7 +291,7 @@ export class World {
     for(const side of [-1,1]){const x=side*(this.bounds.x-5),z=id===1?8:4,mesh=this.clone('pine');mesh.position.set(x,0,z);this.arena.add(mesh);this.covers.push({x,z,w:2.6,d:2.6,kind:'pine',hp:65,mesh});}
     const exit=this.layout.points.at(-1)!;this.ring.visible=true;this.ring.position.set(exit.x,.12,exit.z);this.ring.scale.setScalar(.7);
     if(id===2){const relay=this.clone('relay');relay.position.set(0,0,-13);this.arena.add(relay);}
-    this.buildRoad(this.missionKind);this.batchScenery();this.activities=buildActivities(this.arena,this.layout.supplies);this.target.set(0,0,0);
+    this.buildRoad(this.missionKind);this.batchScenery();this.sceneryBatches.rebuild(this.arena);this.activities=buildActivities(this.arena,this.layout.supplies);this.target.set(0,0,0);
   }
   /** Landmarks join collision immediately; their shared instanced draw is built once every one is known. */
   addLandmarkBlock(box:Box){

@@ -1,0 +1,679 @@
+{
+  "date": "2026-10-25",
+  "engine": "Three.js 0.186.0",
+  "warmupFrames": 10,
+  "measuredFrames": 30,
+  "profileFrames": 90,
+  "seed": 42,
+  "baseline": "Working tree including the previous scenery batching; before transform/upload/collision changes",
+  "note": "Same draws/triangles are expected: this pass follows the earlier batching review. Separate-run CPU timings are diagnostic, not proven speed/FPS gains.",
+  "rows": [
+    {
+      "id": "desktop-high-city-stationary",
+      "before": {
+        "draws": 519,
+        "shadowDraws": 185,
+        "triangles": 828518,
+        "compose": 2834,
+        "multiply": 3342,
+        "invert": 5,
+        "bufferData": 0,
+        "allocationBytes": 0,
+        "bufferSubData": 25,
+        "uploadBytes": 56832
+      },
+      "after": {
+        "draws": 519,
+        "shadowDraws": 185,
+        "triangles": 828518,
+        "compose": 46,
+        "multiply": 555,
+        "invert": 5,
+        "bufferData": 0,
+        "allocationBytes": 0,
+        "bufferSubData": 0,
+        "uploadBytes": 0
+      },
+      "sameResources": true,
+      "beforeMemory": {
+        "geometries": 258,
+        "textures": 12,
+        "programs": 28
+      },
+      "afterMemory": {
+        "geometries": 258,
+        "textures": 12,
+        "programs": 28
+      },
+      "beforeHeap": 40694248,
+      "afterHeap": 31398392,
+      "cpuBefore": {
+        "simulation": {
+          "median": 0,
+          "p95": 0
+        },
+        "render": {
+          "median": 3.1,
+          "p95": 3.9
+        }
+      },
+      "cpuAfter": {
+        "simulation": {
+          "median": 0,
+          "p95": 0
+        },
+        "render": {
+          "median": 5.8,
+          "p95": 7.4
+        }
+      },
+      "sceneBuffers": {
+        "before": 2366828,
+        "after": 2366828
+      }
+    },
+    {
+      "id": "desktop-high-city-combat",
+      "before": {
+        "draws": 759.43,
+        "shadowDraws": 188.03,
+        "triangles": 828768.93,
+        "compose": 3023.4,
+        "multiply": 3581.77,
+        "invert": 5,
+        "bufferData": 0.27,
+        "allocationBytes": 272,
+        "bufferSubData": 28,
+        "uploadBytes": 64512
+      },
+      "after": {
+        "draws": 759.43,
+        "shadowDraws": 188.03,
+        "triangles": 828768.93,
+        "compose": 427.07,
+        "multiply": 1487.73,
+        "invert": 5,
+        "bufferData": 0.27,
+        "allocationBytes": 272,
+        "bufferSubData": 27,
+        "uploadBytes": 36735.47
+      },
+      "sameResources": true,
+      "beforeMemory": {
+        "geometries": 268,
+        "textures": 13,
+        "programs": 32
+      },
+      "afterMemory": {
+        "geometries": 268,
+        "textures": 13,
+        "programs": 32
+      },
+      "beforeHeap": 48546468,
+      "afterHeap": 42516696,
+      "cpuBefore": {
+        "simulation": {
+          "median": 5.7,
+          "p95": 6.9
+        },
+        "render": {
+          "median": 7.3,
+          "p95": 9.2
+        }
+      },
+      "cpuAfter": {
+        "simulation": {
+          "median": 4.4,
+          "p95": 7.9
+        },
+        "render": {
+          "median": 14,
+          "p95": 17.2
+        }
+      },
+      "sceneBuffers": {
+        "before": 2385302,
+        "after": 2385302
+      }
+    },
+    {
+      "id": "mobile-high-city-stationary",
+      "before": {
+        "draws": 556,
+        "shadowDraws": 185,
+        "triangles": 913232,
+        "compose": 2834,
+        "multiply": 3378,
+        "invert": 5,
+        "bufferData": 0,
+        "allocationBytes": 0,
+        "bufferSubData": 25,
+        "uploadBytes": 56832
+      },
+      "after": {
+        "draws": 556,
+        "shadowDraws": 185,
+        "triangles": 913232,
+        "compose": 46,
+        "multiply": 591,
+        "invert": 5,
+        "bufferData": 0,
+        "allocationBytes": 0,
+        "bufferSubData": 0,
+        "uploadBytes": 0
+      },
+      "sameResources": true,
+      "beforeMemory": {
+        "geometries": 261,
+        "textures": 12,
+        "programs": 28
+      },
+      "afterMemory": {
+        "geometries": 261,
+        "textures": 12,
+        "programs": 28
+      },
+      "beforeHeap": 27199360,
+      "afterHeap": 25481184,
+      "cpuBefore": {
+        "simulation": {
+          "median": 0,
+          "p95": 0
+        },
+        "render": {
+          "median": 20.3,
+          "p95": 43.2
+        }
+      },
+      "cpuAfter": {
+        "simulation": {
+          "median": 0,
+          "p95": 0
+        },
+        "render": {
+          "median": 34.5,
+          "p95": 58.2
+        }
+      },
+      "sceneBuffers": {
+        "before": 2366828,
+        "after": 2366828
+      }
+    },
+    {
+      "id": "mobile-high-city-combat",
+      "before": {
+        "draws": 799.37,
+        "shadowDraws": 188.03,
+        "triangles": 927140.33,
+        "compose": 3023.4,
+        "multiply": 3620.7,
+        "invert": 5,
+        "bufferData": 0.27,
+        "allocationBytes": 272,
+        "bufferSubData": 28,
+        "uploadBytes": 64512
+      },
+      "after": {
+        "draws": 799.37,
+        "shadowDraws": 188.03,
+        "triangles": 927140.33,
+        "compose": 427.07,
+        "multiply": 1526.67,
+        "invert": 5,
+        "bufferData": 0.27,
+        "allocationBytes": 272,
+        "bufferSubData": 27,
+        "uploadBytes": 42314.13
+      },
+      "sameResources": true,
+      "beforeMemory": {
+        "geometries": 273,
+        "textures": 13,
+        "programs": 32
+      },
+      "afterMemory": {
+        "geometries": 273,
+        "textures": 13,
+        "programs": 32
+      },
+      "beforeHeap": 26320660,
+      "afterHeap": 26920724,
+      "cpuBefore": {
+        "simulation": {
+          "median": 24.5,
+          "p95": 29.6
+        },
+        "render": {
+          "median": 35.3,
+          "p95": 48.6
+        }
+      },
+      "cpuAfter": {
+        "simulation": {
+          "median": 16.1,
+          "p95": 57.7
+        },
+        "render": {
+          "median": 61.8,
+          "p95": 171.3
+        }
+      },
+      "sceneBuffers": {
+        "before": 2385302,
+        "after": 2385302
+      }
+    },
+    {
+      "id": "mobile-low-city-stationary",
+      "before": {
+        "draws": 371,
+        "shadowDraws": 0,
+        "triangles": 154745,
+        "compose": 2829,
+        "multiply": 3191,
+        "invert": 3,
+        "bufferData": 0,
+        "allocationBytes": 0,
+        "bufferSubData": 25,
+        "uploadBytes": 56832
+      },
+      "after": {
+        "draws": 371,
+        "shadowDraws": 0,
+        "triangles": 154745,
+        "compose": 41,
+        "multiply": 404,
+        "invert": 3,
+        "bufferData": 0,
+        "allocationBytes": 0,
+        "bufferSubData": 0,
+        "uploadBytes": 0
+      },
+      "sameResources": true,
+      "beforeMemory": {
+        "geometries": 280,
+        "textures": 12,
+        "programs": 35
+      },
+      "afterMemory": {
+        "geometries": 280,
+        "textures": 12,
+        "programs": 35
+      },
+      "beforeHeap": 37354592,
+      "afterHeap": 29829328,
+      "cpuBefore": {
+        "simulation": {
+          "median": 0,
+          "p95": 0
+        },
+        "render": {
+          "median": 13.6,
+          "p95": 17.3
+        }
+      },
+      "cpuAfter": {
+        "simulation": {
+          "median": 0,
+          "p95": 0
+        },
+        "render": {
+          "median": 24.8,
+          "p95": 90.3
+        }
+      },
+      "sceneBuffers": {
+        "before": 1014504,
+        "after": 1014504
+      }
+    },
+    {
+      "id": "mobile-low-city-combat",
+      "before": {
+        "draws": 430.33,
+        "shadowDraws": 0,
+        "triangles": 156626.93,
+        "compose": 2882.4,
+        "multiply": 3249.67,
+        "invert": 3,
+        "bufferData": 0.27,
+        "allocationBytes": 112.8,
+        "bufferSubData": 28,
+        "uploadBytes": 64512
+      },
+      "after": {
+        "draws": 430.33,
+        "shadowDraws": 0,
+        "triangles": 156626.93,
+        "compose": 286.07,
+        "multiply": 1155.63,
+        "invert": 3,
+        "bufferData": 0.27,
+        "allocationBytes": 112.8,
+        "bufferSubData": 27,
+        "uploadBytes": 41351.47
+      },
+      "sameResources": true,
+      "beforeMemory": {
+        "geometries": 292,
+        "textures": 13,
+        "programs": 39
+      },
+      "afterMemory": {
+        "geometries": 292,
+        "textures": 13,
+        "programs": 39
+      },
+      "beforeHeap": 28587092,
+      "afterHeap": 32485076,
+      "cpuBefore": {
+        "simulation": {
+          "median": 27,
+          "p95": 36.2
+        },
+        "render": {
+          "median": 18.7,
+          "p95": 28.7
+        }
+      },
+      "cpuAfter": {
+        "simulation": {
+          "median": 21.6,
+          "p95": 99.9
+        },
+        "render": {
+          "median": 39.3,
+          "p95": 137.3
+        }
+      },
+      "sceneBuffers": {
+        "before": 1028682,
+        "after": 1028682
+      }
+    },
+    {
+      "id": "mobile-high-jungle-stationary",
+      "before": {
+        "draws": 365,
+        "shadowDraws": 171,
+        "triangles": 498350,
+        "compose": 3141,
+        "multiply": 3494,
+        "invert": 5,
+        "bufferData": 0,
+        "allocationBytes": 0,
+        "bufferSubData": 1,
+        "uploadBytes": 960
+      },
+      "after": {
+        "draws": 365,
+        "shadowDraws": 171,
+        "triangles": 498350,
+        "compose": 43,
+        "multiply": 397,
+        "invert": 5,
+        "bufferData": 0,
+        "allocationBytes": 0,
+        "bufferSubData": 0,
+        "uploadBytes": 0
+      },
+      "sameResources": true,
+      "beforeMemory": {
+        "geometries": 56,
+        "textures": 11,
+        "programs": 27
+      },
+      "afterMemory": {
+        "geometries": 56,
+        "textures": 11,
+        "programs": 27
+      },
+      "beforeHeap": 28056372,
+      "afterHeap": 27977144,
+      "cpuBefore": {
+        "simulation": {
+          "median": 0,
+          "p95": 0
+        },
+        "render": {
+          "median": 9.5,
+          "p95": 16.6
+        }
+      },
+      "cpuAfter": {
+        "simulation": {
+          "median": 0,
+          "p95": 0
+        },
+        "render": {
+          "median": 21.4,
+          "p95": 36.9
+        }
+      },
+      "sceneBuffers": {
+        "before": 1987644,
+        "after": 1987644
+      }
+    },
+    {
+      "id": "mobile-high-jungle-combat",
+      "before": {
+        "draws": 568.53,
+        "shadowDraws": 171,
+        "triangles": 511312.6,
+        "compose": 3308.97,
+        "multiply": 3696.53,
+        "invert": 5,
+        "bufferData": 0,
+        "allocationBytes": 0,
+        "bufferSubData": 4,
+        "uploadBytes": 8640
+      },
+      "after": {
+        "draws": 568.53,
+        "shadowDraws": 171,
+        "triangles": 511312.6,
+        "compose": 221.97,
+        "multiply": 634.53,
+        "invert": 5,
+        "bufferData": 0,
+        "allocationBytes": 0,
+        "bufferSubData": 4,
+        "uploadBytes": 3069.33
+      },
+      "sameResources": true,
+      "beforeMemory": {
+        "geometries": 62,
+        "textures": 12,
+        "programs": 31
+      },
+      "afterMemory": {
+        "geometries": 62,
+        "textures": 12,
+        "programs": 31
+      },
+      "beforeHeap": 24054304,
+      "afterHeap": 36983248,
+      "cpuBefore": {
+        "simulation": {
+          "median": 0.7,
+          "p95": 5
+        },
+        "render": {
+          "median": 39.1,
+          "p95": 66.2
+        }
+      },
+      "cpuAfter": {
+        "simulation": {
+          "median": 0.5,
+          "p95": 6.6
+        },
+        "render": {
+          "median": 50.8,
+          "p95": 95.8
+        }
+      },
+      "sceneBuffers": {
+        "before": 2006118,
+        "after": 2006118
+      }
+    }
+  ],
+  "images": [
+    {
+      "id": "desktop-high-city-stationary",
+      "control": true,
+      "pixels": 1296000,
+      "changed": 0,
+      "over2": 0,
+      "over8": 0,
+      "max": 0
+    },
+    {
+      "id": "desktop-high-city-stationary",
+      "control": false,
+      "pixels": 1296000,
+      "changed": 0,
+      "over2": 0,
+      "over8": 0,
+      "max": 0
+    },
+    {
+      "id": "mobile-high-city-stationary",
+      "control": true,
+      "pixels": 1316640,
+      "changed": 87786,
+      "over2": 0,
+      "over8": 0,
+      "max": 2
+    },
+    {
+      "id": "mobile-high-city-stationary",
+      "control": false,
+      "pixels": 1316640,
+      "changed": 0,
+      "over2": 0,
+      "over8": 0,
+      "max": 0
+    },
+    {
+      "id": "mobile-low-city-stationary",
+      "control": true,
+      "pixels": 1316640,
+      "changed": 0,
+      "over2": 0,
+      "over8": 0,
+      "max": 0
+    },
+    {
+      "id": "mobile-low-city-stationary",
+      "control": false,
+      "pixels": 1316640,
+      "changed": 0,
+      "over2": 0,
+      "over8": 0,
+      "max": 0
+    },
+    {
+      "id": "mobile-high-jungle-stationary",
+      "control": true,
+      "pixels": 1316640,
+      "changed": 87803,
+      "over2": 0,
+      "over8": 0,
+      "max": 2
+    },
+    {
+      "id": "mobile-high-jungle-stationary",
+      "control": false,
+      "pixels": 1316640,
+      "changed": 0,
+      "over2": 0,
+      "over8": 0,
+      "max": 0
+    }
+  ],
+  "interleaved": {
+    "note": "12 interleaved A/B pairs, six measured frames after eight warm-up frames per arm; no counters or CPU profiler. High detail mobile-sized 844x390, DPR2, CPU4. Null control uses optimized code on both arms. CPU submission timing, not physical-phone FPS.",
+    "results": [
+      {
+        "motion": false,
+        "control": true,
+        "medianRatio": 1.0382352962213404,
+        "ratios": [
+          0.46819338276514866,
+          0.5656108606437928,
+          0.7185430496383417,
+          0.8471502597794321,
+          0.8628048747135265,
+          0.9751861013043558,
+          1.0382352962213404,
+          1.0614973249674464,
+          1.0792079240641703,
+          1.2092050150978815,
+          1.2910447748579992,
+          1.9896373093798674
+        ]
+      },
+      {
+        "motion": false,
+        "control": false,
+        "medianRatio": 1.0154241620350026,
+        "ratios": [
+          0.7523510977409859,
+          0.856589149794078,
+          0.9166666635622581,
+          0.9641693803865368,
+          0.9678456553555411,
+          1.0095541424125274,
+          1.0154241620350026,
+          1.0380228090521333,
+          1.1286307062562266,
+          1.1349480956155187,
+          1.1654676270407183,
+          1.3229813701387845
+        ]
+      },
+      {
+        "motion": true,
+        "control": true,
+        "medianRatio": 1.1191709817890125,
+        "ratios": [
+          0.7433380076694576,
+          0.845906899967423,
+          0.9928366762128714,
+          1.0155339819713705,
+          1.0182119209317229,
+          1.0187265940010444,
+          1.1191709817890125,
+          1.1691176480094816,
+          1.2370936900088652,
+          1.2435064914770302,
+          1.2703213625325243,
+          1.3376623386963675
+        ]
+      },
+      {
+        "motion": true,
+        "control": false,
+        "medianRatio": 0.7756917001529822,
+        "ratios": [
+          0.581016299631322,
+          0.6666666655345747,
+          0.6677148845283591,
+          0.6943277318645383,
+          0.6957831327175836,
+          0.7167868186632336,
+          0.7756917001529822,
+          0.7760814247009769,
+          0.7806122448979592,
+          0.805439330343063,
+          0.8173302104426575,
+          0.9583858769949483
+        ]
+      }
+    ]
+  }
+}

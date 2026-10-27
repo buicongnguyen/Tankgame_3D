@@ -1,3 +1,4 @@
+import {locale} from './i18n';
 import type {Save} from './campaign';
 import {MISSIONS} from './campaign';
 import {MODES} from './difficulty';
@@ -33,21 +34,21 @@ export function loadProfiles(json:string|null):ProfileBook{
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]!);
 export function profileSummary(save:Save){
  const cleared=save.cleared.filter(Boolean).length;
- return `Stage ${save.mission+1} · ${cleared} / ${MISSIONS.length} cleared · ${save.credits.toLocaleString('en-US')} CR · ${MODES[save.difficulty].label} · ${getSkin(save.skin).name}`;
+ return `Stage ${save.mission+1} · ${cleared} / ${MISSIONS.length} cleared · ${save.credits.toLocaleString(locale())} CR · ${MODES[save.difficulty].label} · ${getSkin(save.skin).name}`;
 }
 /** Header button on the command screen. */
 export function profileChip(book:ProfileBook,name:string){
- return `<button class="profile-chip" data-action="profiles" aria-label="Profile ${book.active+1} of ${PROFILE_SLOTS}: ${esc(name)}. Switch or start a new game"><span>PROFILE ${book.active+1}</span><strong>${esc(name)}</strong><b aria-hidden="true">→</b></button>`;
+ return `<button class="profile-chip" data-action="profiles" aria-label="Profile ${book.active+1} of ${PROFILE_SLOTS}: ${esc(name)}. Switch or start a new game"><span>PROFILE ${book.active+1}</span><strong translate="no">${esc(name)}</strong><b aria-hidden="true">→</b></button>`;
 }
 
 export interface ProfileView {book:ProfileBook;saves:(Save|null)[];names:string[];editing:number|null;}
 export function profilesPanel(v:ProfileView){
- const played=(t:number)=>t?`Last played ${new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}`:'';
+ const played=(t:number)=>t?`Last played ${new Date(t).toLocaleDateString(locale(),{day:'numeric',month:'short',year:'numeric'})}`:'';
  const cards=v.saves.map((save,i)=>{
   const active=i===v.book.active,name=esc(v.names[i]);
   const title=v.editing===i
    ?`<label class="profile-rename">Profile name <input id="profile-name" maxlength="20" value="${name}" aria-label="Profile ${i+1} name" autocomplete="off"></label>`
-   :`<h2>${name}</h2>`;
+   :`<h2 translate="no">${name}</h2>`;
   const actions=v.editing===i?`<div class="profile-actions"><button class="primary" data-action="profile-name-save" data-value="${i}">SAVE NAME</button><button data-action="profiles">Cancel</button></div>`:save
    ?`<div class="profile-actions">${active?'<button class="primary" data-action="menu">CONTINUE →</button>':`<button class="primary" data-action="profile-use" data-value="${i}">PLAY THIS PROFILE →</button>`}<button data-action="profile-rename" data-value="${i}">Rename</button><button class="quiet" data-action="profile-reset" data-value="${i}">Reset</button></div>`
    :`<div class="profile-actions"><button class="primary" data-action="profile-use" data-value="${i}">NEW GAME →</button><button data-action="profile-rename" data-value="${i}">Rename</button></div>`;
@@ -56,5 +57,5 @@ export function profilesPanel(v:ProfileView){
  return `<section class="panel pause-panel profiles-panel"><span class="eyebrow">PILOT PROFILES</span><h1>Choose your profile</h1><p>Each profile keeps its own stages, credits, upgrades, skins and leaderboard name. Sound and graphics settings belong to this device and apply to every profile.</p><div class="profile-list">${cards}</div><button data-action="menu">Back to command</button></section>`;
 }
 export function resetPrompt(name:string,i:number){
- return `<section class="panel pause-panel profiles-panel"><span class="eyebrow">RESET PROFILE ${i+1}</span><h1>Start ${esc(name)} over?</h1><p>This clears ${esc(name)}'s unlocked operations, credits, upgrades and skins. Other profiles, leaderboard records and device settings are untouched.</p><button class="primary" data-action="profiles">KEEP THIS PROFILE</button><button data-action="profile-reset-confirm" data-value="${i}">Reset ${esc(name)}</button></section>`;
+ return `<section class="panel pause-panel profiles-panel"><span class="eyebrow">RESET PROFILE ${i+1}</span><h1>Start <span translate="no">${esc(name)}</span> over?</h1><p>This clears <span translate="no">${esc(name)}</span>'s unlocked operations, credits, upgrades and skins. Other profiles, leaderboard records and device settings are untouched.</p><button class="primary" data-action="profiles">KEEP THIS PROFILE</button><button data-action="profile-reset-confirm" data-value="${i}">Reset <span translate="no">${esc(name)}</span></button></section>`;
 }

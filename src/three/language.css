@@ -1,0 +1,38 @@
+.command-screen .language-picker{margin-left:auto}
+.language-picker{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;min-width:0;font-family:Arial,sans-serif;letter-spacing:0;color:#eef4fa;text-transform:none}
+.language-caption{font:600 11px/1.3 Arial,sans-serif;color:#c6d7df;letter-spacing:.02em}
+.language-options{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border:1px solid #e7bc7a80;border-radius:8px;background:#081520;box-shadow:0 4px 18px #0003}
+.language-picker .language-choice{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;min-width:118px;margin:0;padding:10px 14px;border:1px solid transparent;border-radius:4px;background:#172c3b;color:#f3f7fb;font:700 16px/1.25 Arial,sans-serif;letter-spacing:0;text-transform:none;white-space:nowrap;transition:transform .12s}
+.language-picker .language-choice:hover{background:#2b475a;border-color:#9ab8cb}
+.language-picker .language-choice[aria-pressed=true]{background:#f1cf91;color:#10202c;border-color:#ffe5b8;box-shadow:0 2px 8px #0003}
+.language-picker .language-choice:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.language-check{font-size:14px;opacity:0}
+.language-choice[aria-pressed=true] .language-check{opacity:1}
+.command-screen .language-picker+.profile-chip{margin-left:8px}
+html[lang=vi] body{font-family:Arial,'Segoe UI',sans-serif}
+html[lang=vi] button,html[lang=vi] .eyebrow{letter-spacing:.025em}
+html[lang=vi] .command-screen .brand{letter-spacing:.04em}
+html[lang=vi] .abilities button{font-size:11px;letter-spacing:0}
+html[lang=vi] .desktop-hint{letter-spacing:0}
+html[lang=vi] .depot-panel .shop-tabs button{padding-inline:4px}
+html[lang=vi] .skin-card h2,html[lang=vi] .upgrade-card h3{line-height:1.35}
+@media(max-width:760px){
+ .command-screen .brand{flex-wrap:wrap;gap:8px}
+ .command-screen .language-picker{order:-1;flex-basis:100%;margin-left:0}
+ .command-screen .language-options{width:min(100%,340px)}
+ .command-screen .language-picker+.profile-chip{margin-left:auto;max-width:100%}
+ html[lang=vi] .command-screen .brand>span:nth-child(2){font-size:10px;letter-spacing:0}
+ html[lang=vi] .mission-task strong{line-height:1.4}
+ html[lang=vi] .command-screen .difficulty button{font-size:11px;padding-inline:4px}
+ html[lang=vi] .command-screen .level-select button{white-space:normal;font-size:11px;line-height:1.25;padding-inline:4px}
+ html[lang=vi] .weapon-block strong{font-size:12px}
+ html[lang=vi] .switch-gun-label{letter-spacing:0}
+}
+@media(max-width:440px) and (orientation:portrait){
+ .command-screen .brand>span:nth-child(2){flex:1;min-width:90px}
+ .command-screen .language-picker{margin-left:0}
+ .command-screen .profile-chip{flex-basis:auto;justify-content:flex-end;border-color:transparent;background:transparent;padding-block:0;min-height:36px}
+ html[lang=vi] .command-screen .briefing h2{font-size:25px;line-height:1.2}
+ html[lang=vi] .shop-tabs button{font-size:11px}
+ html[lang=vi] .abilities button{font-size:10px}
+}

@@ -52,6 +52,12 @@ npm test
 
 The browser tests use controlled integration fixtures for mission edge cases, along with real keyboard, mouse and multitouch events. Test-only access is enabled on the development server with `?e2e`; it is removed from production builds. Browser tests are not a substitute for physical Android device performance testing.
 
+## Language
+
+Choose **English** or **Tiếng Việt** from the selector at the top of the opening screen. It is also available in Pause. The choice is saved on this device and shared by pilot profiles; changing it preserves the current mission and campaign progress. Menus, all campaign briefings, tutorials, shop details, results, HUD, radio messages and pickup labels support Vietnamese. Brand, character, boss and most skin names keep their original names.
+
+Translation catalogs and contributor notes: [Vietnamese localization](docs/VIETNAMESE_LANGUAGE.md).
+
 ## Controls
 
 | Action | Desktop | Touch |
@@ -359,3 +365,10 @@ Four Blender-painted specialist skins add colored stars: **Verdant Bastion** (gr
 The shop uses icon-led rows, coin-and-price buttons with accessible labels, expandable weapon details and smaller skin previews. See [design, balance and verification](docs/AUTO_SUPPORT_AND_QUADCOPTER_PLAN.md).
 
 Strike has a saved charge bank: **two charges on first deployment into each new background**, with unused charges carried forward. Level changes, retries, previews and revisits do not refill the bank. Each accepted call spends one charge and fires at most **six missiles at 90 base damage each**; rejected calls spend nothing. Drop keeps its separate per-mission allowance and shares the radio cooldown. The flamethrower costs **800 CR**, carries **80 bursts** (200 with Quartermaster), and deals **19.2 impact / 14.4 burn DPS**, both 20% below its original output. The mobile mission card shows a small stage badge, one objective counter and a short boss warning.
+
+
+## Rendering performance review
+
+Repeated Blender scenery and enemy health bars now share rendering batches. The [measured performance review](docs/RENDER_PERFORMANCE_REVIEW.md) records draw-call savings, culling tradeoffs, regression checks, and how to reuse `tools/profile-rendering.mjs` for future changes.
+
+The [CPU, transform, GPU-upload and memory review](PERFORMANCE_REVIEW.md) adds change-aware updates and collision indexing, with measured work counts, controlled timing comparisons and focused correctness checks.

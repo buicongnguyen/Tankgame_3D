@@ -1,3 +1,4 @@
+import {setText} from './i18n';
 /** Fullscreen is opt-in and must be requested directly from a user gesture. */
 let busy=false;
 const orientation=()=>screen.orientation as ScreenOrientation & {lock?:(mode:string)=>Promise<void>};
@@ -5,17 +6,17 @@ export function fullscreenButton(){return `<button class="fullscreen-button" dat
 export function installFullscreen(){
  const notice=document.createElement('div');notice.className='fullscreen-notice';notice.setAttribute('role','status');notice.hidden=true;document.body.append(notice);
  let timer:ReturnType<typeof setTimeout>;
- const message=(text:string)=>{clearTimeout(timer);notice.textContent=text;notice.hidden=false;timer=setTimeout(()=>notice.hidden=true,7000);};
- const sync=()=>{for(const button of document.querySelectorAll<HTMLButtonElement>('[data-action="fullscreen"]')){button.textContent=document.fullscreenElement?'EXIT FULLSCREEN':'⛶ FULLSCREEN';button.setAttribute('aria-pressed',String(!!document.fullscreenElement));button.disabled=busy;}};
+ const message=(text:string)=>{clearTimeout(timer);setText(notice,text);notice.hidden=false;timer=setTimeout(()=>notice.hidden=true,7000);};
+ const sync=()=>{for(const button of document.querySelectorAll<HTMLButtonElement>('[data-action="fullscreen"]')){setText(button,document.fullscreenElement?'EXIT FULLSCREEN':'⛶ FULLSCREEN');button.setAttribute('aria-pressed',String(!!document.fullscreenElement));button.setAttribute('aria-disabled',String(busy));}};
  document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement){try{orientation()?.unlock();}catch{/* Some browsers do not allow orientation control. */}}sync();});
  // Capture phase: the overlay stops the compatibility click that follows a handled touch,
  // so a bubbling listener would never see fullscreen taps on phones.
  document.addEventListener('click',async event=>{
   if(!(event.target instanceof Element)||!event.target.closest('[data-action="fullscreen"]')||busy)return;
   if(!document.fullscreenElement&&(!document.documentElement.requestFullscreen||document.fullscreenEnabled===false)){
-   message('Fullscreen is unavailable here. Rotate your phone to landscape. On iPhone, use Share → Add to Home Screen for an app-style view.');return;
+   message('Fullscreen is unavailable here. Rotate your phone to landscape. On iPhone, open in Safari, use Share → Add to Home Screen, enable Open as Web App if shown, then launch the new icon. System gestures still apply.');return;
   }
-  busy=true;sync();
+  const initiating=event.target.closest<HTMLElement>('[data-action="fullscreen"]');initiating?.focus({preventScroll:true});busy=true;sync();
   try{
    if(document.fullscreenElement){await document.exitFullscreen();}
    else{
