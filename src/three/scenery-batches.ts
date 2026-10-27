@@ -1,4 +1,5 @@
 import * as T from 'three';
+import {instancedMaterial} from './instancing';
 
 interface Source {mesh:T.Mesh;layers:number;shown:boolean;}
 interface Batch {mesh:T.InstancedMesh;sources:Source[];}
@@ -21,7 +22,7 @@ export class SceneryBatches {
   });
   for(const sources of groups.values()){
    if(sources.length<2)continue;
-   const first=sources[0],mesh=new T.InstancedMesh(first.geometry,first.material,sources.length);
+   const first=sources[0],mesh=new T.InstancedMesh(first.geometry,instancedMaterial(first.material as T.Material,false),sources.length);
    mesh.name='ScenerySurfaceBatch';mesh.castShadow=first.castShadow;mesh.receiveShadow=first.receiveShadow;mesh.renderOrder=first.renderOrder;
    mesh.userData={...first.userData,sceneryBatch:true};mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);
    const batch={mesh,sources:sources.map(source=>{const layers=source.layers.mask;source.layers.disableAll();return {mesh:source,layers,shown:false};})};

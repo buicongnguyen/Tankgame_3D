@@ -3,10 +3,11 @@ import {compactLayout,TRAINING} from './training';
 import {EnemyBatches} from './enemy-batches';
 import {SceneryBatches} from './scenery-batches';
 import {cacheTransformChildren} from './transform-cache';
-import {CoverGrid} from './cover-grid';
+import {coverGridFor} from './cover-grid';
 import {mode} from './difficulty';
 import {crewMaterial,packCrewSurfaces} from './crew-material';
-import {buildRouteScenery} from './route-scenery';
+import {buildRouteScenery,instanceCoverClones} from './route-scenery';
+import {instancedMaterial} from './instancing';
 import {buildGuardLandmarks} from './enemy-posts';
 import {stageLayout,overlapsReservation,roadDistance,projectRoute,routeSample} from './stage-layout';
 import {terrainAt,terrainSpeed} from './terrain';
@@ -14,6 +15,7 @@ import {groundTexture} from './frontier-surfaces';
 import {buildRockBoundary} from './rock-boundary';
 import {GROUND_COLORS} from './frontier-environment';
 import MODEL_NAMES from './model-catalog.json';
+import REUSED_MODELS from './reused-models.json';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import {SkinMarkings} from './skin-markings';
 import {StableShadow} from './stable-shadow';
@@ -23,16 +25,32 @@ import { planOuterRing, buildOuterRing } from './arena';
 import * as T from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { buildGroundDressing } from './scenery-variety';
+import { ratioRange } from './performance';
+import { TownLife } from './town-life';
+import { BiomeLife } from './biome-life';
+const SOLDIERS=new Set(['rifleman','rocketeer']);
 import type { Box } from './rules';
 import { BIOMES, Environment } from './environment';
 import { CombatEffects } from './effects';
 import { BOUNDS, buildActivities, loadPickupModels } from './activities';
 import type { Activity } from './activities';
 export interface TankVisual { root: T.Group; hull: T.Object3D; turret: T.Object3D; muzzle: T.Object3D; bar: T.Mesh; beam: T.Mesh; }
-export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'concrete-block' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; boundary?:boolean; scenery?:{parts:T.InstancedMesh[];index:number;maxHP:number}; section?: {parts:T.InstancedMesh[];index:number;wall:object}; }
+export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'concrete-block' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; boundary?:boolean; /** Visual template when it differs from `kind` (tree variants). */ model?:string; scenery?:{parts:T.InstancedMesh[];index:number;maxHP:number}; section?: {parts:T.InstancedMesh[];index:number;wall:object}; }
 /** Square precast landmarks (formerly indestructible hills and basalt outcrops). */
 export const LANDMARK_BLOCK_HP=1000;
 interface Effect { mesh: T.Mesh; life: number; max: number; velocity: T.Vector3; }
+/** Meshopt exports store normalized 16-bit positions and move the real scale onto the node. Baking that
+ *  node transform into a normalized attribute would clamp it to the unit cube, so merge in plain floats. */
+function dequantized(g:T.BufferGeometry){
+  // Packed attributes also arrive interleaved; read both kinds through their denormalizing accessors.
+  for(const [name,a] of Object.entries(g.attributes)){if(a instanceof T.BufferAttribute&&a.array instanceof Float32Array)continue;
+    const read=[a.getX,a.getY,a.getZ,a.getW],out=new Float32Array(a.count*a.itemSize);
+    for(let i=0;i<a.count;i++)for(let k=0;k<a.itemSize;k++)out[i*a.itemSize+k]=read[k].call(a,i);
+    g.setAttribute(name,new T.BufferAttribute(out,a.itemSize));}
+  return g;
+}
 const scratch = new T.Vector3();
 export class World {
   bounds={...BOUNDS};
@@ -50,8 +68,7 @@ export class World {
   templates = new Map<string, T.Group>();
   private modelPacks = new Map<boolean, Map<string, T.Group>>();
   covers: Cover[] = [];
-  private coverGrid=new CoverGrid<Cover>();
-  blockedByCover(x:number,z:number,radius:number){return this.coverGrid.blocked(this.covers,this.navigationRevision,x,z,radius); }
+  blockedByCover(x:number,z:number,radius:number){return coverGridFor(this).blocked(this.covers,this.navigationRevision,x,z,radius); }
   missionKind='assault';
   layout=stageLayout(0);navigationRevision=0;loopReverse=false;
   firmRoad(p:Box|{x:number;z:number}){return this.missionKind==='escort'&&['snow','glacier','desert','marsh'].includes(this.environment.biome)&&roadDistance(this.layout.points,p)<=3.2;}
@@ -94,9 +111,11 @@ export class World {
     this.sun.shadow.normalBias = .035; this.scene.add(this.sun,this.sun.target);
     this.stableShadow = new StableShadow(this.sun);
     this.scene.add(this.arena,this.entities);
-    this.ring = new T.Mesh(new T.RingGeometry(6.6,6.9,64),new T.MeshBasicMaterial({color:0xffc272,side:T.DoubleSide,transparent:true,opacity:.85}));
+    // The roots never move: without their per-frame matrix update, frozen scenery below them is skipped too.
+    for(const root of [this.scene,this.arena,this.entities]){root.matrixAutoUpdate=false;root.updateMatrix();}
+    this.ring = new T.Mesh(new T.RingGeometry(6.6,6.9,64),new T.MeshBasicMaterial({color:0xffc272,side:T.DoubleSide,forceSinglePass:true,transparent:true,opacity:.85}));
     this.ring.rotation.x=-Math.PI/2; this.ring.position.set(0,.05,-13); this.scene.add(this.ring);
-    this.cursor = new T.Mesh(new T.RingGeometry(.65,.78,24),new T.MeshBasicMaterial({color:0xc0ffdf,side:T.DoubleSide,transparent:true,depthWrite:false}));
+    this.cursor = new T.Mesh(new T.RingGeometry(.65,.78,24),new T.MeshBasicMaterial({color:0xc0ffdf,side:T.DoubleSide,forceSinglePass:true,transparent:true,depthWrite:false}));
     this.cursor.renderOrder=4;this.cursor.rotation.x=-Math.PI/2; this.cursor.position.y=.08; this.scene.add(this.cursor);
     this.shield = new T.Mesh(new T.SphereGeometry(2.6,20,12),new T.MeshBasicMaterial({color:0x76ffe0,transparent:true,opacity:.12,wireframe:true}));
     this.scene.add(this.shield); this.shield.visible=false;
@@ -109,9 +128,14 @@ export class World {
     let templates=this.modelPacks.get(low);
     if(!templates){
       templates=new Map<string,T.Group>();
-      const loader=new GLTFLoader();
+      // Reused Hoshi Valley models are meshopt-compressed; the Blender exports decode as before.
+      const loader=new GLTFLoader();if(MeshoptDecoder.supported)loader.setMeshoptDecoder(MeshoptDecoder);
       await Promise.all(MODEL_NAMES.map(async name=>{
-        const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/${low?'low/':''}${name}.glb`);
+        // Reused scenery is decoration: without WebAssembly (some locked-down browsers) it is skipped and pines stay.
+        // Soldiers stand about 20 px tall on any screen; touch devices use the 504-triangle body even in Detailed.
+        const lowFile=low||(SOLDIERS.has(name)&&matchMedia('(pointer:coarse)').matches);
+        const gltf=await loader.loadAsync(`${import.meta.env.BASE_URL}models/${lowFile?'low/':''}${name}.glb`).catch(error=>{if(name in REUSED_MODELS)return null;throw error;});
+        if(!gltf)return;
         const root=gltf.scene;
         if(['rifleman','rocketeer','scout-jeep'].includes(name))packCrewSurfaces(root,this.crewMaterial);
         root.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true; o.receiveShadow=true;}});
@@ -132,7 +156,7 @@ export class World {
         part.traverse(o=>{if(o instanceof T.Mesh&&!Array.isArray(o.material)){
           if(o.name==='Core')return; // Boss weak-point visibility remains independent.
           let parent=o.parent;while(parent&&parent!==part){if(parts.includes(parent))return;parent=parent.parent;}
-          const g=o.geometry.clone().applyMatrix4(inverse.clone().multiply(o.matrixWorld));
+          const g=dequantized(o.geometry.clone()).applyMatrix4(inverse.clone().multiply(o.matrixWorld));
           const key=o.material.uuid+':'+Object.keys(g.attributes).sort().join(',')+':'+!!g.index;
           let bucket=buckets.get(key);if(!bucket){bucket={material:o.material,geometries:[],sources:[]};buckets.set(key,bucket);}
           bucket.geometries.push(g);bucket.sources.push(o);
@@ -151,7 +175,8 @@ export class World {
       // Validate before touching the live scene so a bad pack cannot hide objects.
       if(this.templates.size)for(const [name,root] of templates){
         const keys=(group:T.Group)=>{const result:string[]=[];group.traverse(o=>{if(o instanceof T.Mesh)result.push(o.userData.surfaceKey);});return result.sort().join('|');};
-        if(keys(root)!==keys(this.templates.get(name)!))throw new Error(`Incompatible detail model: ${name}`);
+        const current=this.templates.get(name);
+        if(current&&keys(root)!==keys(current))throw new Error(`Incompatible detail model: ${name}`);
       }
       this.modelPacks.set(low,templates);
     }
@@ -212,7 +237,7 @@ export class World {
       const key=`team${team}:${visual.root.userData.model}:${name}`;let mat=this.enemyMaterials.get(key);if(!mat){mat=o.material.clone();mat.color.set(color);this.enemyMaterials.set(key,mat);}o.material=mat;
     });
   }
-  clear() { this.coverGrid.clear();this.leadReady=false;this.enemyBatches.clear();this.sceneryBatches.clear();this.environment.clear();this.fx.clear();this.wrecks=[];this.activities=[];this.pendingLandmarks=[];
+  clear() { coverGridFor(this).clear();this.leadReady=false;this.townLife.reset();this.biomeLife.reset();this.enemyBatches.clear();this.sceneryBatches.clear();this.environment.clear();this.fx.clear();this.wrecks=[];this.activities=[];this.pendingLandmarks=[];
     for(const effect of this.effects){effect.mesh.removeFromParent();(effect.mesh.material as T.Material).dispose();}
     this.effects=[];
     // Only dispose runtime-created resources; GLB geometry/materials are shared templates.
@@ -233,7 +258,8 @@ export class World {
     const meshes:T.Mesh[]=[];
     this.arena.traverse(o=>{if(o instanceof T.Mesh&&o.userData.staticBatch&&o.material instanceof T.MeshStandardMaterial)meshes.push(o);});
     for(const mesh of meshes){
-      const material=mesh.material as T.MeshStandardMaterial,key=`${material.color.getHex()}:${mesh.castShadow}:${material.map?.uuid??''}`;
+      // Geometries merge only with the same attributes and indexing; a failed merge would drop the whole bucket.
+      const material=mesh.material as T.MeshStandardMaterial,layout=`${Object.keys(mesh.geometry.attributes).sort().join(',')}:${!!mesh.geometry.index}`,key=`${material.color.getHex()}:${material.roughness}:${mesh.castShadow}:${material.map?.uuid??''}:${layout}`;
       let bucket=buckets.get(key);if(!bucket){bucket={geometries:[],material:material.clone(),shadow:mesh.castShadow};buckets.set(key,bucket);}
       bucket.geometries.push(mesh.geometry.clone().applyMatrix4(mesh.matrixWorld));mesh.removeFromParent();mesh.geometry.dispose();material.dispose();
     }
@@ -280,8 +306,8 @@ export class World {
     // Extraction pylons frame the road.
     const previous=this.layout.points.at(-2)!,angle=Math.atan2(exit.x-previous.x,exit.z-previous.z);
     for(const side of [-4,4]){const x=exit.x+Math.cos(angle)*side,z=exit.z-Math.sin(angle)*side;this.box(.45,3.2,.45,0x3e5751,x,1.6,z);this.box(.65,.2,.65,0x98f3bf,x,3.3,z);}
-    this.environment.build(this,index);if(ring.length)buildOuterRing(this,ring);if(scale>1)this.environment.weather?.scale.set(scale,1,scale);this.buildLandmarkBlocks();buildRouteScenery(this);buildGuardLandmarks(this,kind);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;this.buildRoad(kind);this.batchScenery();this.sceneryBatches.rebuild(this.arena);this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
-    this.target.set(0,0,0);
+    this.environment.build(this,index);if(ring.length)buildOuterRing(this,ring);if(scale>1)this.environment.weather?.scale.set(scale,1,scale);this.buildLandmarkBlocks();buildRouteScenery(this);buildGuardLandmarks(this,kind);buildGroundDressing(this,index);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;instanceCoverClones(this);this.buildRoad(kind);this.batchScenery();this.sceneryBatches.rebuild(this.arena);this.townLife.build(this,index);this.biomeLife.build(this,index);this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
+    this.freezeStatic();this.target.set(0,0,0);
   }
   buildCompact(id:number){
     this.clear();this.navigationRevision++;this.layout=compactLayout(id);this.bounds=id===3?{x:36,z:32}:{...TRAINING[id].bounds};this.missionKind=id===2?'defense':'assault';this.environment.biome='grove';
@@ -291,7 +317,19 @@ export class World {
     for(const side of [-1,1]){const x=side*(this.bounds.x-5),z=id===1?8:4,mesh=this.clone('pine');mesh.position.set(x,0,z);this.arena.add(mesh);this.covers.push({x,z,w:2.6,d:2.6,kind:'pine',hp:65,mesh});}
     const exit=this.layout.points.at(-1)!;this.ring.visible=true;this.ring.position.set(exit.x,.12,exit.z);this.ring.scale.setScalar(.7);
     if(id===2){const relay=this.clone('relay');relay.position.set(0,0,-13);this.arena.add(relay);}
-    this.buildRoad(this.missionKind);this.batchScenery();this.sceneryBatches.rebuild(this.arena);this.activities=buildActivities(this.arena,this.layout.supplies);this.target.set(0,0,0);
+    instanceCoverClones(this);this.buildRoad(this.missionKind);this.batchScenery();this.sceneryBatches.rebuild(this.arena);this.biomeLife.build(this,0);this.activities=buildActivities(this.arena,this.layout.supplies);this.freezeStatic();this.target.set(0,0,0);
+  }
+  /** Scenery placed with the stage never moves again: compose its matrices once, so three.js stops recomputing
+   *  hundreds of them every frame. Pickups (they hover, and drop from the sky) keep updating; anything added
+   *  during the battle (wrecks, effects, loot) is not frozen. */
+  private freezeStatic(){
+    const moving=new Set<T.Object3D>(this.activities.map(a=>a.mesh));
+    for(const child of this.arena.children)if(!moving.has(child))child.traverse(o=>{o.updateMatrix();o.matrixAutoUpdate=false;o.matrixWorldNeedsUpdate=true;});
+  }
+  /** Shadow map size; the phone frame budget halves it when High still runs late at its lowest resolution. */
+  shadowDetail(size:number){
+    if(this.sun.shadow.mapSize.x===size)return;
+    this.sun.shadow.mapSize.set(size,size);this.sun.shadow.map?.dispose();this.sun.shadow.map=null;
   }
   /** Landmarks join collision immediately; their shared instanced draw is built once every one is known. */
   addLandmarkBlock(box:Box){
@@ -306,7 +344,7 @@ export class World {
     const template=this.templates.get('concrete-block')!;template.updateMatrixWorld(true);
     const root=new T.Group();root.name='RouteLandforms';this.arena.add(root);const parts:T.InstancedMesh[]=[];
     template.traverse(o=>{if(!(o instanceof T.Mesh))return;
-      const instances=new T.InstancedMesh(o.geometry,o.material,blocks.length);instances.userData={...o.userData};instances.castShadow=true;instances.receiveShadow=true;
+      const instances=new T.InstancedMesh(o.geometry,instancedMaterial(o.material as T.Material,true),blocks.length);instances.userData={...o.userData};instances.castShadow=true;instances.receiveShadow=true;
       // The template spans the historic 14 x 10 m landform footprint.
       blocks.forEach((b,i)=>{const matrix=new T.Matrix4().makeScale(b.w/14,1,b.d/10);matrix.setPosition(b.x,0,b.z);matrix.multiply(o.matrixWorld);instances.setMatrixAt(i,matrix);instances.setColorAt(i,new T.Color(0xffffff));});
       instances.computeBoundingSphere();root.add(instances);parts.push(instances);
@@ -323,7 +361,7 @@ export class World {
     const root=new T.Group();root.name='RouteConcrete';this.arena.add(root);
     const template=this.templates.get('barricade')!;template.updateMatrixWorld(true);const parts:T.InstancedMesh[]=[];
     template.traverse(o=>{if(!(o instanceof T.Mesh))return;
-      const instances=new T.InstancedMesh(o.geometry,o.material,panels.length);instances.userData={...o.userData};instances.castShadow=true;instances.receiveShadow=true;
+      const instances=new T.InstancedMesh(o.geometry,instancedMaterial(o.material as T.Material,true),panels.length);instances.userData={...o.userData};instances.castShadow=true;instances.receiveShadow=true;
       panels.forEach(({x,z,vertical,width},i)=>{
         const matrix=new T.Matrix4().compose(new T.Vector3(x,0,z),new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),vertical?Math.PI/2:0),new T.Vector3(width/3.2,1.3,1.5)).multiply(o.matrixWorld);
         instances.setMatrixAt(i,matrix);instances.setColorAt(i,new T.Color(0xffffff));
@@ -339,7 +377,7 @@ export class World {
     const placement=cover.section??cover.scenery;if(!placement)return;const {parts,index}=placement;
     for(const part of parts){
       if(cover.hp<=0){part.setMatrixAt(index,new T.Matrix4().makeScale(0,0,0));part.instanceMatrix.needsUpdate=true;}
-      else{part.setColorAt(index,new T.Color().setScalar(.45+.55*cover.hp/(cover.scenery?.maxHP??176)));if(part.instanceColor)part.instanceColor.needsUpdate=true;}
+      else if(Number.isFinite(cover.hp)){part.setColorAt(index,new T.Color().setScalar(.45+.55*cover.hp/(cover.scenery?.maxHP??176)));if(part.instanceColor)part.instanceColor.needsUpdate=true;}
     }
   }
   private buildRoad(kind:string){
@@ -365,8 +403,12 @@ export class World {
       if(pieces.length){const geometry=mergeGeometries(pieces);pieces.forEach(p=>p.dispose());if(geometry){const markers=new T.Mesh(geometry,material);markers.name='RouteDirectionBatch';markers.userData.owned=true;this.arena.add(markers);}else material.dispose();}else material.dispose();
     }
   }
-  settings(low:boolean){this.scene.environment=low?null:this.studioEnvironment;this.low=low;this.fx.low=low;this.renderer.shadowMap.enabled=!low;document.body.dataset.graphics=low?'low':'detailed';this.resize();}
-  resize(){const w=window.innerWidth,h=window.innerHeight;this.renderer.setPixelRatio(this.low?Math.min(devicePixelRatio,.8,960/Math.max(w,h)):Math.min(devicePixelRatio,1.6));this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}
+  settings(low:boolean){this.scene.environment=low?null:this.studioEnvironment;this.low=low;this.fx.low=low;this.renderer.shadowMap.enabled=!low;document.body.dataset.graphics=low?'low':'detailed';this.renderRatio=null;this.resize();}
+  /** Flags, chimney smoke and birds around buildings (decoration only). */
+  townLife=new TownLife();biomeLife=new BiomeLife();
+  /** Set by the phone frame budget during battle; null keeps the detail tier's own ratio. */
+  renderRatio:number|null=null;
+  resize(){const w=window.innerWidth,h=window.innerHeight;this.renderer.setPixelRatio(this.renderRatio??ratioRange(this.low).base);this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}
   burst(position:T.Vector3,color=0,amount=12){
     for(let i=0;i<(this.low?Math.ceil(amount/2):amount)&&this.effects.length<(this.low?24:100);i++){
       const material=this.effectMaterials[color].clone();
@@ -419,6 +461,7 @@ export class World {
     for(let i=this.wrecks.length-1;i>=0;i--){const wreck=this.wrecks[i];wreck.age+=dt;if(wreck.age>(this.low?20:60)){wreck.root.removeFromParent();wreck.scorch.removeFromParent();this.wrecks.splice(i,1);continue;}wreck.root.position.y=Math.max(0,wreck.root.position.y-dt*(4+wreck.age*12));wreck.emit-=dt;if(wreck.age<(this.low?5:12)&&wreck.emit<=0){wreck.emit=this.low?.4:.18;const p=wreck.root.position.clone();p.y+=1.3;this.fx.smoke(p,1.8);if(wreck.age<4)this.fx.emit(p,'flash',0xff6b23,1.4,.35);}}
     for(const a of this.activities)if(a.hover!==undefined&&!a.spent&&!a.airborne){a.hoverTime=(a.hoverTime??0)+dt;a.mesh.position.y=a.hover+Math.sin(a.hoverTime*2)*.2;}
     this.environment.update(dt,this.low);this.fx.update(dt,this.camera);
+    this.townLife.update(menu?0:dt);this.biomeLife.update(menu?0:dt,focus,this.target,this);
     this.renderer.render(this.scene,this.camera);
   }
 }

@@ -36,3 +36,9 @@ html[lang=vi] .skin-card h2,html[lang=vi] .upgrade-card h3{line-height:1.35}
  html[lang=vi] .shop-tabs button{font-size:11px}
  html[lang=vi] .abilities button{font-size:10px}
 }
+
+/* Pause settings have less width than the opening header on compact phones. */
+.settings .language-picker{width:100%;margin-bottom:8px}
+.settings .language-options{box-sizing:border-box;width:100%;grid-template-columns:repeat(2,minmax(0,1fr))}
+.settings .language-choice{min-width:0;padding-inline:6px;gap:4px}
+@media(max-width:360px){.settings .language-options{grid-template-columns:1fr}}

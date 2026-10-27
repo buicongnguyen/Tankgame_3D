@@ -3,6 +3,7 @@ import type {World,Cover} from './world';
 import type {StageLayout} from './stage-layout';
 import type {Box} from './rules';
 import {instanceScenery} from './route-scenery';
+import {treeLook} from './scenery-variety';
 
 /** Large skirmish battlefields keep the campaign map as their core and add a seeded outer ring. */
 export const MAP_SCALES=[1,2] as const;
@@ -50,7 +51,8 @@ export function buildOuterRing(world:World,props:RingProp[]){
   const kind:Cover['kind']=p.kind==='tree'?tree:p.kind==='building'?(biome==='city'?'cityblock':'house'):p.kind;
   const [w,d]=kind==='cityblock'?[8,7]:SIZE[p.kind],building=p.kind==='building';
   const cover:Cover={x:p.x,z:p.z,w,d,kind,hp:building?220:p.kind==='barrel'?25:p.kind==='crate'?55:70,mesh:new T.Group()};cover.mesh.name='OuterRingCover';cover.mesh.position.set(p.x,0,p.z);world.arena.add(cover.mesh);
-  world.covers.push(cover);return {cover,rotation:p.kind==='tree'?p.rotation:0};
+  const look=kind==='pine'?treeLook(world,biome,p.x,p.z):null;if(look)cover.model=look.model;
+  world.covers.push(cover);return {cover,rotation:p.kind==='tree'?p.rotation:0,scale:look?.scale};
  });
  instanceScenery(world,entries,'OuterRing');
  return entries.length;

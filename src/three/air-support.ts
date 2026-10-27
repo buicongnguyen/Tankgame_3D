@@ -4,6 +4,7 @@ import {createActivity} from './activities';
 import type {Activity} from './activities';
 import {distance,segmentBox} from './rules';
 import {MINE_TRIGGER_RADIUS} from './combat-ranges';
+import {arcUnlocked} from './armory';
 
 interface Drop {activity:Activity;rig:T.Group;marker:T.Mesh;time:number;quiet?:boolean;}
 /** A small mission allowance, independent of wreck loot, sharing the missile radio cooldown. */
@@ -24,11 +25,12 @@ export class AirSupport {
   const payload=this.payload(g);this.launch(g,payload.kind,payload.amount,site);this.used++;g.artilleryCooldown=28;
   g.radioMessage(`AIR SUPPORT / ${payload.kind==='health'?'Medical':payload.kind==='shield'?'Shield':'Ammo'} crate inbound. Collect at the mint circle.`,4);return true;
  }
- /** Easy opens with a small free cache beside the tank: a few laser shots and arc rockets, usable even
-  *  before either weapon is bought. It uses neither the mission's drops nor the radio cooldown. */
+ /** Easy opens with a small free cache beside the tank: a few laser shots, usable even before the laser is
+  *  bought, plus arc rockets once Glass Road is cleared (they are hard to aim, so beginners get a shield cache
+  *  instead). It uses neither the mission's drops nor the radio cooldown. */
  starter(g:Game){
   const laser=this.site(g,[],[6,8,10,12,14]),arc=laser&&this.site(g,[laser],[6,8,10,12,14]);
-  if(laser)this.launch(g,'laser',4,laser,true);if(arc)this.launch(g,'arc',2,arc,true);
+  if(laser)this.launch(g,'laser',4,laser,true);if(arc){if(arcUnlocked(g.save.cleared))this.launch(g,'arc',2,arc,true);else this.launch(g,'shield',4,arc,true);}
   return !!laser;
  }
  /** A visible, reachable nearby landing site ahead of the tank; never behind cover, on a mine or by fuel. */
@@ -49,7 +51,7 @@ export class AirSupport {
   const canopy=new T.Mesh(new T.SphereGeometry(2.2,12,6,0,Math.PI*2,0,Math.PI/2),new T.MeshStandardMaterial({color:0xd2eedf,roughness:1,side:T.DoubleSide}));canopy.position.y=3;canopy.scale.y=.55;rig.add(canopy);
   const ropes:number[]=[];for(let i=0;i<4;i++){const angle=Math.PI/4+i*Math.PI/2;ropes.push(Math.cos(angle)*.65,.6,Math.sin(angle)*.65,Math.cos(angle)*2.2,3,Math.sin(angle)*2.2);}
   const lines=new T.LineSegments(new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute(ropes,3)),new T.LineBasicMaterial({color:0x394f4d}));rig.add(lines);
-  const marker=new T.Mesh(new T.RingGeometry(2.9,3.1,32),new T.MeshBasicMaterial({color:0x86ffdf,side:T.DoubleSide,transparent:true,opacity:.8,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));marker.rotation.x=-Math.PI/2;marker.position.set(site.x,.13,site.z);g.world.entities.add(marker);
+  const marker=new T.Mesh(new T.RingGeometry(2.9,3.1,32),new T.MeshBasicMaterial({color:0x86ffdf,side:T.DoubleSide,forceSinglePass:true,transparent:true,opacity:.8,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));marker.rotation.x=-Math.PI/2;marker.position.set(site.x,.13,site.z);g.world.entities.add(marker);
   this.drops.push({activity,rig,marker,time:0,quiet});
  }
  dispose(drop:Drop){

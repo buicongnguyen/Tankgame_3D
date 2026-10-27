@@ -1,8 +1,12 @@
 # Performance review — 25 October 2026
 
-Project: **Tank_game_3D / Steel Front**, Three.js **0.186.0**, Vite development build. Changes remain local. Existing language, mobile, and earlier draw-batching work was preserved.
+Project: **Tank_game_3D / Steel Front**, Three.js **0.186.0**, Vite development build. Measurements describe the local snapshot taken on 25 October 2026. Existing language, mobile, and earlier draw-batching work was preserved.
 
 Applied the installed `smooth-dense-scenes` skill at `C:/Users/n/.claude/skills/smooth-dense-scenes/SKILL.md`, including its CPU/buffer reference. The supplied `C:/Users/n.claude/...` path was not present; the installed `.claude` folder was used.
+
+## Release integration — 28 October 2026
+
+For GitHub Pages publication, these changes were merged with the newer main branch, preserving its living scenery, soldier animation, particle batches, phone frame budget and touch fixes. Movement and sight/navigation now share one cover index; render batches retain separate material variants. The measurements below remain historical evidence for the tested October 25 snapshot, not a new benchmark of the combined release.
 
 ## Outcome
 

@@ -11,6 +11,7 @@ import {installFullscreen} from './three/fullscreen';
 setLanguage(getLanguage(),false);
 installFullscreen();
 import { Game } from './three/game';
+import './three/ui-polish';
 const app=document.querySelector<HTMLDivElement>('#app')!;
 setHtml(app,'<div class="loading"><span class="eyebrow">KESTREL // CONNECTING</span><h1>Establishing uplink<span class="blink">_</span></h1><p>Preparing the valley and armored units.</p></div>');
 try { const game=new Game(app); await game.init(); }

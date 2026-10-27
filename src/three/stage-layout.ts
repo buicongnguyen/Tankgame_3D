@@ -1,4 +1,5 @@
 import {routePattern,landformCandidates} from './route-patterns';
+import {ARC_UNLOCK_MISSION} from './armory';
 import type {RouteShape} from './route-patterns';
 import {clamp,distance,segmentBox} from './rules';
 import {mode} from './difficulty';
@@ -70,7 +71,7 @@ export function stageLayout(stage:number,level=0,kind='assault',difficulty='norm
  const points=pattern?.points??approach(stage,level).map(([x,z])=>({x:x*mirror,z})),length=routeLength(points),rng=random(9127+stage*7919+level*104729);
  const corridors=points.slice(1).map((p,i)=>({a:points[i],b:p,width:kind==='escort'?6.4:4.2})),heading=Math.atan2(points[1].x-points[0].x,points[1].z-points[0].z);
  const spawn=kind==='defense'?{x:4,z:-13}:{x:points[0].x-Math.cos(heading)*4,z:points[0].z+Math.sin(heading)*4};
- const count=mode(difficulty).supplies,pool:SupplyKind[]=count===2?['repair',(['laser','arc','shield','health'] as SupplyKind[])[stage%4]]:['repair'];
+ const count=mode(difficulty).supplies,pool:SupplyKind[]=count===2?['repair',(['laser',stage>ARC_UNLOCK_MISSION?'arc':'laser','shield','health'] as SupplyKind[])[stage%4]]:['repair'];   // no arc caches before Glass Road is behind the pilot
  // Keep recovery early; shuffle the other kinds within deterministic route slots.
  for(let i=pool.length-1;i>1;i--){const j=1+Math.floor(rng()*i);[pool[i],pool[j]]=[pool[j],pool[i]];}
  const supplies:SupplyPosition[]=[],access:Box[]=[],weaponCount=pool.filter(isWeaponSupply).length;let weaponSlot=0;

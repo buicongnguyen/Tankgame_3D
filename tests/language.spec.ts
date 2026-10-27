@@ -118,7 +118,7 @@ for(const viewport of [{width:320,height:568},{width:390,height:844},{width:844,
  await page.locator('[data-action=shop]').click();await noOverflow();await page.screenshot({path:`test-results/language-shop-${viewport.width}.png`});
  await page.locator('[data-action=shop-back]').click();await page.locator('[data-action=training]').first().click();await page.evaluate(()=>(window as any).__steel.updateHud());
  await expect(page.locator('#lesson-hint')).toHaveText('➜ Kéo cần trái để di chuyển theo mũi tên.');await noOverflow();await page.screenshot({path:`test-results/language-training-${viewport.width}.png`});
- await page.locator('#pause').click();await expect(page.locator('#pause-language [data-language="vi"]')).toHaveAttribute('aria-pressed','true');await page.locator('#pause-language [data-language="en"]').click();await page.locator('[data-action=resume]').click();await expect(page.locator('body')).toHaveAttribute('data-phase','playing');expect(errors).toEqual([]);await context.close();
+ await page.locator('#pause').click();await noOverflow();await expect(page.locator('#pause-language [data-language="vi"]')).toHaveAttribute('aria-pressed','true');await page.locator('#pause-language [data-language="en"]').click();await page.locator('[data-action=resume]').click();await expect(page.locator('body')).toHaveAttribute('data-phase','playing');expect(errors).toEqual([]);await context.close();
 });
 
 test('unknown copy stays literal and changing language restores text without changing markup',async({page})=>{

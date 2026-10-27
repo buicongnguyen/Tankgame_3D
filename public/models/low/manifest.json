@@ -163,9 +163,9 @@
   },
   {
     "asset": "rifleman",
-    "detailedTriangles": 748,
-    "lowTriangles": 221,
-    "bytes": 30964
+    "detailedTriangles": 1324,
+    "lowTriangles": 504,
+    "bytes": 33784
   },
   {
     "asset": "rocket",
@@ -175,9 +175,9 @@
   },
   {
     "asset": "rocketeer",
-    "detailedTriangles": 732,
-    "lowTriangles": 216,
-    "bytes": 30704
+    "detailedTriangles": 1514,
+    "lowTriangles": 618,
+    "bytes": 40984
   },
   {
     "asset": "scout-jeep",

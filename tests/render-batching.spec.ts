@@ -14,7 +14,7 @@ test('scenery batching preserves cover transforms, independent destruction and s
  }
  const manager=new SceneryBatches(scene);manager.rebuild(arena);
  const batch=scene.children.find(o=>o.name==='ScenerySurfaceBatch') as T.InstancedMesh;
- expect(batch.count).toBe(2);expect(batch.geometry).toBe(geometry);expect(batch.material).toBe(material);
+ expect(batch.count).toBe(2);expect(batch.geometry).toBe(geometry);expect((batch.material as T.Material).userData.instancedFrom).toBe(material.uuid);expect((batch.material as T.MeshStandardMaterial).color).toEqual(material.color);
  expect(batch.castShadow&&batch.receiveShadow).toBe(true);
  const m=new T.Matrix4();batch.getMatrixAt(1,m);
  expect(m.elements.every((v,i)=>Math.abs(v-roots[1].children[0].matrixWorld.elements[i])<1e-5)).toBe(true);
@@ -73,10 +73,9 @@ test('all backgrounds rebuild with bounded resources and dense scenes stay withi
    await w.load(low);w.settings(low);
    for(const mission of [12,13]){g.start(mission,2);render();highCalls.push({low,mission,calls:w.renderer.info.render.calls});await new Promise<void>(resolve=>requestAnimationFrame(()=>resolve()));}
   }
-  const managers=w.sceneryBatches.batches;
-  const cover=w.covers.find((c:any)=>Number.isFinite(c.hp)&&c.hp>0&&managers.some((b:any)=>b.sources.some((s:any)=>c.mesh.getObjectById(s.mesh.id))));
-  const count=()=>managers.reduce((sum:number,b:any)=>sum+b.mesh.count,0);
-  const before=count();g.hitCover(cover,99999);render();const removed=count()<before&&!cover.mesh.visible;
+  const cover=w.covers.find((c:any)=>Number.isFinite(c.hp)&&c.hp>0&&c.scenery);
+  if(!cover)throw new Error('Expected destructible instanced cover');
+  g.hitCover(cover,99999);render();const removed=!cover.mesh.visible&&cover.scenery.parts.every((part:any)=>[0,5,10].every(k=>part.instanceMatrix.array[cover.scenery.index*16+k]===0));
   return {lowMemory,highCalls,removed,lost:w.renderer.getContext().isContextLost()};
  });
  console.log('RENDER_BATCH_REGRESSION',JSON.stringify(result));

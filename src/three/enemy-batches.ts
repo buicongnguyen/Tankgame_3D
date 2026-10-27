@@ -1,5 +1,6 @@
 import * as T from 'three';
 import {writeMatrix,writeColor,uploadRange} from './buffer-updates';
+import {instancedMaterial} from './instancing';
 
 interface Source {root:T.Group;parts:T.Mesh[];}
 interface Batch {mesh:T.InstancedMesh;capacity:number;}
@@ -33,7 +34,7 @@ export class EnemyBatches {
    let batch=this.batches.get(key);
    if(!batch||batch.capacity<parts.length){if(batch){batch.mesh.removeFromParent();batch.mesh.dispose();}const capacity=2**Math.ceil(Math.log2(Math.max(16,parts.length))),first=parts[0];
     const health=!!first.userData.batchHealthBar;
-    const mesh=new T.InstancedMesh(health?this.barGeometry:first.geometry,health?this.barMaterial:first.material,capacity);mesh.renderOrder=first.renderOrder;mesh.userData.healthBarBatch=health;mesh.name='EnemySurfaceBatch';mesh.castShadow=first.castShadow;mesh.receiveShadow=first.receiveShadow;mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);if(health)mesh.instanceColor=new T.InstancedBufferAttribute(new Float32Array(capacity*3).fill(1),3).setUsage(T.DynamicDrawUsage);this.scene.add(mesh);batch={mesh,capacity};this.batches.set(key,batch);
+    const mesh=new T.InstancedMesh(health?this.barGeometry:first.geometry,health?this.barMaterial:instancedMaterial(first.material as T.Material,false),capacity);mesh.renderOrder=first.renderOrder;mesh.userData.healthBarBatch=health;mesh.name='EnemySurfaceBatch';mesh.castShadow=first.castShadow;mesh.receiveShadow=first.receiveShadow;mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);if(health)mesh.instanceColor=new T.InstancedBufferAttribute(new Float32Array(capacity*3).fill(1),3).setUsage(T.DynamicDrawUsage);this.scene.add(mesh);batch={mesh,capacity};this.batches.set(key,batch);
    }
    const mesh=batch.mesh,countChanged=mesh.count!==parts.length;mesh.count=parts.length;
    let matrixFirst=parts.length,matrixEnd=0,colorFirst=parts.length,colorEnd=0;

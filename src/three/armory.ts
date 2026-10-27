@@ -13,6 +13,14 @@ export const WEAPONS:WeaponDefinition[]=[
  {name:'Triple arc launcher',label:'TRIPLE ARC',description:'Three rockets together, over cover. Only 3 volleys per mission.',price:720,damage:180,speed:0,reload:3.2,splash:5.5,ammoSlot:2,capacity:3,rocket:true,arc:true},
  {name:'Flamethrower',label:'FLAMETHROWER',description:'12 m / 60° cone. Heavy close-range fire + 2s burn. Cover blocks flames. 80 bursts per mission; Quartermaster: 200.',price:800,damage:19.2,speed:0,reload:.12,splash:0,flame:true,ammoSlot:3,capacity:80},
 ];
+/** The order weapons are offered in, numbered 1-9 for the keys, the HUD picker and the shop. Arc rockets are the
+ *  hardest to aim, so they come last; ids stay as they are, so saves keep working. */
+export const WEAPON_ORDER=[0,1,2,3,5,6,7,8,4];
+export const weaponNumber=(id:number)=>WEAPON_ORDER.indexOf(id)+1;
+/** Arc rockets are for pilots who have cleared Glass Road (mission 5): before that the shop keeps them locked and
+ *  the maps and salvage hand out none. */
+export const ARC_UNLOCK_MISSION=4;
+export const arcUnlocked=(cleared:readonly boolean[])=>!!cleared[ARC_UNLOCK_MISSION];
 const level=(n:number|undefined)=>clamp(n??0,0,UPGRADE_CAP);
 export const weaponLevel=(save:Save,id:number)=>level(save.weaponLevels?.[id]);
 export const weaponUpgradeCost=(n:number)=>60+n*25;

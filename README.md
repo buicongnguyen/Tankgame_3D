@@ -79,6 +79,76 @@ Tap **Graphics** on the command screen or in **Pause** to choose **Detailed** or
 
 Only the selected model tier downloads on startup. Low detail contains 33 models totaling 1.76 MB; the tank uses 1,692 triangles instead of 5,712. Switch back to Detailed whenever desired. Actual frame rate depends on the phone.
 
+**Phones and tablets adapt during battle** (`src/three/performance.ts`); desktop keeps a fixed resolution:
+- **Resolution follows the frame rate.** Detailed starts at 1.6x and steps down to 1x when frames run late. A step that does not make frames at least 10% faster is undone, and that battle stops trading resolution; this happens, for example, when the browser caps frames at 30 Hz to save power. Low detail starts at its small buffer (0.8x, at most 960 px on the long side) and sharpens toward 1.2x only while the device keeps up, never back to a rate that ran late. Menus and the next battle use each tier's own ratio.
+- **A one-time hint.** When Detailed stays under 25 FPS for six seconds after lowering its resolution, the game offers Low detail. **LOW DETAIL** pauses and switches in place, and **KEEP** dismisses the offer for the session. The hint closes when the battle ends.
+- **Contact shadows.** Low detail has no shadow maps, so soft drop shadows (one instanced draw) keep tanks, soldiers and the transport grounded.
+- **Lighter battle logic.** Pathfinding finds the nearest open cell ring by ring and tests the best route candidates first, and movement checks only the cover near each unit. A Large three-team skirmish went from about 2.3 ms to 0.4 ms of game logic per step on a desktop CPU; the chosen routes are identical.
+- **Shadows after resolution.** When Detailed still runs late at its lowest resolution, the shadow map drops from 2048 to 1024 texels for the rest of that battle. The next battle starts sharp again.
+- **`?perf`** adds a live readout: frame rate, logic and render time, draw calls, triangles and the current pixel ratio.
+
+**Fewer draw calls everywhere** (`src/three/route-scenery.ts`, `src/three/instancing.ts`):
+- **Covers draw instanced.** Houses, city blocks, crates, barrels, fuel crates, walls and trees placed as whole models now draw as one instanced mesh per model surface, per quadrant on Large maps. They keep their damage tint, destruction, town flags and hit effects. Street and terrain decals merge per colour.
+- **No shader switching.** An instanced mesh draws with its own copy of its material. A material shared by plain and instanced meshes made three.js re-derive the shader program on every draw, about 6% of a phone frame on the city map.
+- **Batched explosions.** All combat particles (flashes, smoke, sparks, rings and scorch marks) draw as one instanced mesh per kind, so a fight costs at most five particle draws however much explodes. Before, each puff was its own transparent double-sided mesh, drawn twice and rebuilt twice per frame. Ground rings now draw in one pass too (`src/three/effects.ts`).
+- **Frozen scenery.** Everything placed with a stage, except pickups, skips its per-frame matrix update. Patrol checks read covers from the cover grid.
+
+Measured on a phone profile (390 × 844, CPU slowed 4×, raw WebGL draws including the shadow pass). Frame CPU is the median of four alternating runs per build:
+
+| Scene | Draws before → after | Frame CPU before → after |
+|---|---:|---:|
+| City (Citadel Dawn, level 3) | 281 → 166 | 21.5 → 13.3 ms |
+| City under constant heavy explosions | 361 (peak 443) → 205 (peak 245) | 63 → 20.8 ms |
+| Village (Open Frequency) | 210 → 190 | 27.9 → 18.5 ms |
+| Snow (Frozen Pass) | 186 → 127 | — |
+| Large city skirmish | 328 → 241 | — |
+
+Triangle counts rose, for example 339k to 460k on the city. Each batch now draws its off-screen copies too, which costs vertex work but no pixels. Phones were CPU-bound on draw calls, so that trade pays.
+
+## Menus on phones
+
+The command screen, shop, settings, pause and results panels share one design layer, `src/three/ui-polish.css`, loaded after the other stylesheets. It restyles the existing markup, so the English text that translations match stays the same.
+- **Touch and type:** on touch screens every control is at least 44 px and settings rows are 48 px. No menu text is smaller than 11 px.
+- **Command screen:** Leaderboard, Fullscreen, Shop and Settings are equal tiles: a 2 × 2 grid on portrait phones and one row on landscape phones. Settings opens as a sheet with one row per option and its current value on the right. **Reset this profile** sits apart, in red. The pause screen uses the same rows.
+- **Shop:** each tab has a rendered icon, and prices show a gold credit coin. Owned gear has a mint edge, a level bar and a teal upgrade button. Locked weapons have a dashed border and a gold buy button. Prices you cannot afford turn grey.
+- **Taps:** a tap that closes a panel, such as **Deploy** or **Resume**, no longer triggers the HUD button underneath it. On phones, focus rings appear only after a key is pressed.
+
+The eight icons are Blender renders from `tools/blender/build_ui_icons.py`: credit coin, coin stack, trophy, gear, shells, tank, supply crate and spray can. The tank icon reuses `tank.glb` in the Cobalt Kestrel paint from `skin-palettes.ts`, and the crate icon reuses `crate.glb`. The icons are 160 px transparent WebP files in `src/three/ui-icons/`, 47 KB in total, and `npm run test:assets` checks their size and format.
+
+```powershell
+& 'C:\Users\n\source\repos\3d_astra\.tools\blender-4.5.3-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_ui_icons.py
+```
+
+## Soldiers and towns
+
+- **Soldiers move like individuals.** Each soldier's stride advances with the distance it walks, starting from a phase set by where it spawned, so no two march in step and their feet keep pace with the ground. Soldiers bob as they walk and lean into turns. While calm they breathe and look around, their rifles kick when they fire, and a hit staggers them. All of this is visual only: a shot always leaves from the aimed muzzle (`src/three/soldier-life.ts`).
+- **Smooth movement.** The game simulates at a fixed 60 Hz. Tanks, soldiers, the transport and shells are now drawn between their last two steps, so they glide at any frame rate. Jumps such as respawns and airlift drops are drawn where they land (`src/three/smoothing.ts`).
+- **Phones use the light soldier.** A soldier is about 20 px tall on any screen, where the 504-triangle body looks the same as the 1,324-triangle one. Touch devices therefore use the light body in Detailed too, which saves about 81k triangles on the busiest map.
+- **Town life.** Village houses and city blocks get rooftop flags streaming downwind, smoke from house chimneys and gulls circling over town. Each kind is one draw call with no shadow, costing about 0.03 ms per frame on a 4× slowed phone CPU. Flags and smoke disappear with their building, and placement is seeded per stage. Phones and Low detail get fewer, and reduced motion keeps only still flags (`src/three/town-life.ts`).
+
+## Rooftop lookouts
+
+On Normal and harder, riflemen from a stage's own roster take up posts on the roofs of houses and city blocks beside the road, or overlooking the objective on capture and defence maps. Normal has up to 2, Hard 3 and Crazy 4, so enemy counts stay as designed. Easy, training and skirmish have none (`src/three/lookouts.ts`).
+- A lookout holds its roof. It wakes with its encounter group and fires from the rooftop, and its own building never blocks its view or its shots.
+- Shots travel along the ground, so direct fire at a lookout hits the building. Bring it down with splash damage, such as rockets, artillery or a strike, or knock the building down, which drops the lookout with it.
+- Lookouts never stand over the deployment area or the convoy's starting ground.
+
+## Living battlefields
+
+Every map has small life that suits it (`src/three/biome-life.ts`):
+
+| Map | Life |
+|---|---|
+| Grove, village, ridge, jungle (and the Easy intro arena) | Butterflies flutter beside the road and scatter when your tank comes close |
+| River, marsh | Dragonflies hover over the water and mud pools, then dart to a new spot |
+| Volcanic, wastes | Glowing embers drift up around you and spit from the volcano's crater |
+| Industrial, city | Steam rises from vents and from manholes beside the city crossings |
+| Quake | Dust puffs out of the ground cracks |
+| Desert | Tumbleweeds roll downwind, bounce off cover and fade in and out at the map edge |
+| Snow, glacier | Diamond-dust glints twinkle on the snow |
+
+Each map's life is one instanced draw with no shadow. Butterflies, dragonflies and tumbleweeds steer on the CPU, a few dozen numbers per frame. Embers, steam, dust and glints move entirely on the GPU. It is decoration only: it does not collide, block sight or use the game's random numbers. Placement is seeded per stage, and flyers keep clear of trees and buildings so they never hide under a canopy. Phones and Low detail get fewer, and reduced motion shows none.
+
 ## Rebuild the Blender assets
 
 Editable sources include `assets/blender/steel-front.blend` and `assets/blender/frontier-environments.blend`. Generators include `tools/blender/build_assets.py`, `tools/blender/build_frontier.py` and `tools/blender/build_extreme_bosses.py`. The last generator writes four separate editable scenes for the helicopter, spider, laser tank and white pine. Runtime exports: `public/models/*.glb`. After the base and extreme boss generators, run `tools/blender/build_reinforcement_bosses.py` to create the two humanoids and missile truck and add light guns to all six older boss scenes. It saves editable meshes before merging runtime surfaces. Run `tools/blender/build_scout_jeep.py` for the crewed light jeep, then run `tools/blender/build_low_detail.py` with Blender to rebuild `public/models/low/*.glb`.
@@ -97,6 +167,7 @@ The most frequently seen static props are rebuilt by `tools/blender/build_aaa_pr
 - fuel drum: a 200 L drum with rolling hoops, chimes, bungs and hazard labels;
 - volcanic rock: a fractured basalt bomb with glowing fissures, now used only for falling volcanic rocks;
 - concrete landmark (`concrete-block`): a 3 × 2 cluster of square precast blocks with lifting loops. It replaced the retired hill model.
+- soldiers (`rifleman`, `rocketeer`): rebuilt from stacked boxes into proper bodies by `tools/blender/build_infantry.py`: a tapered torso with shoulders and neck, a rounded head under a helmet with brim and neck flap, goggles, vest, belt and pouches, gloved two-handed weapon holds, a backpack (with spare rockets on the rocketeer), and legs with thigh, shin, knee pad and boot. The rig is unchanged (`Hull`, `LeftLeg`/`RightLeg` hip pivots, `Turret`, `Muzzle` at the same offsets), so walking, aiming and firing behave as before. Both tiers are authored: 1,324 / 504 triangles for the rifleman and 1,514 / 618 for the rocketeer (previously 748 / 221 and 732 / 216), still three merged meshes each. Occlusion is baked into the vertex colours and the crew shader now multiplies it into each surface colour. The uniform matches the enemy tank paint. Sources: `assets/blender/infantry.blend`.
 - enemy airlift (`airlift`): a tandem-rotor transport helicopter for Large skirmish fields, with two counter-rotating three-blade rotors, a hinged rear loading ramp, engine nacelles, glazing and a nose door gun. Its armor, trim and signal lights take each team's paint. The rotor and ramp pivots sit under `Hull`, so they turn with the airframe (1,428 / 772 triangles).
 
 The props also carry face-weighted normals and a vertex-colour paint pass. Cycles-baked ambient occlusion is multiplied into procedural weathering such as moss, grime, rain streaks, scuffed hoops and ash. There are no new textures apart from a 64 px tileable basalt normal map.
@@ -107,6 +178,17 @@ Run the generator after the base, environment and frontier generators. It author
 & $blender --background --factory-startup --python tools/blender/build_aaa_props.py
 npm run test:assets
 ```
+
+### Reused Hoshi Valley scenery
+
+Temperate maps (Grove, Village, River, Ridge, Industrial, Wastes, City and Quake) reuse trees and ground cover from the owner's KITEFALL / Hoshi Valley art (`../3D_game_fighting`), chosen for their cost:
+- **Trees:** broadleaf, maple and cedar models render a share of the tree cover (40–70% depending on the biome, fixed per position). Gameplay is unchanged: every one is still a destructible `pine` cover with the same footprint and health. The detailed tier is the KITEFALL tree simplified to about 1,700 triangles, close to the pine's 1,378. The mobile tier is KITEFALL's hand-made 344-triangle LOD, cheaper than the pine's 570. Canopies are scaled to the pine's footprint so they never hide tanks from the high camera.
+- **Ground cover:** grass tufts, small bushes and riverbank or marsh reeds are instanced, walk-through decoration. They never cast shadows, never sit on roads, in water or inside cover, and are not placed on snow, glacier, desert or volcanic maps.
+- **Cost:** 84 KB of meshopt-compressed models (44 KB mobile), under their own 100 KB budget in `tools/check-assets.mjs`. Measured at each stage's start, desktop gains 0–12 draw calls and phones 0–8. Phones stay under 115k triangles on the densest map.
+
+The list of reused models and their simplify settings is `src/three/reused-models.json`; the import tool, asset checks, mobile-tier script and loader all read it. The reused models are optional decoration: if a browser cannot decode meshopt (no WebAssembly), they are skipped and every tree stays a pine. Ground cover also avoids decal ground that has no collision: bog holes, the ridge mud pit, city asphalt and reserved pads.
+
+The heavier KITEFALL buildings (16–25k triangles), soldiers (about 24k) and towers were left out: Steel Front instances dozens of units and props, so they would cost far more than they add. `node tools/import-kitefall-assets.mjs` regenerates the imports from a KITEFALL checkout (`KITEFALL_DIR`, default `../3D_game_fighting`); the exports are committed, so ordinary builds do not need it. The loader decodes meshopt and converts the packed vertex attributes to floats before merging, so the quantized positions keep their real size.
 
 ### Concrete landmarks
 
@@ -138,7 +220,7 @@ Player movement uses a flat gameplay plane with ice momentum and visual mud sink
 
 ## Asset attribution
 
-Game models and narrative are authored for this project. Barlow and Barlow Condensed are bundled under the SIL Open Font License; licenses are in `public/fonts/`. Three.js, Phaser and other dependencies retain their own package licenses.
+Game models and narrative are authored for this project. The reused trees, bushes, grass and reeds come from the owner's KITEFALL / Hoshi Valley (3D_game_scene) Blender art; each export records its source in `asset.extras.source`. Barlow and Barlow Condensed are bundled under the SIL Open Font License; licenses are in `public/fonts/`. Three.js, Phaser and other dependencies retain their own package licenses.
 
 ## Battlefield update
 
@@ -205,6 +287,15 @@ The generator writes five editable `assets/blender/skin-*.blend` files, transpar
 ## Purchased weapon selection
 
 The combat weapon panel always shows **Switch Gun**. Click or tap it to select a weapon, press **C** to open the same selector on PC, or use **1–9** directly. Buying a weapon sets it as the next mission's starting gun. Selecting an owned gun in combat remembers that choice for reloads, retries and later missions; temporary map pickups do not become permanent purchases. Owned lasers receive 12 shots and arc rockets 6 rounds each mission. An empty special weapon is labeled **Empty · next mission**, and its last shot selects the next usable advanced slot to its right, then the nearest usable lower slot. Collect a cache or start the next mission to replenish it.
+
+## Arc rockets come late
+
+Arc rockets fly over cover and are the hardest weapon to aim, so they are weapon **9**, the last key and the last card in the shop. The other weapons keep their order: 1 cannon, 2 autocannon, 3 siege rockets, 4 laser, 5 machine gun, 6 micro missiles, 7 triple arc, 8 flamethrower. Beginners don't get them:
+- **Shop:** Arc rockets unlock after you clear **Glass Road** (mission 5). Until then the card reads *Clear Glass Road to unlock*.
+- **Maps and salvage:** the first five missions place laser caches where arc caches used to be, and wreck salvage drops laser cells instead of arc rockets until Glass Road is cleared.
+- **Easy's free starter cache:** 4 laser shots plus a shield cache. It holds 2 arc rockets once Glass Road is cleared.
+
+Pilots who already own arc rockets keep them (`src/three/armory.ts`: `WEAPON_ORDER`, `arcUnlocked`).
 
 ## Arc rocket range assistance
 

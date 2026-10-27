@@ -32,7 +32,7 @@ test('every shaped Crazy level keeps all enemies and supply connections clear',a
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
  const issues=await page.evaluate(async()=>{const g=(window as any).__steel;g.frame=()=>{};g.save.difficulty='crazy';const {circleBox,segmentBox}=await import('/src/three/rules.ts');const {projectRoute,alongRoute}=await import('/src/three/stage-layout.ts');const {routePattern}=await import('/src/three/route-patterns.ts');const issues:any[]=[];
   for(let stage=0;stage<16;stage++)for(let level=0;level<3;level++){if(!routePattern(stage,level))continue;g.start(stage,level);const covers=g.world.covers.filter((c:any)=>c.hp>0);
-   for(const u of [g.player,...g.enemies])if(covers.some((c:any)=>circleBox(u.visual.root.position,g.unitRadius(u),c)))issues.push({stage,level,unit:u.role});
+   for(const u of [g.player,...g.enemies])if(!u.perch&&covers.some((c:any)=>circleBox(u.visual.root.position,g.unitRadius(u),c)))issues.push({stage,level,unit:u.role});
    for(const a of g.world.activities.filter((a:any)=>a.kind!=='mine')){const anchor=alongRoute(g.world.layout.points,projectRoute(g.world.layout.points,a).progress);if(covers.some((c:any)=>segmentBox(anchor,a,c,1.4)!==null))issues.push({stage,level,access:a.kind});}
    for(const c of covers.filter((c:any)=>c.kind==='concrete-block'))if(c.hp!==1000||!c.scenery)issues.push({stage,level,landmark:c.hp});
   }return issues;

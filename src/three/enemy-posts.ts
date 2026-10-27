@@ -3,6 +3,7 @@ import type {World,Cover} from './world';
 import type {Point} from './rules';
 import {distance} from './rules';
 import {projectRoute,routeSample,overlapsReservation} from './stage-layout';
+import {treeLook} from './scenery-variety';
 
 const TREES=new Set(['pine','white-pine','palm','jungle-tree']);
 const BUILDINGS=new Set(['house','cityblock']);
@@ -37,7 +38,8 @@ export function buildGuardLandmarks(world:World,kind:string){
   placement:for(const name of kinds)for(const offset of [14,18,22])for(const along of [0,-8,8,-14,14])for(const side of [-1,1]){
    const box={x:anchor.x+sample.dz*offset*side+sample.dx*along,z:anchor.z-sample.dx*offset*side+sample.dz*along,w:name==='house'?6:name==='barrel'?1:2.6,d:name==='house'?5:name==='barrel'?1:2.6};
    if(Math.abs(box.x)+box.w/2>68||Math.abs(box.z)+box.d/2>56||overlapsReservation(world.layout,box,.6)||world.covers.some(c=>c.hp>0&&Math.abs(c.x-box.x)<(c.w+box.w)/2+2&&Math.abs(c.z-box.z)<(c.d+box.d)/2+2)||name==='barrel'&&world.layout.supplies.some(s=>distance(box,s)<9))continue;
-   const mesh=world.clone(name);mesh.position.set(box.x,0,box.z);world.arena.add(mesh);world.covers.push({...box,kind:name,hp:name==='house'?220:name==='barrel'?25:70,mesh});break placement;
+   const look=name==='pine'?treeLook(world,biome,box.x,box.z):null,mesh=world.clone(look?.model??name);if(look)mesh.scale.setScalar(look.scale);
+   mesh.position.set(box.x,0,box.z);world.arena.add(mesh);world.covers.push({...box,kind:name,hp:name==='house'?220:name==='barrel'?25:70,mesh,model:look?.model});break placement;
   }
  }
 }

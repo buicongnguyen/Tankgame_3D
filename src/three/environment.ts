@@ -1,3 +1,4 @@
+import {treeLook} from './scenery-variety';
 import {overlapsReservation} from './stage-layout';
 import * as T from 'three';
 import type {World,Cover} from './world';
@@ -18,7 +19,9 @@ export class Environment{
   if(FRONTIER_BIOMES.includes(this.biome)){this.weather=buildFrontier(world,this.biome);return;}
   const add=(name:Cover['kind'],x:number,z:number,w:number,d:number,hp:number)=>{
    if(overlapsReservation(world.layout,{x,z,w,d}))return null;
-   if(snow&&name==='pine')name='white-pine';const mesh=world.clone(name);mesh.position.set(x,0,z);world.arena.add(mesh);world.covers.push({kind:name,x,z,w,d,hp,mesh});return mesh;
+   if(snow&&name==='pine')name='white-pine';
+   const look=name==='pine'?treeLook(world,this.biome,x,z):null,mesh=world.clone(look?.model??name);if(look){mesh.scale.setScalar(look.scale);mesh.rotation.y=x*1.7+z*.9;}
+   mesh.position.set(x,0,z);world.arena.add(mesh);world.covers.push({kind:name,x,z,w,d,hp,mesh,model:look?.model});return mesh;
   };
   // Marked passages, spawn footprints, the relay and service pads remain reachable.
   for(const [x,z] of [[-14,41],[15,43],[-36,-37],[39,-24]])add('house',x,z,6,5,220);

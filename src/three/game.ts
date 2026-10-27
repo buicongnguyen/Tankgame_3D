@@ -20,10 +20,13 @@ import {Flamethrower,FLAME} from './flamethrower';
 import {enemyHealth} from './unit-health';
 import {GuidedBarrage} from './barrage';
 import {ESCORT,escortStartClear,escortEncounterMeters} from './escort';
-import {WEAPONS,weaponLevel,weaponDamage,barrels,powerMultiplier,reloadSeconds,engineMultiplier,shieldDuration,shieldCooldown as upgradedShieldCooldown} from './armory';
+import {WEAPONS,weaponLevel,weaponDamage,barrels,powerMultiplier,reloadSeconds,engineMultiplier,shieldDuration,shieldCooldown as upgradedShieldCooldown,WEAPON_ORDER,weaponNumber,arcUnlocked} from './armory';
 import {workshop} from './workshop';
 import {UPGRADES} from './rules';
 import {AirSupport} from './air-support';
+import {FrameBudget} from './performance';
+import {animateRig,restPose,noteShot,noteHit} from './soldier-life';
+import {RenderSmoother} from './smoothing';
 import {MINE_TRIGGER_RADIUS,AIM_WARNING_SECONDS} from './combat-ranges';
 import {assignPatrol,updatePatrol} from './patrols';
 import type {PatrolOrder} from './patrols';
@@ -53,9 +56,11 @@ import { MISSIONS, LEVEL_NAMES, levelMission, unlockedLevel, encounterSize, fres
 import type { Save } from './campaign';
 import { armorMultiplier, clamp, circleBox, distance, purchase, segmentBox, segmentCircle, turnToward } from './rules';
 import type { Point, Upgrade } from './rules';
+import { reducedMotion } from './media';
+import { dropLookouts, placeLookouts, type Perch } from './lookouts';
 type Phase='menu'|'finishing'|'playing'|'paused'|'depot'|'failed'|'victory';
-export interface Unit { team?:'ally';squad?:number;pending?:boolean;aboard?:Unit; patrol?:PatrolOrder; burstLeft?:number; lastSeen?:Point; searchUntil?:number; encounter?:EncounterOrder; bossKind?:BossKind; mudTime?:number; velocity:Point; visual:TankVisual; hp:number; max:number; heading:number; aim:number; cooldown:number; role:'player'|'raider'|'sentry'|'heavy'|'boss'|'rifleman'|'rocketeer'|'jeep'|'airlift'; dead:boolean; }
-interface Shot { homing?:Unit;alliedSafe?:boolean; height?:{start:number;range:number;traveled:number}; mesh:T.Mesh; p:Point; from:Point; dx:number; dz:number; speed:number; damage:number; life:number; friendly:boolean; splash:number; }
+export interface Unit { /** Posted on a rooftop (lookouts.ts). */ perch?:Perch; team?:'ally';squad?:number;pending?:boolean;aboard?:Unit; patrol?:PatrolOrder; burstLeft?:number; lastSeen?:Point; searchUntil?:number; encounter?:EncounterOrder; bossKind?:BossKind; mudTime?:number; velocity:Point; visual:TankVisual; hp:number; max:number; heading:number; aim:number; cooldown:number; role:'player'|'raider'|'sentry'|'heavy'|'boss'|'rifleman'|'rocketeer'|'jeep'|'airlift'; dead:boolean; }
+interface Shot { /** The shooter's own rooftop: never blocks its shot. */ ignore?:Cover; homing?:Unit;alliedSafe?:boolean; height?:{start:number;range:number;traveled:number}; mesh:T.Mesh; p:Point; from:Point; dx:number; dz:number; speed:number; damage:number; life:number; friendly:boolean; splash:number; }
 export class Game {
   training:TrainingSession|null=null;campaignSave:Save|null=null;waves=new DefenseWaves();allies=new Allies();
   /** Skirmish series state; the setup draft persists separately from the campaign save. */
@@ -70,6 +75,9 @@ export class Game {
   flame=new Flamethrower();special=new SpecialWeapons();specialAmmo=[0,0,0,0];infantryKills=0;
   weaponPickerOpen=false;auto=new AutoMissiles();airSupport=new AirSupport();
   qualityChanging=false;qualityError=false;graphicsLost=false;renderPacer=new RenderPacer();
+  /** Phone frame budget: adaptive render resolution, the ?perf readout and Low detail contact shadows. */
+  budget=new FrameBudget();
+  smoother=new RenderSmoother();
   navigation=new GroundNavigation();convoyDistance=0;convoyReverse:boolean|null=null;
   weapon=0; reload=0; shieldTime=0; shieldCooldown=0; relayHealth=300; convoyHealth=ESCORT.health; convoy:T.Group|null=null;convoyBlocked=false;
   overlay:HTMLElement; hud:HTMLElement; radio:HTMLElement; mini:HTMLCanvasElement;
@@ -114,15 +122,22 @@ export class Game {
     this.world.renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();this.graphicsLost=true;if(this.phase==='playing')this.pause();this.input.reset();this.input.active=false;this.save.low=true;this.save.graphicsChosen=true;this.persist();this.overlay.hidden=false;setHtml(this.overlay,'<section class="panel"><h1>Graphics connection lost</h1><p>Your campaign checkpoint is saved. Reload with low detail to reduce graphics load.</p><button onclick="location.reload()">Reload in low detail</button></section>');});
   }
   private bindActions(root:HTMLElement,run:(button:HTMLButtonElement)=>void,selector='button'){
-    const presses=new Map<number,{button:HTMLButtonElement;x:number;y:number}>();let pendingTouchClick=false;
+    const presses=new Map<number,{button:HTMLButtonElement|null;x:number;y:number}>();let pendingTouchClick=false;
     const buttonAt=(target:EventTarget|null)=>target instanceof Element?target.closest<HTMLButtonElement>(selector):null;
-    root.addEventListener('pointerdown',e=>{pendingTouchClick=false;const button=buttonAt(e.target);if(e.pointerType==='touch'&&button&&!button.disabled){presses.set(e.pointerId,{button,x:e.clientX,y:e.clientY});button.setPointerCapture(e.pointerId);}});
-    root.addEventListener('pointercancel',e=>presses.delete(e.pointerId));
-    root.addEventListener('pointerup',e=>{
-      const press=presses.get(e.pointerId);presses.delete(e.pointerId);if(!press||press.button.disabled||!root.contains(press.button))return;
-      const r=press.button.getBoundingClientRect();if(Math.hypot(e.clientX-press.x,e.clientY-press.y)>12||e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)return;
-      pendingTouchClick=true;e.preventDefault();run(press.button);
-    });
+    root.addEventListener('pointerdown',e=>{pendingTouchClick=false;if(e.pointerType!=='touch')return;const button=buttonAt(e.target),live=button&&!button.disabled?button:null;presses.set(e.pointerId,{button:live,x:e.clientX,y:e.clientY});live?.setPointerCapture(e.pointerId);});
+    // Window level: a panel can close, or a mission end, under a finger that is still down; its lift must still be seen.
+    addEventListener('pointercancel',e=>presses.delete(e.pointerId),true);
+    addEventListener('pointerup',e=>{
+      const press=presses.get(e.pointerId);presses.delete(e.pointerId);if(!press)return;
+      const button=press.button,r=button?.getBoundingClientRect();
+      if(button&&r&&!button.disabled&&root.contains(button)&&Math.hypot(e.clientX-press.x,e.clientY-press.y)<=12&&e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){pendingTouchClick=true;e.preventDefault();run(button);}
+      // Whatever this touch did, its compatibility click must not fire a control outside this root: DEPLOY and
+      // RESUME hide the overlay, and a mission that ends under a held finger hides the HUD. The next touch disarms it.
+      const x=e.clientX,y=e.clientY,disarm=()=>{removeEventListener('click',stray,true);removeEventListener('pointerdown',disarm,true);},
+        stray=(click:MouseEvent)=>{if(click.detail===0||Math.hypot(click.clientX-x,click.clientY-y)>24)return;disarm();
+          if(!root.contains(click.target as Node)){pendingTouchClick=false;click.preventDefault();click.stopPropagation();}};
+      addEventListener('click',stray,true);addEventListener('pointerdown',disarm,true);setTimeout(disarm,700);
+    },true);
     // A handled touch can replace its button with a link before the browser sends its compatibility click.
     root.addEventListener('click',e=>{if(pendingTouchClick&&e.detail!==0){pendingTouchClick=false;e.preventDefault();e.stopPropagation();return;}const button=buttonAt(e.target);if(!button||button.disabled)return;run(button);});
   }
@@ -308,6 +323,8 @@ export class Game {
   }
   defenseSpawn(i:number,role:Unit['role'],kind?:BossKind){const corners=[[-66,-52],[66,52],[66,-52],[-66,52]];const [x,z]=corners[i%4];return this.makeUnit(x,z,role,kind);}
   prepare(index:number,level=unlockedLevel(this.save,index)){
+    // Every battle (also a retry or a restart from pause) starts at full resolution and shadow detail.
+    this.budget?.newBattle(this);
     this.level=clamp(level,0,2);this.mission=index;const m=this.missionData();this.allies.clear();this.waves.reset();this.clearLesson();
     this.finishDelay=0;this.finishDeadline=0;this.stageResult=null;
     this.airSupport.clear();this.hazards.reset(index);this.bosses.clear();this.airlifts.clear();this.flame.clear();this.special.clear();this.auto.clear();this.specialAmmo=ammoCaps(this.save.skin).map((cap,i)=>this.save.weapons.includes(WEAPONS.findIndex(w=>w.ammoSlot===i))?cap:0);this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.clearBarrage();this.mission=index;if(this.training)this.world.buildCompact(this.training.id);else if(this.skirmish){this.world.build(index,'assault',this.level,this.save.difficulty,this.skirmish.scale);this.world.ring.visible=false;}else if(index===0&&this.level===0&&this.save.difficulty==='easy')this.world.buildCompact(3);else this.world.build(index,m.kind,this.level,this.save.difficulty);this.encounters.reset();this.salvageDrops=0;this.shots=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;this.convoyDistance=0;this.convoyReverse=null;this.world.loopReverse=false;
@@ -334,7 +351,7 @@ export class Game {
     for(let i=0;i<encounter.riflemen;i++)deploy(i,encounter.riflemen,'rifleman');
     for(let i=0;i<encounter.rocketeers;i++)deploy(i,encounter.rocketeers,'rocketeer');
     for(let i=0;i<encounter.jeeps;i++)deploy(i,encounter.jeeps,'jeep');
-    this.escortDeploying=false;this.deploying=false;this.skirmish?.deploy(this);this.enemies.forEach((u,i)=>{if(!this.training&&!this.skirmish&&!u.pending)assignPatrol(this,u,i);});this.allies.setup(this);
+    this.escortDeploying=false;this.deploying=false;this.skirmish?.deploy(this);this.enemies.forEach((u,i)=>{if(!this.training&&!this.skirmish&&!u.pending)assignPatrol(this,u,i);});if(!this.training&&!this.skirmish)placeLookouts(this);this.allies.setup(this);
     this.world.shield.visible=false;this.world.cursor.visible=false;
     this.syncVisual(this.player);this.enemies.forEach(e=>this.syncVisual(e));this.updateHud();
   }
@@ -356,7 +373,7 @@ export class Game {
     if(action==='shield'&&this.shieldCooldown<=0){this.shieldTime=Math.max(this.shieldTime,shieldDuration(this.save));this.deployShieldUntil=0;this.shieldCooldown=upgradedShieldCooldown(this.save);this.radioMessage(`KESTREL / ${this.convoy?'Both vehicles shielded':'Protective field active'} · ${this.shieldTime.toFixed(1)}s of cover.`,3);this.tone(620,.2,.04);}
     if(action==='auto')this.auto.fire(this);
     if(action==='switch'){this.weaponPickerOpen=!this.weaponPickerOpen;}
-    if(/^[1-9]$/.test(action)){const w=Number(action)-1;if(this.weaponAvailable(w)){this.weapon=w;this.weaponPickerOpen=false;if(ownsWeapon(this.save,w)){this.save.equippedWeapon=w;this.persist();}}else if(w>=3)this.radioMessage(w===8?'ARMORY / Flamethrower fuel refills next mission. Buy in the shop.':w===7?'ARMORY / Triple arc: buy in the shop. Three volleys refill next mission.':ownsWeapon(this.save,w)?'ARMORY / Ammo empty. Collect a map cache or resupply next mission.':w>=5?'ARMORY / Buy this weapon in the shop.':'ARMORY / Buy in the shop or collect a map cache.',3);else this.radioMessage(`ARMORY / ${w===1?'Autocannon unlocks after First Light.':'Rockets unlock after Homeward.'}`,3);}
+    if(/^[1-9]$/.test(action)){const w=WEAPON_ORDER[Number(action)-1];if(this.weaponAvailable(w)){this.weapon=w;this.weaponPickerOpen=false;if(ownsWeapon(this.save,w)){this.save.equippedWeapon=w;this.persist();}}else if(w>=3)this.radioMessage(w===8?'ARMORY / Flamethrower fuel refills next mission. Buy in the shop.':w===7?'ARMORY / Triple arc: buy in the shop. Three volleys refill next mission.':ownsWeapon(this.save,w)?'ARMORY / Ammo empty. Collect a map cache or resupply next mission.':w>=5?'ARMORY / Buy this weapon in the shop.':'ARMORY / Buy in the shop or collect a map cache.',3);else this.radioMessage(`ARMORY / ${w===1?'Autocannon unlocks after First Light.':'Rockets unlock after Homeward.'}`,3);}
     this.training?.action(this,action);this.updateHud();
   }
   isInfantry(unit:Unit){return unit.role==='rifleman'||unit.role==='rocketeer';}
@@ -366,7 +383,7 @@ export class Game {
   weaponStats(){return WEAPONS[this.weapon];}
   reloadDuration(){return reloadSeconds(this.save,this.weapon);}
   moveUnit(unit:Unit,dx:number,dz:number,dt=1/60){
-    if(unit.dead||dt<=0)return;
+    if(unit.dead||dt<=0||unit.perch)return;   // a lookout holds its roof
     if(this.hazards.quaking&&!this.isInfantry(unit)){unit.velocity.x=unit.velocity.z=0;unit.visual.root.userData.walking=false;return;}
     const p=unit.visual.root.position,r=this.unitRadius(unit),previous=p.clone();
     const mud=this.world.terrainKind(p)==='mud';unit.mudTime=mud?(unit.mudTime??0)+dt:0;
@@ -402,21 +419,26 @@ export class Game {
     unit.visual.root.userData.walking=p.distanceToSquared(previous)>.000001;
   }
   syncVisual(unit:Unit){
-    if(this.isInfantry(unit)){const swing=unit.visual.root.userData.walking?Math.sin(this.elapsed*9)*.5:0;for(const [name,sign] of [['LeftLeg',1],['RightLeg',-1]] as const){const leg=unit.visual.root.getObjectByName(name);if(leg)leg.rotation.x=swing*sign;}}
-    if(unit.role==='jeep'&&unit.visual.root.userData.walking)for(const name of ['WheelFL','WheelFR','WheelRL','WheelRR']){const wheel=unit.visual.root.getObjectByName(name);if(wheel)wheel.rotation.x=-this.elapsed*7;}
     unit.visual.hull.rotation.y=unit.heading;unit.visual.turret.rotation.y=unit.aim;
+    // Strides, bob, lean, breathing, look-around, kick and stagger: visual only (soldier-life.ts).
+    animateRig(this,unit);
     unit.visual.bar.scale.x=Math.max(.001,unit.hp/unit.max);unit.visual.bar.visible=!unit.dead;
     unit.visual.root.visible=!unit.dead&&!unit.pending;unit.visual.bar.visible=!unit.dead&&!unit.pending;
   }
   private selectFallbackWeapon(){
     // Automatic fallback must not replace the preferred loadout for the next mission.
     // Prefer the next available advanced slot, then the nearest usable lower slot.
-    let next=this.weapon+1;while(next<WEAPONS.length&&!this.weaponAvailable(next))next++;
-    if(next===WEAPONS.length){next=this.weapon-1;while(next>0&&!this.weaponAvailable(next))next--;}
-    this.weapon=Math.max(0,next);
+    // In the offered order (WEAPON_ORDER), not by id. Arc rockets are never picked automatically: they are the
+    // hardest to aim, so they stay a deliberate choice (the cannon is always there as a last resort).
+    const usable=(n:number)=>WEAPON_ORDER[n]!==4&&this.weaponAvailable(WEAPON_ORDER[n]);
+    const slot=WEAPON_ORDER.indexOf(this.weapon);let next=slot+1;while(next<WEAPON_ORDER.length&&!usable(next))next++;
+    if(next===WEAPON_ORDER.length){next=slot-1;while(next>0&&!usable(next))next--;}
+    this.weapon=WEAPON_ORDER[Math.max(0,next)];
     this.radioMessage(`ARMORY / Ammo empty. ${WEAPONS[this.weapon].name} selected.`,3);
   }
   shoot(unit:Unit,friendly:boolean){
+    // The shot leaves from the aimed muzzle, whatever the idle or recoil pose was.
+    restPose(unit);noteShot(unit,this.elapsed);
     if(friendly&&this.training&&!this.training.canFire())return;
     const info=WEAPONS[this.weapon],ammo=info.ammoSlot;
     if(friendly&&ammo!==undefined){
@@ -434,7 +456,7 @@ export class Game {
       if(friendly&&[1,5].includes(this.weapon))mesh.scale.set(this.weapon===5?.32:.5,this.weapon===5?.32:.5,.6);
       if(unit.role==='rifleman'||unit.role==='jeep')mesh.scale.set(.35,.35,.5);if(rocket)mesh.scale.setScalar(friendly?(this.weapon===6?.65:1.2):.85);
       unit.visual.muzzle.getWorldPosition(mesh.position);mesh.position.x+=Math.cos(unit.aim)*offset;mesh.position.z-=Math.sin(unit.aim)*offset;this.world.entities.add(mesh);
-      this.shots.push({mesh,p:{x:p.x,z:p.z},from:{x:p.x,z:p.z},dx:direction.x,dz:direction.z,speed:stats.speed,damage:stats.damage*(friendly?this.playerDamageMultiplier():1),life:unit.role==='rifleman'||unit.role==='jeep'?.9:2.5,friendly,splash:stats.splash});
+      this.shots.push({mesh,p:{x:p.x,z:p.z},from:{x:p.x,z:p.z},dx:direction.x,dz:direction.z,speed:stats.speed,damage:stats.damage*(friendly?this.playerDamageMultiplier():1),life:unit.role==='rifleman'||unit.role==='jeep'?.9:2.5,friendly,splash:stats.splash,ignore:unit.perch?.cover,height:unit.perch?{start:mesh.position.y,range:18,traveled:0}:undefined});
       if(unit.role==='rifleman'||unit.role==='jeep'||friendly&&this.weapon===5)this.world.fx.emit(mesh.position.clone(),'flash',0xffd494,.3,.07);else this.world.fx.muzzle(mesh.position,heading,!!rocket);
     }
     if(friendly){this.shotsFired++;this.reload=this.reloadDuration();this.tone([1,5].includes(this.weapon)?110:65,.1,.05);}
@@ -471,7 +493,9 @@ export class Game {
     if(this.training)this.training.update(this);else if(this.skirmish)this.skirmish.update(this,dt);else {this.waves.update(this);this.encounters.update(this);}
     this.airlifts.update(this,dt);
     for(let i=0;i<this.enemies.length;i++){
-      const e=this.enemies[i];if(e.dead||e.pending||e.role==='airlift')continue;if(e.encounter&&!e.encounter.active){if(!this.training)updatePatrol(this,e,dt);continue;}if(e.role==='boss'){this.bosses.update(this,e,dt);continue;}
+      const e=this.enemies[i];if(e.dead||e.pending||e.role==='airlift')continue;if(e.encounter&&!e.encounter.active){if(!this.training)updatePatrol(this,e,dt);
+        // Guards waiting at their post still breathe and look around, but only near the player (on screen).
+        if(!e.patrol&&e.visual.root.position.distanceToSquared(this.player.visual.root.position)<3600)this.syncVisual(e);continue;}if(e.role==='boss'){this.bosses.update(this,e,dt);continue;}
       const p=e.visual.root.position;e.visual.root.userData.walking=false;
       const playerVisible=seesTarget(this,e,playerPos),convoyVisible=!!this.convoy&&seesTarget(this,e,this.convoy.position);
       let target:Point|undefined,objectiveTarget=false;
@@ -487,8 +511,8 @@ export class Game {
       const investigating=target===e.lastSeen,capturing=objectiveTarget&&m.kind==='capture';
       const dist=distance(p,target),desired=Math.atan2(target.x-p.x,target.z-p.z);
       e.aim=turnToward(e.aim,desired,dt*2*(this.skirmish?.pace??1));
-      const obstruction=this.world.covers.some(c=>c.hp>0&&segmentBox(p,target,c,this.unitRadius(e)+.2)!==null);
-      if(!ordered&&(e.role!=='sentry'||dist>26||obstruction)){
+      const obstruction=this.world.covers.some(c=>c.hp>0&&c!==e.perch?.cover&&segmentBox(p,target,c,this.unitRadius(e)+.2)!==null);
+      if(!ordered&&!e.perch&&(e.role!=='sentry'||dist>26||obstruction)){
         const advance=dist>(investigating?2:capturing?4:17)||obstruction?1:dist<10&&!investigating&&!capturing?-.55:0;
         const side=investigating||capturing?0:e.role==='raider'?.5:obstruction?.7:0;
         const detour=obstruction?this.navigation.next(this.world,p,target):null;
@@ -498,7 +522,7 @@ export class Game {
         this.moveUnit(e,dx,dz,dt);if(Math.abs(dx)+Math.abs(dz)>.001)e.heading=turnToward(e.heading,Math.atan2(dx,dz),dt*2);
       }
       if(!ordered&&e.role==='sentry'&&dist<=26&&!obstruction&&terrainAt(this.world.environment.biome,p)==='ice')this.moveUnit(e,0,0,dt);
-      const canFire=(target===playerPos||target===this.convoy?.position||this.allies.active.some(a=>target===a.visual.root.position)||objectiveTarget&&!capturing)&&clearSight(this,p,target);
+      const canFire=(target===playerPos||target===this.convoy?.position||this.allies.active.some(a=>target===a.visual.root.position)||objectiveTarget&&!capturing)&&clearSight(this,p,target,e.perch?.cover);
       const range=objectiveTarget?24:38;
       if(dist<range&&canFire)e.cooldown-=dt;else e.cooldown=Math.max(e.cooldown,AIM_WARNING_SECONDS);
       const beam=e.visual.beam;beam.visible=canFire&&e.cooldown<AIM_WARNING_SECONDS&&dist<range;beam.scale.z=dist;beam.position.set(p.x+Math.sin(e.aim)*dist/2,.12,p.z+Math.cos(e.aim)*dist/2);beam.rotation.y=e.aim;
@@ -516,6 +540,7 @@ export class Game {
     if(unit!==this.player&&unit.team!=='ally'&&damage>0)this.encounters.alert(this,unit,source);
     const multiplier=this.isInfantry(unit)||unit.role==='jeep'||unit.role==='airlift'?1:armorMultiplier(unit.visual.root.position,unit.heading,source);
     unit.hp-=damage*multiplier*(unit.role==='boss'?this.bosses.multiplier(unit):1);
+    if(this.isInfantry(unit))noteHit(unit,this.elapsed);
     const impact=unit.visual.root.position.clone();impact.y+=1.4;if(hitEffect)this.world.fx.impact(impact);
     if(unit===this.player){this.hurtTimer=.2;this.tone(45,.07,.03);}
     if(unit.hp<=0){unit.hp=0;unit.dead=true;if(unit.role==='boss')this.bosses.cancel(unit);if(unit.role==='airlift')this.airlifts.lost(this,unit);unit.visual.beam.visible=false;if(this.isInfantry(unit)){this.infantryKills++;this.world.burst(unit.visual.root.position,2,5);}else this.world.destroyTank(unit.visual);this.tone(45,.22,.06);
@@ -526,7 +551,7 @@ export class Game {
   }
   dropSalvage(source:Point){
     if(this.salvageDrops>=mode(this.save.difficulty).salvageLimit||this.lootRandom()>=DROP_CHANCE)return;
-    const reward=salvageReward(this.lootRandom(),this.save.difficulty,this.level);
+    const reward=salvageReward(this.lootRandom(),this.save.difficulty,this.level,arcUnlocked(this.save.cleared));
     for(const radius of [0,2,4,6,8])for(let i=0;i<(radius?12:1);i++){
       const p={x:source.x+Math.cos(i*Math.PI/6)*radius,z:source.z+Math.sin(i*Math.PI/6)*radius};
       if(Math.abs(p.x)>this.world.bounds.x-4||Math.abs(p.z)>this.world.bounds.z-4||this.world.covers.some(c=>c.hp>0&&(circleBox(p,2.85,c)||segmentBox(source,p,c,1.3)!==null))||this.world.activities.some(a=>!a.spent&&distance(a,p)<(a.kind==='mine'?6:3.5))||this.navigation.next(this.world,p,this.player.visual.root.position)===null)continue;
@@ -540,7 +565,7 @@ export class Game {
     // A 14 m landmark shows each hit on the struck face, not buried at its centre.
     const landmark=cover.kind==='concrete-block',where=landmark?(at?new T.Vector3(clamp(at.x,cover.x-cover.w/2,cover.x+cover.w/2),1.4,clamp(at.z,cover.z-cover.d/2,cover.z+cover.d/2)):cover.mesh.position.clone().setY(3.6)):cover.mesh.position.clone().setY(.7);
     if(hitEffect||cover.hp<=0)this.world.fx.surface(where,surface,cover.hp<=0);
-    if(cover.hp<=0){cover.mesh.visible=false;this.world.navigationRevision++;
+    if(cover.hp<=0){cover.mesh.visible=false;this.world.navigationRevision++;dropLookouts(this,cover);
 if(landmark)for(const [dx,dz] of [[-.3,-.3],[.3,-.3],[-.3,.3],[.3,.3]])this.world.fx.surface(new T.Vector3(cover.x+dx*cover.w,1.6,cover.z+dz*cover.d),'stone',true);
 if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kind==='fuelcrate'?7:5,cover.kind==='fuelcrate'?110:65);}}
   }
@@ -566,7 +591,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
       if(s.homing&&!s.homing.dead){const target=s.homing.visual.root.position,heading=turnToward(Math.atan2(s.dx,s.dz),Math.atan2(target.x-s.mesh.position.x,target.z-s.mesh.position.z),dt*4);s.dx=Math.sin(heading);s.dz=Math.cos(heading);s.mesh.rotation.y=heading;}
       const b={x:s.mesh.position.x+s.dx*s.speed*dt,z:s.mesh.position.z+s.dz*s.speed*dt};
       let first=Infinity,hit:(()=>void)|null=null;
-      for(const c of this.world.covers){if(c.hp<=0)continue;const t=segmentBox(s.p,b,c,.12);if(t!==null&&t<first){first=t;hit=()=>this.hitCover(c,s.damage,false,true,{x:s.p.x+(b.x-s.p.x)*t,z:s.p.z+(b.z-s.p.z)*t});}}
+      for(const c of this.world.covers){if(c.hp<=0||c===s.ignore)continue;const t=segmentBox(s.p,b,c,.12);if(t!==null&&t<first){first=t;hit=()=>this.hitCover(c,s.damage,false,true,{x:s.p.x+(b.x-s.p.x)*t,z:s.p.z+(b.z-s.p.z)*t});}}
       for(const unit of s.friendly?this.enemies:[this.player,...this.allies.active]){if(unit.dead||unit.pending||this.airborne(unit))continue;const t=segmentCircle(s.p,b,unit.visual.root.position,this.unitRadius(unit));if(t!==null&&t<first){first=t;hit=()=>this.damageUnit(unit,s.damage,s.from);}}
       if(!s.friendly){
         if(this.convoy){const t=segmentCircle(s.p,b,this.convoy.position,1.9);if(t!==null&&t<first){first=t;hit=()=>{this.damageConvoy(s.damage);};}}
@@ -693,7 +718,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     const picker=this.el('weapon-picker');picker.hidden=!this.weaponPickerOpen;
     // Rebuild only when selection/unlocks change so held touch buttons retain pointer ownership.
     const state=`${available}:${this.weapon}:${this.specialAmmo.join()}:${this.save.weapons.join()}:${this.save.weaponLevels.join()}`;
-    if(picker.dataset.state!==state){picker.dataset.state=state;setHtml(this.el('weapon-shortcuts'),WEAPONS.map((w,i)=>`<button data-quick-weapon="${i+1}" aria-label="Weapon ${i+1}: ${w.name}" title="${i+1} · ${w.name}" aria-pressed="${this.weapon===i}" ${!this.weaponAvailable(i)?'disabled':''}>${i+1}</button>`).join(''));setHtml(picker,WEAPONS.map((info,i)=>{const ammo=info.ammoSlot,available=this.weaponAvailable(i),owned=ownsWeapon(this.save,i),level=weaponLevel(this.save,i);return `<button data-weapon="${i+1}" aria-pressed="${this.weapon===i}" ${!available?'disabled':''}><strong>${i+1} · ${info.label}</strong><small>${ammo!==undefined?available?`${this.specialAmmo[ammo]} ${i===7?'volleys':i===8?'bursts':'shots'}`:owned?'Empty · next mission':i>=7?'Buy in shop':'Shop / map cache':available?i===5?`${barrels(this.save,i)} rounds together`:`LEVEL ${level} / 20`:i===1?'Clear First Light':i===2?'Clear Homeward':'Buy in shop'}</small></button>`;}).join(''));}
+    if(picker.dataset.state!==state){picker.dataset.state=state;setHtml(this.el('weapon-shortcuts'),WEAPON_ORDER.map(i=>[WEAPONS[i],i] as const).map(([w,i])=>`<button data-quick-weapon="${weaponNumber(i)}" aria-label="Weapon ${weaponNumber(i)}: ${w.name}" title="${weaponNumber(i)} · ${w.name}" aria-pressed="${this.weapon===i}" ${!this.weaponAvailable(i)?'disabled':''}>${weaponNumber(i)}</button>`).join(''));setHtml(picker,WEAPON_ORDER.map(i=>[WEAPONS[i],i] as const).map(([info,i])=>{const ammo=info.ammoSlot,available=this.weaponAvailable(i),owned=ownsWeapon(this.save,i),level=weaponLevel(this.save,i);return `<button data-weapon="${weaponNumber(i)}" aria-pressed="${this.weapon===i}" ${!available?'disabled':''}><strong>${weaponNumber(i)} · ${info.label}</strong><small>${ammo!==undefined?available?`${this.specialAmmo[ammo]} ${i===7?'volleys':i===8?'bursts':'shots'}`:owned?'Empty · next mission':i>=7?'Buy in shop':'Shop / map cache':available?i===5?`${barrels(this.save,i)} rounds together`:`LEVEL ${level} / 20`:i===1?'Clear First Light':i===2?'Clear Homeward':'Buy in shop'}</small></button>`;}).join(''));}
     const info=WEAPONS[this.weapon],ammo=info.ammoSlot;
     setText(this.el('weapon-label'),(this.weapon===5?(barrels(this.save,5)===4?'Quad machine gun':'Twin machine gun'):info.name)+(ammo!==undefined?' · '+this.specialAmmo[ammo]+(this.weapon===7?' volleys':this.weapon===8?' fuel':''):'')+' ▴');setAttribute(this.el('weapon'),'aria-label','Choose weapon: '+info.name);setText(this.el('reload-label'),this.reload>0?`${this.reload.toFixed(1)}s`:'READY');this.el('reload-fill').style.width=`${(1-clamp(this.reload/this.reloadDuration(),0,1))*100}%`;
     setText(this.el('shield-label'),this.shieldCooldown>0?`SHIELD ${Math.ceil(this.shieldCooldown)}s`:'SHIELD');
@@ -784,15 +809,19 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   frame(now:number){
     // Results use wall time even when the GPU frame budget skips this callback.
     if(!this.graphicsLost&&!document.hidden&&this.phase==='finishing'&&now>=this.finishDeadline){this.accumulator=0;this.step(this.finishDelay);}
-    if(this.graphicsLost||document.hidden||!this.renderPacer.due(now,this.world.low?30:60)){requestAnimationFrame(t=>this.frame(t));return;}
+    const due=!this.graphicsLost&&!document.hidden&&this.renderPacer.due(now,this.world.low?30:60);this.budget.frame(this,now,due);
+    if(!due){requestAnimationFrame(t=>this.frame(t));return;}
     // A queued RAF timestamp can predate start/resume after a slow render.
     const frameTime=Math.max(now,this.last),dt=Math.min((frameTime-this.last)/1000,.1);this.last=frameTime;
     if(this.phase==='finishing')this.accumulator=0;
-    else if(this.phase==='playing'){this.accumulator+=dt;let steps=0;while(this.phase==='playing'&&this.accumulator>=1/60&&steps++<3){this.step(1/60);this.accumulator-=1/60;}this.accumulator=Math.min(this.accumulator,1/60);}
+    else if(this.phase==='playing'){this.accumulator+=dt;let steps=0;while(this.phase==='playing'&&this.accumulator>=1/60&&steps++<3){this.smoother.capture(this);this.step(1/60);this.accumulator-=1/60;}this.accumulator=Math.min(this.accumulator,1/60);}
     else {this.accumulator=0;if(this.phase==='menu')this.player.visual.turret.rotation.y=Math.PI+Math.sin(now*.0003)*.45;}
-    this.hurtTimer=Math.max(0,this.hurtTimer-dt);document.body.classList.toggle('hurt',this.hurtTimer>0&&!matchMedia('(prefers-reduced-motion: reduce)').matches);
+    this.hurtTimer=Math.max(0,this.hurtTimer-dt);document.body.classList.toggle('hurt',this.hurtTimer>0&&!reducedMotion());
     this.flame.render(this,this.phase!=='paused'?dt:0);
-    this.world.update(this.phase!=='paused'?dt:0,this.player.visual.root.position,this.phase==='menu');
+    // Draw moving things between the last two steps, then put the exact logic transforms back.
+    const smooth=this.phase==='playing';if(smooth)this.smoother.apply(this.accumulator*60);
+    try{this.budget.beforeRender(this);this.world.update(this.phase!=='paused'?dt:0,this.player.visual.root.position,this.phase==='menu');}finally{if(smooth)this.smoother.restore();}
+    this.budget.afterRender(this);
     this.projectRelay();requestAnimationFrame(t=>this.frame(t));
   }
 }

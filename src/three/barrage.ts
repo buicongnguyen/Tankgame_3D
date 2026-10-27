@@ -28,7 +28,7 @@ export class GuidedBarrage {
  launch(g:Game,targets:Unit[]){
   for(const [i,target] of targets.entries()){
    this.reserve(target);const point=target.visual.root.position.clone();point.y=Math.max(.8,point.y+1);
-   const marker=new T.Mesh(new T.RingGeometry(this.config.blast-.16,this.config.blast,32),new T.MeshBasicMaterial({color:0xffb458,side:T.DoubleSide,transparent:true,opacity:.75,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));marker.rotation.x=-Math.PI/2;marker.position.set(point.x,.15,point.z);g.world.entities.add(marker);
+   const marker=new T.Mesh(new T.RingGeometry(this.config.blast-.16,this.config.blast,32),new T.MeshBasicMaterial({color:0xffb458,side:T.DoubleSide,forceSinglePass:true,transparent:true,opacity:.75,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));marker.rotation.x=-Math.PI/2;marker.position.set(point.x,.15,point.z);g.world.entities.add(marker);
    const from=new T.Vector3(clamp(this.origin.x+(i%2?18:-18),-g.world.bounds.x,g.world.bounds.x),34+i%3*3,clamp(this.origin.z+14,-g.world.bounds.z,g.world.bounds.z));
    if(this.vehiclesOnly)from.copy(g.player.visual.root.position).setY(2.2);
    const bomb=g.world.rocket();bomb.name='GuidedSupportMissile';bomb.scale.setScalar(.95);bomb.position.copy(from);bomb.visible=false;g.world.entities.add(bomb);
