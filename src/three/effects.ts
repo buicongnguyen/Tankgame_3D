@@ -66,6 +66,7 @@ export class CombatEffects {
   impact(p:T.Vector3,large=false){
     this.emit(p,'flash',0xffc56c,large?8:2,.18);
     const floor=p.clone();floor.y=.16;this.emit(floor,'ring',0xd7b77e,large?2:.5,large?.65:.3);
+    if(large){floor.y=.2;this.emit(floor,'ring',0xfff1c4,1.6,.28);}   // shockwave: fast, bright, gone in a blink
     for(let i=0;i<(this.low?3:large?22:8);i++){
       const angle=Math.random()*Math.PI*2,speed=(large?12:5)*Math.random();
       this.emit(p,'spark',i%3===0?0x44413a:0xffa64d,large?.12+Math.random()*.16:.06,.6+Math.random()*.5,new T.Vector3(Math.sin(angle)*speed,2+Math.random()*8,Math.cos(angle)*speed));
@@ -76,6 +77,25 @@ export class CombatEffects {
       this.emit(cloud,'smoke',0x47443e,2+Math.random()*2,2.5+Math.random(),new T.Vector3((Math.random()-.5)*2,2+Math.random()*2,0));
     }
   }
+  /** A building coming down: tumbling chunks in its own colour and a dust cloud rolling out at its base. */
+  collapse(p:T.Vector3,size:number,color:number){
+    const chunks=this.low?4:12,clouds=this.low?2:6;
+    for(let i=0;i<chunks;i++){const a=Math.random()*Math.PI*2,speed=2+Math.random()*4;
+      this.emit(p.clone().setY(1.5+Math.random()*size*.4),'spark',i%3?color:0x3d3833,.28+Math.random()*.3,.9+Math.random()*.6,new T.Vector3(Math.sin(a)*speed,3+Math.random()*5,Math.cos(a)*speed));}
+    for(let i=0;i<clouds;i++){const a=i/clouds*Math.PI*2;
+      this.emit(p.clone().setY(.6).add(new T.Vector3(Math.sin(a)*size*.3,0,Math.cos(a)*size*.3)),'smoke',0xa89a86,3+Math.random()*1.2,2.6+Math.random(),new T.Vector3(Math.sin(a)*2.2,.8,Math.cos(a)*2.2));}
+    const ground=p.clone().setY(.16);this.emit(ground,'ring',0xb9ab93,size*.22,.7);   // grows ~6x: about the building's own footprint
+  }
+  /** Dust kicked up behind a moving vehicle, tinted to the ground it drives on. */
+  trackDust(p:T.Vector3,color:number,size=.85){this.emit(p,'smoke',color,size,1.1,new T.Vector3((Math.random()-.5)*.6,.9,(Math.random()-.5)*.6));}
+  /** Electric sparks spitting from a badly damaged vehicle. */
+  shortCircuit(p:T.Vector3){
+    if(this.low)return;
+    for(let i=0;i<3;i++){const a=Math.random()*Math.PI*2;this.emit(p,'spark',i?0x9fe7ff:0xffffff,.05,.25+Math.random()*.2,new T.Vector3(Math.sin(a)*3,2+Math.random()*3,Math.cos(a)*3));}
+    this.emit(p,'flash',0x8fd8ff,.6,.06);
+  }
+  /** The cannon's blast flattening the dust under the barrel. */
+  blastDust(p:T.Vector3,color:number){const floor=p.clone().setY(.18);this.emit(floor,'ring',color,.5,.35);if(!this.low)this.emit(floor,'smoke',color,.9,.6,new T.Vector3(0,.6,0));}
   surface(p:T.Vector3,surface:Surface,destroyed=false){
     const metal=surface==='metal',fuel=surface==='fuel';
     if(fuel&&destroyed)this.impact(p,true);

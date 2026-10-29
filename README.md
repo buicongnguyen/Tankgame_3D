@@ -254,6 +254,16 @@ Repair centers are large green circular service pads, marked with a green cross 
 
 Hits on metal produce bright sparks; stone creates dust and gray chips; wood splinters and produces brief smoke. Destroyed wooden cover and fuel containers leave short flame/smoke effects and fading ground scorch marks. Existing fuel blast damage and chain reactions are unchanged; lingering flames are cosmetic.
 
+**More feedback, same cost** (`src/three/effects.ts`, `world.ts`):
+- **Camera shake** when your tank is hit, from blasts within 40 m (weaker with distance), from a building coming down, and a light kick from your cannon, siege rockets and micro missiles. It moves the camera, not what it looks at, settles within about half a second, and never runs in menus or with reduced motion.
+- **Shockwave.** Large explosions send a bright ring racing out ahead of the dust ring.
+- **Collapsing buildings.** Houses and city blocks throw debris chunks in their own colour, roll a dust cloud out at their base and leave a ring about their own size.
+- **Track dust** behind every moving tank within 45 m of you, tinted to the ground: snow, sand, mud, city grey or soil. Low detail keeps the player's dust only.
+- **Muzzle dust.** Your heavy guns flatten the dust under the barrel.
+- **Electric sparks** spit from badly damaged vehicles, beside their smoke. Not in Low detail.
+
+Everything draws through the same five batched particle meshes, within the existing particle cap. In a constant-explosion test on the city map, draws stayed at 166 and frame CPU was unchanged within measurement noise.
+
 Effects reuse the existing shard geometry and a single small procedural texture. Particles remain capped at 230 (85 in low mode), with at most six active cover fires (two in low mode). Fire lasts 2.8-4 seconds and scorch marks fade over eight seconds. Low mode also reduces large-explosion clouds. There are no added lights, shadow casters, physics debris or downloaded effect textures. Tests check particle/fire limits, expiration, repeat-hit behavior and mission cleanup; actual-device frame rates depend on hardware.
 
 ## Stage finish and performance bonuses

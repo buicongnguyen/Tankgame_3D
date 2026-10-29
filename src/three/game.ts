@@ -73,6 +73,8 @@ export class Game {
   elapsed=0; capture=0; kills=0; shotsFired=0; lastReward=0;
   bosses=new BossCombat();hazards=new BiomeHazards();encounters=new RouteEncounters();salvageDrops=0;lootRandom=()=>Math.random();
   flame=new Flamethrower();special=new SpecialWeapons();specialAmmo=[0,0,0,0];infantryKills=0;
+  /** Where each vehicle stood at the last dust tick (dust trails only while it moves). */
+  private dustSeen=new WeakMap<Unit,Point>();
   weaponPickerOpen=false;auto=new AutoMissiles();airSupport=new AirSupport();
   qualityChanging=false;qualityError=false;graphicsLost=false;renderPacer=new RenderPacer();
   /** Phone frame budget: adaptive render resolution, the ?perf readout and Low detail contact shadows. */
@@ -458,6 +460,8 @@ export class Game {
       unit.visual.muzzle.getWorldPosition(mesh.position);mesh.position.x+=Math.cos(unit.aim)*offset;mesh.position.z-=Math.sin(unit.aim)*offset;this.world.entities.add(mesh);
       this.shots.push({mesh,p:{x:p.x,z:p.z},from:{x:p.x,z:p.z},dx:direction.x,dz:direction.z,speed:stats.speed,damage:stats.damage*(friendly?this.playerDamageMultiplier():1),life:unit.role==='rifleman'||unit.role==='jeep'?.9:2.5,friendly,splash:stats.splash,ignore:unit.perch?.cover,height:unit.perch?{start:mesh.position.y,range:18,traveled:0}:undefined});
       if(unit.role==='rifleman'||unit.role==='jeep'||friendly&&this.weapon===5)this.world.fx.emit(mesh.position.clone(),'flash',0xffd494,.3,.07);else this.world.fx.muzzle(mesh.position,heading,!!rocket);
+      // The player's heavy guns kick dust off the ground under the barrel and nudge the camera.
+      if(friendly&&i===0&&(this.weapon===0||this.weapon===2||this.weapon===6)){this.world.fx.blastDust(mesh.position,this.world.dustColor(mesh.position));this.world.shake(this.weapon===0?.07:.05);}
     }
     if(friendly){this.shotsFired++;this.reload=this.reloadDuration();this.tone([1,5].includes(this.weapon)?110:65,.1,.05);}
     unit.visual.turret.position.y=this.isInfantry(unit)?1.2:unit.role==='jeep'?1.635:(unit.visual.turret.userData.restY??1.17)-.07;
@@ -542,7 +546,7 @@ export class Game {
     unit.hp-=damage*multiplier*(unit.role==='boss'?this.bosses.multiplier(unit):1);
     if(this.isInfantry(unit))noteHit(unit,this.elapsed);
     const impact=unit.visual.root.position.clone();impact.y+=1.4;if(hitEffect)this.world.fx.impact(impact);
-    if(unit===this.player){this.hurtTimer=.2;this.tone(45,.07,.03);}
+    if(unit===this.player){this.hurtTimer=.2;this.tone(45,.07,.03);this.world.shake(Math.min(.45,.12+damage/120));}
     if(unit.hp<=0){unit.hp=0;unit.dead=true;if(unit.role==='boss')this.bosses.cancel(unit);if(unit.role==='airlift')this.airlifts.lost(this,unit);unit.visual.beam.visible=false;if(this.isInfantry(unit)){this.infantryKills++;this.world.burst(unit.visual.root.position,2,5);}else this.world.destroyTank(unit.visual);this.tone(45,.22,.06);
       if(unit!==this.player&&unit.team!=='ally'&&!this.isInfantry(unit)){this.kills++;if(unit.role!=='jeep'&&!this.training)this.dropSalvage(unit.visual.root.position);
       }
@@ -565,7 +569,7 @@ export class Game {
     // A 14 m landmark shows each hit on the struck face, not buried at its centre.
     const landmark=cover.kind==='concrete-block',where=landmark?(at?new T.Vector3(clamp(at.x,cover.x-cover.w/2,cover.x+cover.w/2),1.4,clamp(at.z,cover.z-cover.d/2,cover.z+cover.d/2)):cover.mesh.position.clone().setY(3.6)):cover.mesh.position.clone().setY(.7);
     if(hitEffect||cover.hp<=0)this.world.fx.surface(where,surface,cover.hp<=0);
-    if(cover.hp<=0){cover.mesh.visible=false;this.world.navigationRevision++;dropLookouts(this,cover);
+    if(cover.hp<=0){cover.mesh.visible=false;this.world.navigationRevision++;if(cover.kind==='house'||cover.kind==='cityblock'){this.world.fx.collapse(new T.Vector3(cover.x,0,cover.z),Math.max(cover.w,cover.d),cover.kind==='house'?0xc98f6e:0x9aa3a6);this.world.shake(.35*Math.max(0,1-distance(cover,this.player.visual.root.position)/40));}dropLookouts(this,cover);
 if(landmark)for(const [dx,dz] of [[-.3,-.3],[.3,-.3],[-.3,.3],[.3,.3]])this.world.fx.surface(new T.Vector3(cover.x+dx*cover.w,1.6,cover.z+dz*cover.d),'stone',true);
 if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kind==='fuelcrate'?7:5,cover.kind==='fuelcrate'?110:65);}}
   }
@@ -574,6 +578,8 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     this.convoyHealth=Math.max(0,this.convoyHealth-damage);this.world.burst(this.convoy.position,1,5);
   }
   explode(p:Point,radius:number,damage:number,antiAir=false,alliedSafe=false){
+    // Felt, not just seen: a blast shakes the camera, less the farther it is from the player.
+    {const d=distance(p,this.player.visual.root.position);if(d<40)this.world.shake(Math.min(.6,radius/14)*(1-d/40));}
     for(const unit of alliedSafe?this.enemies:[this.player,...this.enemies,...this.allies.active]){
       if(unit.dead||unit.pending)continue;
       const range=distance(p,unit.visual.root.position);
@@ -613,8 +619,12 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     if(this.dustClock<=0){
       this.dustClock=this.world.low?.3:.12;
       const movement=this.input.movement();
-      if(Math.hypot(movement.x,movement.z)>.2){const dust=p.clone();dust.y=.15;dust.x-=Math.sin(this.player.heading)*1.8;dust.z-=Math.cos(this.player.heading)*1.8;this.world.fx.smoke(dust,.85,0xb5a17c);}
-      for(const unit of [this.player,...this.enemies,...this.allies.active])if(!unit.dead&&unit.hp<unit.max*.35)this.world.fx.smoke(unit.visual.root.position.clone().setY(unit.visual.root.position.y+1.6),.8);
+      if(Math.hypot(movement.x,movement.z)>.2){const dust=p.clone();dust.y=.15;dust.x-=Math.sin(this.player.heading)*1.8;dust.z-=Math.cos(this.player.heading)*1.8;this.world.fx.trackDust(dust,this.world.dustColor(dust));}
+      // Other vehicles near the player trail dust too (moved since the last tick); Low detail keeps the player's only.
+      if(!this.world.low)for(const unit of [...this.enemies,...this.allies.active]){if(unit.dead||unit.pending||this.isInfantry(unit)||this.airborne(unit)||unit.role==='boss'&&unit.bossKind!=='walker')continue;
+        const q=unit.visual.root.position,last=this.dustSeen.get(unit);this.dustSeen.set(unit,{x:q.x,z:q.z});
+        if(!last||Math.hypot(q.x-last.x,q.z-last.z)<.15||q.distanceToSquared(p)>45*45)continue;const dust=q.clone();dust.y=.15;dust.x-=Math.sin(unit.heading)*1.6;dust.z-=Math.cos(unit.heading)*1.6;this.world.fx.trackDust(dust,this.world.dustColor(dust),.7);}
+      for(const unit of [this.player,...this.enemies,...this.allies.active])if(!unit.dead&&unit.hp<unit.max*.35){const top=unit.visual.root.position.clone().setY(unit.visual.root.position.y+1.6);this.world.fx.smoke(top,.8);if(!this.isInfantry(unit)&&Math.random()<.35)this.world.fx.shortCircuit(top);}
     }
     for(const activity of this.world.activities){
       if(activity.spent||activity.airborne)continue;

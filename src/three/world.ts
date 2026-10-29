@@ -1,4 +1,5 @@
 import {setAttribute} from './i18n';
+import { reducedMotion } from './media';
 import {compactLayout,TRAINING} from './training';
 import {EnemyBatches} from './enemy-batches';
 import {SceneryBatches} from './scenery-batches';
@@ -405,6 +406,12 @@ export class World {
   }
   settings(low:boolean){this.scene.environment=low?null:this.studioEnvironment;this.low=low;this.fx.low=low;this.renderer.shadowMap.enabled=!low;document.body.dataset.graphics=low?'low':'detailed';this.renderRatio=null;this.resize();}
   /** Flags, chimney smoke and birds around buildings (decoration only). */
+  /** Camera shake, 0..1 (squared when applied, so small knocks stay gentle). */
+  trauma=0;private shakeClock=0;
+  shake(amount:number){this.trauma=Math.min(1,this.trauma+amount);}
+  /** Dust colour for the ground at a point: snow, sand, mud or the biome's own soil. */
+  dustColor(p:{x:number;z:number}){const b=this.environment.biome,k=this.terrainKind(p);
+    return k==='mud'?0x6d5a43:k==='ice'?0xe6f2f6:k==='sand'?0xd8bb86:b==='snow'||b==='glacier'?0xeef4f6:b==='desert'?0xd6b98a:b==='city'?0x9a9c98:b==='volcanic'?0x6c5f61:b==='marsh'||b==='jungle'?0x7c7558:0xb5a17c;}
   townLife=new TownLife();biomeLife=new BiomeLife();
   /** Set by the phone frame budget during battle; null keeps the detail tier's own ratio. */
   renderRatio:number|null=null;
@@ -454,6 +461,8 @@ export class World {
     const portrait=this.camera.aspect<1;
     this.camera.position.set(this.target.x+(menu?16:0),menu?18:(portrait?62:54)*(this.bounds.x<40?.78:1),this.target.z+(menu?24:(portrait?51:43)*(this.bounds.x<40?.78:1)));
     this.camera.lookAt(this.target.x,0,this.target.z-(menu?0:3));
+    // Shake moves the camera, not what it looks at, and decays fast; it never runs in the menu or with reduced motion.
+    if(this.trauma>0){this.trauma=Math.max(0,this.trauma-dt*2.2);if(!menu&&!reducedMotion()){const k=this.trauma*this.trauma*.9,t=this.shakeClock+=dt;this.camera.position.x+=Math.sin(t*61)*k;this.camera.position.y+=Math.sin(t*53+1.3)*k*.6;this.camera.position.z+=Math.sin(t*47+2.1)*k;}}
     for(let i=this.effects.length-1;i>=0;i--){const e=this.effects[i];e.life-=dt;if(e.life<=0){e.mesh.removeFromParent();(e.mesh.material as T.Material).dispose();this.effects.splice(i,1);continue;}e.mesh.position.addScaledVector(e.velocity,dt);e.velocity.y-=dt*9;(e.mesh.material as T.MeshBasicMaterial).opacity=e.life/e.max;}
     // Track the ground, not the tank's vertical bob/sinking animation.
     this.stableShadow.update(scratch.set(focus.x,0,focus.z));
