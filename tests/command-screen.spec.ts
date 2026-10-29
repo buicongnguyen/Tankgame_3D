@@ -37,6 +37,7 @@ test('setup, stage and More open as bottom sheets: one at a time, closed by a ta
   await page.mouse.click(195,300);await expect.poll(openSheets).toBe(0);   // the empty hero area, above the sheet
   await page.locator('.dock-more>summary').tap();expect(await openSheets()).toBe(1);await expect(page.locator('.dock-more>.sheet [data-action=leaderboard]')).toBeVisible();
   // Opening another sheet closes the first.
+  await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,50))));
   await page.evaluate(()=>{(document.querySelector('.mission-setup') as HTMLDetailsElement).open=true;});
   await expect.poll(()=>page.evaluate(()=>[...document.querySelectorAll('details.chip-sheet[open]')].map(d=>d.className))).toEqual([expect.stringContaining('mission-setup')]);
   await page.mouse.click(195,300);await expect.poll(openSheets).toBe(0);
