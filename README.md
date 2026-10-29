@@ -105,6 +105,19 @@ Measured on a phone profile (390 × 844, CPU slowed 4×, raw WebGL draws includi
 
 Triangle counts rose, for example 339k to 460k on the city. Each batch now draws its off-screen copies too, which costs vertex work but no pixels. Phones were CPU-bound on draw calls, so that trade pays.
 
+## Fairer battles
+
+Players, mostly on phones, found battles hard to win. A review found that phones could not aim without firing, could not see flank fire, and that several rules worked against the player. Changes:
+- **Aim without firing (touch).** A light push on the AIM / FIRE stick turns the turret; a firm push, past about 58% of the stick's travel, fires. A thumb on the stick fires only once the turret is on target, so the first shot is never thrown away.
+- **Light aim assist (touch only).** A stick pointed within 12° of a visible enemy up to 40 m away settles on it, leading a moving target by the shell's flight time. Mouse and keys aim exactly; arc rockets and flames keep their own aiming.
+- **See your flanks.** Portrait phones now show about 22 m to each side in battle, up from about 15 m; menus keep their close-up. Red arrows on the screen edge point at off-screen enemies whose aim warning is on you (bosses from 52 m). Minimap dots are bigger.
+- **Armor faces your gun.** Driving turns the hull toward travel, so armor now follows the turret: backing away while firing no longer shows the weak rear.
+- **Deployment shield waits for contact.** It holds until an enemy is close, something hits you or the transport, or you open fire (at most 30 s), instead of running out before anyone is awake.
+- **Defense means holding.** Once the last wave is in and any boss with it is destroyed, holding the uplink for the mission's time (45 s on Long Night) wins, as the briefing says. Killing every attacker still wins too. The HUD shows `HOLD 32s`, or `DESTROY BOSS` first.
+- **What you protect scales with difficulty.** Uplink and transport health are ×2 on Easy, ×1.5 on Normal, ×1.25 on Hard and ×1 on Crazy. A transport out of contact for 4 s, with no enemy within 30 m, repairs 3 HP/s.
+- **Normal hull ×1.25** (300 HP). Boss armor is no longer counted twice: bosses use their armored (0.65×) and exposed (1.75×) phases only.
+- The leaderboard moved to rules version 3, so new runs rank separately from older ones.
+
 ## Menus on phones
 
 The command screen, shop, settings, pause and results panels share one design layer, `src/three/ui-polish.css`, loaded after the other stylesheets. It restyles the existing markup, so the English text that translations match stays the same.

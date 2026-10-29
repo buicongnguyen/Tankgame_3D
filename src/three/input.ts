@@ -46,8 +46,9 @@ export class Input {
       }else{
         this.touchAiming=length>.15;
         if(this.touchAiming){const magnitude=Math.hypot(x,z);this.aim={x:x/magnitude,z:z/magnitude};this.hasTouchAim=true;}
+        // Aim with a light push, fire with a firm one: the band between lets a thumb aim without shooting.
         // Separate engage/release thresholds prevent firing from flickering at the boundary.
-        this.touchFiring=length>(this.touchFiring?.22:.32);
+        this.touchFiring=length>(this.touchFiring?.45:.58);
         element.classList.toggle('firing',this.touchFiring);
       }
     };

@@ -1,7 +1,8 @@
 import {setHtml,locale,setText} from './i18n';
 import {MISSIONS} from './campaign';
 const KEY='steel-front-leaderboard-v1',PILOT='steel-front-pilot-v1';
-export const RULES_VERSION=2;
+/** 3: Normal hull 1.25×, armor faces the gun, defense won by holding the uplink (2026-10). */
+export const RULES_VERSION=3;
 export interface RecordEntry {rules?:number;pilot:string;mission:number;level:number;difficulty:string;score:number;seconds:number;health:number;date:string}
 export function scoreRun(seconds:number,health:number,target:number){
  if(![seconds,health,target].every(Number.isFinite)||seconds<0||health<0||health>100||target<0)throw new Error('Invalid result');
@@ -20,7 +21,7 @@ export function recordRun(mission:number,level:number,difficulty:string,seconds:
  try{localStorage.setItem(KEY,JSON.stringify(memory));}catch{storageWarning=true;}
 }
 export function showLeaderboard(root:HTMLElement,mission:number,level:number,difficulty:string,back:()=>void,profile?:{name:string;rename:(name:string)=>Promise<boolean>}){
- setHtml(root,'<section class="panel" style="width:min(720px,94vw);max-height:85dvh;overflow:auto"><span class="eyebrow">LOCAL LEADERBOARD</span><h1>Best pilots</h1><p>Saved on this device. Campaign loadouts apply. Rankings use current mission rules; older records remain saved separately.</p><label>Pilot name <input id="rank-name" maxlength="20" aria-label="Pilot name"></label><button id="rank-save">Save name</button><p id="rank-message" role="status"></p><div style="display:flex;gap:8px;flex-wrap:wrap"><select id="rank-stage" aria-label="Stage"></select><select id="rank-level" aria-label="Level"></select><select id="rank-mode" aria-label="Difficulty"></select><select id="rank-rules" aria-label="Rules version"><option value="2">Current rules</option><option value="1">Legacy rules</option></select></div><div id="rank-list" style="overflow-x:auto;margin:16px 0"></div><p>Score: 1,000 for completion + up to 1,000 for health + up to 1,000 for speed where a target time exists. Best run only; retries do not accumulate points.</p><button id="rank-back">Back</button></section>');
+ setHtml(root,'<section class="panel" style="width:min(720px,94vw);max-height:85dvh;overflow:auto"><span class="eyebrow">LOCAL LEADERBOARD</span><h1>Best pilots</h1><p>Saved on this device. Campaign loadouts apply. Rankings use current mission rules; older records remain saved separately.</p><label>Pilot name <input id="rank-name" maxlength="20" aria-label="Pilot name"></label><button id="rank-save">Save name</button><p id="rank-message" role="status"></p><div style="display:flex;gap:8px;flex-wrap:wrap"><select id="rank-stage" aria-label="Stage"></select><select id="rank-level" aria-label="Level"></select><select id="rank-mode" aria-label="Difficulty"></select><select id="rank-rules" aria-label="Rules version"><option value="3">Current rules</option><option value="2">Previous rules</option><option value="1">Legacy rules</option></select></div><div id="rank-list" style="overflow-x:auto;margin:16px 0"></div><p>Score: 1,000 for completion + up to 1,000 for health + up to 1,000 for speed where a target time exists. Best run only; retries do not accumulate points.</p><button id="rank-back">Back</button></section>');
  const name=root.querySelector<HTMLInputElement>('#rank-name')!;name.value=profile?.name??pilotName();
  const stage=root.querySelector<HTMLSelectElement>('#rank-stage')!,lv=root.querySelector<HTMLSelectElement>('#rank-level')!,mode=root.querySelector<HTMLSelectElement>('#rank-mode')!;
  const option=(label:string,value:string)=>{const o=new Option('',value);setText(o,label);return o;};

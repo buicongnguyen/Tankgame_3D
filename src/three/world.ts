@@ -415,7 +415,13 @@ export class World {
   townLife=new TownLife();biomeLife=new BiomeLife();
   /** Set by the phone frame budget during battle; null keeps the detail tier's own ratio. */
   renderRatio:number|null=null;
-  resize(){const w=window.innerWidth,h=window.innerHeight;this.renderer.setPixelRatio(this.renderRatio??ratioRange(this.low).base);this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}
+  resize(){const w=window.innerWidth,h=window.innerHeight;this.renderer.setPixelRatio(this.renderRatio??ratioRange(this.low).base);this.renderer.setSize(w,h);this.camera.aspect=w/h;
+    // Portrait screens are narrow: widen the view so ~24 m show on either side of the tank (enemies fire from 38 m;
+    // edge arrows point at the rest). Landscape and desktop keep the original 43 degrees.
+    this.battleFov=w<h?Math.min(68,Math.max(43,2*T.MathUtils.radToDeg(Math.atan(Math.tan(T.MathUtils.degToRad(15.3))/(w/h))))):43;
+    this.camera.fov=this.menuView?43:this.battleFov;this.camera.updateProjectionMatrix();}
+  /** Vertical field of view in battle: wider on portrait screens; menus always use 43 degrees. */
+  battleFov=43;private menuView=true;
   burst(position:T.Vector3,color=0,amount=12){
     for(let i=0;i<(this.low?Math.ceil(amount/2):amount)&&this.effects.length<(this.low?24:100);i++){
       const material=this.effectMaterials[color].clone();
@@ -461,6 +467,7 @@ export class World {
     const portrait=this.camera.aspect<1;
     this.camera.position.set(this.target.x+(menu?16:0),menu?18:(portrait?62:54)*(this.bounds.x<40?.78:1),this.target.z+(menu?24:(portrait?51:43)*(this.bounds.x<40?.78:1)));
     this.camera.lookAt(this.target.x,0,this.target.z-(menu?0:3));
+    if(this.menuView!==menu){this.menuView=menu;this.camera.fov=menu?43:this.battleFov;this.camera.updateProjectionMatrix();}
     // Shake moves the camera, not what it looks at, and decays fast; it never runs in the menu or with reduced motion.
     if(this.trauma>0){this.trauma=Math.max(0,this.trauma-dt*2.2);if(!menu&&!reducedMotion()){const k=this.trauma*this.trauma*.9,t=this.shakeClock+=dt;this.camera.position.x+=Math.sin(t*61)*k;this.camera.position.y+=Math.sin(t*53+1.3)*k*.6;this.camera.position.z+=Math.sin(t*47+2.1)*k;}}
     for(let i=this.effects.length-1;i>=0;i--){const e=this.effects[i];e.life-=dt;if(e.life<=0){e.mesh.removeFromParent();(e.mesh.material as T.Material).dispose();this.effects.splice(i,1);continue;}e.mesh.position.addScaledVector(e.velocity,dt);e.velocity.y-=dt*9;(e.mesh.material as T.MeshBasicMaterial).opacity=e.life/e.max;}

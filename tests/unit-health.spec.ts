@@ -61,7 +61,7 @@ test('all difficulties spawn consistent HP, keep player hull, and restore damage
    g.start(15,2);rows.push({difficulty,counts,health,independent,barMatches,hull:g.player.max,retried:g.enemies.every((e:any)=>e.hp===e.max&&!e.dead)});g.save.upgrades.armor=0;
   }return rows;
  });
- for(const r of rows){const c=encounterSize(15,2,r.difficulty as any);expect(r.counts.rifleman).toBe(c.riflemen);expect(r.counts.rocketeer).toBe(c.rocketeers);expect(r.counts.jeep).toBe(c.jeeps);expect(r.counts.boss).toBe(c.bosses);expect(r.counts.raider+r.counts.sentry+r.counts.heavy).toBe(c.armor);expect(r.health).toMatchObject(Object.fromEntries(Object.entries({rifleman:136,rocketeer:213,jeep:291,raider:427,sentry:582,heavy:931}).map(([role,hp])=>[role,hp*(r.difficulty==='easy'?.5:1)])));expect(r.hull).toBe(565*(r.difficulty==='easy'?6:1));expect(r.independent&&r.barMatches&&r.retried).toBe(true);}
+ for(const r of rows){const c=encounterSize(15,2,r.difficulty as any);expect(r.counts.rifleman).toBe(c.riflemen);expect(r.counts.rocketeer).toBe(c.rocketeers);expect(r.counts.jeep).toBe(c.jeeps);expect(r.counts.boss).toBe(c.bosses);expect(r.counts.raider+r.counts.sentry+r.counts.heavy).toBe(c.armor);expect(r.health).toMatchObject(Object.fromEntries(Object.entries({rifleman:136,rocketeer:213,jeep:291,raider:427,sentry:582,heavy:931}).map(([role,hp])=>[role,hp*(r.difficulty==='easy'?.5:1)])));expect(r.hull).toBe(565*(r.difficulty==='easy'?6:r.difficulty==='normal'?1.25:1));expect(r.independent&&r.barMatches&&r.retried).toBe(true);}
 });
 
 test('all ten bosses retain individual HP and meaningful exposed cores',async({page})=>{
@@ -72,7 +72,7 @@ test('all ten bosses retain individual HP and meaningful exposed cores',async({p
    const s=g.bosses.states.get(b);s.phase='tracking';g.damageUnit(b,44,{x:0,z:25},true);const protectedDamage=b.max-b.hp;s.phase='exposed';const hp=b.hp;g.damageUnit(b,44,{x:0,z:25},true);rows.push({kind,max:b.max,protectedDamage,exposedDamage:hp-b.hp,alive:!b.dead});g.bosses.cancel(b);b.visual.root.removeFromParent();
   }return rows;
  });
- expect(rows.map(r=>r.max)).toEqual([960,1020,1260,816,1104,936,1200,1320,1440,1080]);for(const r of rows){expect(r.protectedDamage).toBeCloseTo(18.59);expect(r.exposedDamage).toBeCloseTo(50.05);expect(r.alive).toBe(true);}
+ expect(rows.map(r=>r.max)).toEqual([960,1020,1260,816,1104,936,1200,1320,1440,1080]);for(const r of rows){expect(r.protectedDamage).toBeCloseTo(28.6);expect(r.exposedDamage).toBeCloseTo(77);expect(r.alive).toBe(true);}
 });
 
 test('a tougher final tank reaches delayed results and awards the stage once',async({page})=>{

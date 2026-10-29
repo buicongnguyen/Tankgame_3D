@@ -28,6 +28,7 @@ import {FrameBudget} from './performance';
 import {animateRig,restPose,noteShot,noteHit} from './soldier-life';
 import {RenderSmoother} from './smoothing';
 import {MINE_TRIGGER_RADIUS,AIM_WARNING_SECONDS} from './combat-ranges';
+import {ThreatArrows} from './threat-arrows';
 import {assignPatrol,updatePatrol} from './patrols';
 import type {PatrolOrder} from './patrols';
 import {DROP_CHANCE,ammoCaps,salvageReward} from './loot';
@@ -37,7 +38,7 @@ import {guardPost} from './enemy-posts';
 import type {EncounterOrder} from './encounters';
 import {GroundNavigation} from './navigation';
 import {alongRoute,routeSample,projectRoute,ENCOUNTER_FRACTIONS} from './stage-layout';
-import {DIFFICULTIES,MODES,mode,normalizeDifficulty} from './difficulty';
+import {DIFFICULTIES,MODES,mode,normalizeDifficulty,objectiveHealth} from './difficulty';
 import type {BossKind} from './bosses';
 import {BiomeHazards} from './hazards';
 import {terrainAt,terrainLabel,terrainRegions,tractionMotion} from './terrain';
@@ -81,7 +82,14 @@ export class Game {
   budget=new FrameBudget();
   smoother=new RenderSmoother();
   navigation=new GroundNavigation();convoyDistance=0;convoyReverse:boolean|null=null;
-  weapon=0; reload=0; shieldTime=0; shieldCooldown=0; relayHealth=300; convoyHealth=ESCORT.health; convoy:T.Group|null=null;convoyBlocked=false;
+  weapon=0; reload=0; shieldTime=0; shieldCooldown=0; relayHealth=300; convoyHealth=ESCORT.health;
+  /** Full uplink and transport health this battle (scaled by difficulty). */
+  relayMax=300; convoyMax=ESCORT.health; private convoyHitAt=-Infinity;
+  /** The deployment shield waits for the first contact instead of running out before any enemy is awake. */
+  private contact=false;
+  /** Recent ground speed of each enemy, for touch aim lead. */
+  private aimTrack=new WeakMap<Unit,{x:number;z:number;vx:number;vz:number;t:number}>();
+  readonly threats=new ThreatArrows(); convoy:T.Group|null=null;convoyBlocked=false;
   overlay:HTMLElement; hud:HTMLElement; radio:HTMLElement; mini:HTMLCanvasElement;
   radioTimer=0; hudTimer=0; last=0; accumulator=0; hurtTimer=0;
   ray=new T.Raycaster(); plane=new T.Plane(new T.Vector3(0,1,0),0); aimPoint=new T.Vector3(0,0,-15);
@@ -330,7 +338,7 @@ export class Game {
     this.level=clamp(level,0,2);this.mission=index;const m=this.missionData();this.allies.clear();this.waves.reset();this.clearLesson();
     this.finishDelay=0;this.finishDeadline=0;this.stageResult=null;
     this.airSupport.clear();this.hazards.reset(index);this.bosses.clear();this.airlifts.clear();this.flame.clear();this.special.clear();this.auto.clear();this.specialAmmo=ammoCaps(this.save.skin).map((cap,i)=>this.save.weapons.includes(WEAPONS.findIndex(w=>w.ammoSlot===i))?cap:0);this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.clearBarrage();this.mission=index;if(this.training)this.world.buildCompact(this.training.id);else if(this.skirmish){this.world.build(index,'assault',this.level,this.save.difficulty,this.skirmish.scale);this.world.ring.visible=false;}else if(index===0&&this.level===0&&this.save.difficulty==='easy')this.world.buildCompact(3);else this.world.build(index,m.kind,this.level,this.save.difficulty);this.encounters.reset();this.salvageDrops=0;this.shots=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;this.convoyDistance=0;this.convoyReverse=null;this.world.loopReverse=false;
-    this.elapsed=0;this.capture=0;this.kills=0;this.shotsFired=0;this.reload=0;this.weapon=this.save.equippedWeapon;this.shieldTime=0;this.shieldCooldown=0;this.relayHealth=300;this.convoyHealth=ESCORT.health;this.escortDeploying=false;this.deployShieldUntil=0;
+    this.elapsed=0;this.capture=0;this.kills=0;this.shotsFired=0;this.reload=0;this.weapon=this.save.equippedWeapon;this.shieldTime=0;this.shieldCooldown=0;this.relayMax=Math.round(300*objectiveHealth(this.save.difficulty));this.relayHealth=this.relayMax;this.convoyMax=Math.round(ESCORT.health*objectiveHealth(this.save.difficulty));this.convoyHealth=this.convoyMax;this.convoyHitAt=-Infinity;this.contact=false;this.escortDeploying=false;this.deployShieldUntil=0;
     // Skirmish starts mid-map so teams can come from every side; spawn search keeps it clear of cover and mines.
     const route=this.world.layout,spawn=this.skirmish?{x:0,z:0}:route.spawn;this.player=this.makeUnit(spawn.x,spawn.z,'player');this.player.heading=this.player.aim=route.heading;this.world.applySkin(this.player.visual.root,this.save.skin,this.save.flag);
     if(m.kind==='escort'){this.convoy=this.world.clone('transport');this.convoy.position.set(route.points[0].x,0,route.points[0].z);this.convoy.rotation.y=route.heading;this.world.entities.add(this.convoy);const field=this.world.shield.clone();field.name='ConvoyShield';field.position.set(0,1.1,0);field.scale.set(1.2,.9,1.6);field.visible=false;this.convoy.add(field);}
@@ -473,6 +481,31 @@ export class Game {
     const p={x:mesh.position.x,z:mesh.position.z},center=unit.visual.root.position,aimRange=Math.max(5,distance(center,this.hostileTarget(unit).visual.root.position)),target={x:center.x+Math.sin(heading)*aimRange,z:center.z+Math.cos(heading)*aimRange},range=Math.max(5,distance(p,target)),shotHeading=Math.atan2(target.x-p.x,target.z-p.z);mesh.rotation.y=shotHeading;
     this.shots.push({mesh,p,from:{...p},dx:Math.sin(shotHeading),dz:Math.cos(shotHeading),damage,speed,life:42/speed,friendly:false,splash:0,height:{start:mesh.position.y,range,traveled:0}});if(muzzleName==='LightMuzzle')this.world.fx.emit(mesh.position.clone(),'flash',0xffd494,.3,.07);else this.world.fx.muzzle(mesh.position,shotHeading,false);
   }
+  /** Touch aim assist: a stick pointed within 12 degrees of a visible enemy (40 m) settles on it, leading a moving
+   *  target by the shell's flight time. Mouse and keys aim exactly; arc rockets and flames have their own aiming. */
+  private assistAim(p:T.Vector3){
+    const info=WEAPONS[this.weapon];if(info.arc||info.flame)return;
+    const want=Math.atan2(this.input.aim.x,this.input.aim.z);let best:Unit|null=null,bestDiff=.21,bestD=0;
+    for(const e of this.enemies){
+      if(e.dead||e.pending||e.perch||this.airborne(e))continue;
+      const q=e.visual.root.position,dx=q.x-p.x,dz=q.z-p.z,d=Math.hypot(dx,dz);if(d>40||d<2)continue;
+      let track=this.aimTrack.get(e);if(!track){track={x:q.x,z:q.z,vx:0,vz:0,t:this.elapsed};this.aimTrack.set(e,track);}
+      const gap=this.elapsed-track.t;if(gap>0&&gap<.25){track.vx+=((q.x-track.x)/gap-track.vx)*.3;track.vz+=((q.z-track.z)/gap-track.vz)*.3;}else if(gap>=.25){track.vx=track.vz=0;}
+      track.x=q.x;track.z=q.z;track.t=this.elapsed;
+      const diff=Math.abs(Math.atan2(Math.sin(Math.atan2(dx,dz)-want),Math.cos(Math.atan2(dx,dz)-want)));
+      if(diff<bestDiff&&clearSight(this,p,q)){best=e;bestDiff=diff;bestD=d;}
+    }
+    if(!best)return;
+    const q=best.visual.root.position,track=this.aimTrack.get(best)!,flight=info.speed>0?bestD/info.speed:0,speed=Math.hypot(track.vx,track.vz),k=speed>9?9/speed:1;
+    let lx=track.vx*k*flight,lz=track.vz*k*flight;const lead=Math.hypot(lx,lz);if(lead>6){lx*=6/lead;lz*=6/lead;}
+    this.aimPoint.set(q.x+lx,0,q.z+lz);
+  }
+  /** A transport out of contact patches itself up slowly: 3 HP/s once no enemy is within 30 m for 4 s. */
+  private repairConvoy(dt:number){
+    if(!this.convoy||this.convoyHealth<=0||this.convoyHealth>=this.convoyMax||this.elapsed-this.convoyHitAt<4)return;
+    const c=this.convoy.position;if(this.enemies.some(e=>!e.dead&&!e.pending&&e.visual.root.position.distanceToSquared(c)<30*30))return;
+    this.convoyHealth=Math.min(this.convoyMax,this.convoyHealth+3*dt);
+  }
   updatePlayer(dt:number){
     const movement=this.input.movement(),length=Math.hypot(movement.x,movement.z);
     if(this.world.layout.closed&&length>.2){const route=routeSample(this.world.layout.points,projectRoute(this.world.layout.points,this.player.visual.root.position).progress);const dot=movement.x*route.dx+movement.z*route.dz;if(Math.abs(dot)>.2)this.world.loopReverse=dot<0;}
@@ -483,6 +516,7 @@ export class Game {
     if(this.input.touchAiming||this.input.hasTouchAim)this.aimPoint.set(p.x+this.input.aim.x*28,0,p.z+this.input.aim.z*28);
     else if(this.input.hasMouse){this.ray.setFromCamera(this.input.mouse,this.world.camera);this.ray.ray.intersectPlane(this.plane,this.aimPoint);}
     else this.aimPoint.set(p.x+Math.sin(this.player.heading)*15,0,p.z+Math.cos(this.player.heading)*15);
+    if(this.input.touchAiming)this.assistAim(p);
     if(WEAPONS[this.weapon].arc){const target=rocketTarget(p,this.aimPoint,this.enemies.filter(e=>!e.dead&&!e.pending).map(e=>e.visual.root.position),this.input.touchAiming||this.input.hasTouchAim,this.world.bounds);this.aimPoint.set(target.x,0,target.z);}
     if(WEAPONS[this.weapon].flame){const dx=this.aimPoint.x-p.x,dz=this.aimPoint.z-p.z,r=Math.hypot(dx,dz);if(r>FLAME.range)this.aimPoint.set(p.x+dx/r*FLAME.range,0,p.z+dz/r*FLAME.range);}
     this.player.aim=turnToward(this.player.aim,Math.atan2(this.aimPoint.x-p.x,this.aimPoint.z-p.z),dt*9);
@@ -490,7 +524,14 @@ export class Game {
     this.world.cursor.visible=true;this.world.cursor.position.set(this.aimPoint.x,.07,this.aimPoint.z);
     this.reload=Math.max(0,this.reload-dt);this.shieldTime=Math.max(0,this.shieldTime-dt);this.shieldCooldown=Math.max(0,this.shieldCooldown-dt);
     this.world.shield.visible=this.shieldTime>0;this.world.shield.position.copy(p).y=1;const convoyShield=this.convoy?.getObjectByName('ConvoyShield');if(convoyShield)convoyShield.visible=this.shieldTime>0;
-    if((this.input.pendingFire||this.input.firing||this.input.touchFiring||this.input.keys.has('Space')||this.input.keys.has('KeyF'))&&this.reload<=0){this.input.pendingFire=false;this.syncVisual(this.player);this.shoot(this.player,true);}
+    // A thumb on the aim stick fires only once the turret is on target, so the first shot is never thrown away.
+    const deliberate=this.input.pendingFire||this.input.firing||this.input.keys.has('Space')||this.input.keys.has('KeyF'),info=WEAPONS[this.weapon];
+    const onTarget=info.arc||info.flame||Math.abs(Math.atan2(Math.sin(Math.atan2(this.aimPoint.x-p.x,this.aimPoint.z-p.z)-this.player.aim),Math.cos(Math.atan2(this.aimPoint.x-p.x,this.aimPoint.z-p.z)-this.player.aim)))<.14;
+    // Deployment shield: hold it until the first contact (an enemy awake nearby, or the player opens fire), at most 30 s.
+    if(!this.contact&&this.shieldTime>0&&this.elapsed<this.deployShieldUntil){const c=this.convoy?.position;
+      this.contact=this.elapsed>30||this.shotsFired>0||this.enemies.some(e=>{if(e.dead||e.pending||e.encounter?.active===false)return false;const q=e.visual.root.position,reach=e.role==='boss'?52:40;return q.distanceToSquared(p)<reach*reach||!!c&&q.distanceToSquared(c)<40*40;});
+      if(!this.contact){this.shieldTime+=dt;this.deployShieldUntil+=dt;}}
+    if((deliberate||this.input.touchFiring&&onTarget)&&this.reload<=0){this.input.pendingFire=false;this.syncVisual(this.player);this.shoot(this.player,true);}
   }
   updateEnemies(dt:number){
     const m=this.missionData(),playerPos=this.player.visual.root.position;
@@ -540,9 +581,12 @@ export class Game {
   airborne(unit:Unit){return (unit.role==='airlift'||unit.bossKind==='helicopter'||unit.bossKind==='quadcopter'||unit.bossKind==='jet')&&unit.visual.root.position.y>2;}
   damageUnit(unit:Unit,damage:number,source:Point,antiAir=false,hitEffect=true){
     if(this.airborne(unit)&&!antiAir)return;
+    if(unit===this.player&&this.shieldTime>0)this.contact=true;   // a blocked hit ends the deployment hold
     if(unit.dead||unit.pending||unit===this.player&&this.shieldTime>0)return;
     if(unit!==this.player&&unit.team!=='ally'&&damage>0)this.encounters.alert(this,unit,source);
-    const multiplier=this.isInfantry(unit)||unit.role==='jeep'||unit.role==='airlift'?1:armorMultiplier(unit.visual.root.position,unit.heading,source);
+    // The player's armor faces where the gun points (twin-stick driving turns the hull toward travel, so retreating
+    // would always show the rear). Bosses have their own armored/exposed phases instead of facing armor.
+    const multiplier=this.isInfantry(unit)||unit.role==='jeep'||unit.role==='airlift'||unit.role==='boss'?1:armorMultiplier(unit.visual.root.position,unit===this.player?unit.aim:unit.heading,source);
     unit.hp-=damage*multiplier*(unit.role==='boss'?this.bosses.multiplier(unit):1);
     if(this.isInfantry(unit))noteHit(unit,this.elapsed);
     const impact=unit.visual.root.position.clone();impact.y+=1.4;if(hitEffect)this.world.fx.impact(impact);
@@ -574,8 +618,9 @@ if(landmark)for(const [dx,dz] of [[-.3,-.3],[.3,-.3],[-.3,.3],[.3,.3]])this.worl
 if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kind==='fuelcrate'?7:5,cover.kind==='fuelcrate'?110:65);}}
   }
   damageConvoy(damage:number){
+    if(this.convoy&&this.shieldTime>0)this.contact=true;
     if(!this.convoy||this.convoyHealth<=0||this.shieldTime>0||damage<=0)return;
-    this.convoyHealth=Math.max(0,this.convoyHealth-damage);this.world.burst(this.convoy.position,1,5);
+    this.convoyHealth=Math.max(0,this.convoyHealth-damage);this.convoyHitAt=this.elapsed;this.world.burst(this.convoy.position,1,5);
   }
   explode(p:Point,radius:number,damage:number,antiAir=false,alliedSafe=false){
     // Felt, not just seen: a blast shakes the camera, less the farther it is from the player.
@@ -667,7 +712,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   battlefieldClear(){return this.enemies.length>0&&this.enemies.every(e=>e.dead||this.airlifts.departing(e));}
   objectiveProgress(){if(this.training)return this.training.ready(this)?1:0;if(this.skirmish)return this.battlefieldClear()?1:0;if(this.missionData().kind==='rescue')return this.allies.progress(this);const m=this.missionData();if(this.battlefieldClear())return 1;let progress=0;
     if(m.kind==='capture')progress=this.capture/m.duration;
-    else if(m.kind==='defense')progress=this.enemies.length?this.enemies.filter(e=>e.dead).length/this.enemies.length:0;
+    else if(m.kind==='defense')progress=Math.max(this.enemies.length?this.enemies.filter(e=>e.dead).length/this.enemies.length:0,this.waves.holdProgress(this));
     else if(m.kind==='escort')progress=this.convoy?this.convoyDistance/this.world.layout.length:0;
     else if(m.kind==='boss'){const bosses=this.enemies.filter(e=>e.role==='boss');progress=bosses.length?bosses.reduce((sum,b)=>sum+1-b.hp/b.max,0)/bosses.length:0;}
     else progress=this.kills/Math.max(1,this.armoredGoal);
@@ -677,7 +722,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   step(dt:number){
     if(this.phase==='finishing'){this.finishDelay=Math.max(0,this.finishDelay-dt);if(this.finishDelay<1e-6){if(this.training){this.showTrainingResult();return;}if(this.skirmish){this.showSkirmishResult();return;}if(this.level===2&&(this.mission===5||this.mission===8||this.mission===MISSIONS.length-1)){this.setPhase('victory');this.showVictory();}else this.showDepot();}return;}
     if(this.phase!=='playing')return;
-    this.trailClock-=dt;this.elapsed+=dt;this.hazards.update(this,dt);if(this.player.dead){this.fail();return;}this.updatePlayer(dt);this.updateEnemies(dt);this.updateShots(dt);this.updateActivities(dt);this.special.update(this,dt);this.flame.update(this,dt);if(this.trailClock<=0)this.trailClock=.06;
+    this.trailClock-=dt;this.elapsed+=dt;this.repairConvoy(dt);this.hazards.update(this,dt);if(this.player.dead){this.fail();return;}this.updatePlayer(dt);this.updateEnemies(dt);this.updateShots(dt);this.updateActivities(dt);this.special.update(this,dt);this.flame.update(this,dt);if(this.trailClock<=0)this.trailClock=.06;
     for(const unit of [this.player,...this.enemies,...this.allies.active])if(!this.isInfantry(unit))unit.visual.turret.position.y+=((unit.role==='jeep'?1.64:unit.visual.turret.userData.restY??1.17)-unit.visual.turret.position.y)*Math.min(1,dt*12);
     this.syncVisual(this.player);
     const m=this.missionData(),p=this.player.visual.root.position;
@@ -696,20 +741,20 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     let objective=m.objective;
     if(m.kind==='assault')objective=this.kills>=this.armoredGoal?`PATROL CLEAR · REACH EXIT ${Math.ceil(distance(this.player.visual.root.position,this.world.layout.points.at(-1)!))} m`:`${this.kills} / ${this.armoredGoal} vehicles · ${this.enemies.filter(e=>!e.dead&&e.encounter&&!e.encounter.active).length} waiting ahead`;
     if(m.kind==='capture')objective=`UPLINK ${Math.min(m.duration,Math.floor(this.capture))} / ${m.duration}s · ${this.enemies.some(e=>!e.dead&&distance(e.visual.root.position,{x:0,z:-13})<6.7)?'CONTESTED':'HOLD THE AMBER RING'}`;
-    if(m.kind==='defense')objective=this.training?`SIGNAL DRILL · RELAY ${Math.ceil(this.relayHealth/3)}%`:this.waves.text(this).replace('\n',' · ');
+    if(m.kind==='defense')objective=this.training?`SIGNAL DRILL · RELAY ${Math.ceil(this.relayHealth/this.relayMax*100)}%`:this.waves.text(this).replace('\n',' · ');
     if(m.kind==='rescue')objective=`SQUADRON ${this.allies.saved}/2 rescued · ${this.allies.survivors} surviving`;
-    if(m.kind==='escort')objective=`TRANSPORT ${Math.max(0,Math.ceil(this.convoyHealth/ESCORT.health*100))}%${this.shieldTime>0?' · SHIELDED':''} · ${this.convoy&&distance(this.player.visual.root.position,this.convoy.position)<12?(this.world.layout.closed&&this.convoyReverse===null?'CHOOSE LEFT OR RIGHT':this.convoyBlocked?'CLEAR THE MARKED PATH':'MOVING TO EXTRACTION'):'MOVE CLOSER TO ESCORT'}`;
+    if(m.kind==='escort')objective=`TRANSPORT ${Math.max(0,Math.ceil(this.convoyHealth/this.convoyMax*100))}%${this.shieldTime>0?' · SHIELDED':''} · ${this.convoy&&distance(this.player.visual.root.position,this.convoy.position)<12?(this.world.layout.closed&&this.convoyReverse===null?'CHOOSE LEFT OR RIGHT':this.convoyBlocked?'CLEAR THE MARKED PATH':'MOVING TO EXTRACTION'):'MOVE CLOSER TO ESCORT'}`;
     if(m.kind==='boss')objective='DEFEAT COMMAND GUARD · REACH EXIT';
     if(m.kind==='boss'&&!this.enemies.some(u=>u.role==='boss'&&!u.dead))objective='COMMAND DOWN · REACH THE MARKED EXIT';
     if(this.battlefieldClear()&&m.kind!=='rescue'&&!this.training)objective='AREA SECURED';
     if(this.training){this.updateLesson();objective=this.training.hint(this).text;}
     if(this.skirmish&&!this.battlefieldClear())objective=this.skirmish.objective(this).full;
-    const relayLabel=this.el('relay-label');relayLabel.hidden=m.kind!=='defense'||!['playing','paused'].includes(this.phase);const relayText=this.training?`UPLINK ${Math.ceil(this.relayHealth/3)}%`:this.waves.text(this);if(relayLabel.textContent!==relayText)setText(relayLabel,relayText);
+    const relayLabel=this.el('relay-label');relayLabel.hidden=m.kind!=='defense'||!['playing','paused'].includes(this.phase);const relayText=this.training?`UPLINK ${Math.ceil(this.relayHealth/this.relayMax*100)}%`:this.waves.text(this);if(relayLabel.textContent!==relayText)setText(relayLabel,relayText);
     const boss=this.enemies.find(u=>u.role==='boss'&&!u.dead),readout=this.el('boss-readout');readout.hidden=!boss;if(boss)setText(readout,`${this.enemies.filter(e=>e.role==='boss'&&!e.dead).length} BOSS · ${BOSS[boss.bossKind??bossKind(this.mission)].name} ${Math.ceil(boss.hp/boss.max*100)}% · ${boss.encounter&&!boss.encounter.active?(m.kind==='defense'?'REINFORCEMENTS':'GUARDING THE EXIT'):this.bosses.status(boss)}`);setText(this.el('objective'),objective);this.el('objective-fill').style.width=`${clamp(this.objectiveProgress()*100,0,100)}%`;
     const hostile=this.enemies.filter(e=>!e.dead).length,compact=this.el('objective-compact');
     let short=`${hostile} hostiles`;
-    if(m.kind==='escort')short=`Transport ${Math.max(0,Math.ceil(this.convoyHealth/ESCORT.health*100))}%${this.shieldTime>0?' ◇':''} · ${hostile} left`;
-    else if(m.kind==='defense')short=`Relay ${Math.max(0,Math.ceil(this.relayHealth/3))}% · ${hostile} left`;
+    if(m.kind==='escort')short=`Transport ${Math.max(0,Math.ceil(this.convoyHealth/this.convoyMax*100))}%${this.shieldTime>0?' ◇':''} · ${hostile} left`;
+    else if(m.kind==='defense')short=`Relay ${Math.max(0,Math.ceil(this.relayHealth/this.relayMax*100))}% · ${hostile} left`;
     else if(m.kind==='capture')short=`Uplink ${Math.min(m.duration,Math.floor(this.capture))}/${m.duration}s · ${hostile} left`;
     else if(m.kind==='assault'&&this.kills>=this.armoredGoal)short=`Exit ${Math.ceil(distance(this.player.visual.root.position,this.world.layout.points.at(-1)!))} m · ${hostile} left`;
     if(m.kind==='rescue')short=`Rescued ${this.allies.saved}/2 · ${this.allies.survivors} alive`;
@@ -753,7 +798,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     for(const a of this.world.activities){if(a.spent)continue;const q=map(a);ctx.fillStyle=a.kind==='repair'||a.kind==='health'?'#75ffbd':a.kind==='shield'?'#55aaff':a.kind==='supply'?'#70d9ff':a.kind==='laser'?'#8bffff':a.kind==='arc'?'#c392ff':'#ff7055';if(a.kind==='repair'||a.kind==='health'){ctx.fillRect(q.x-3,q.y-1,6,2);ctx.fillRect(q.x-1,q.y-3,2,6);}else if(a.kind==='shield'){ctx.beginPath();ctx.moveTo(q.x-3,q.y-3);ctx.lineTo(q.x+3,q.y-3);ctx.lineTo(q.x+2,q.y+2);ctx.lineTo(q.x,q.y+4);ctx.lineTo(q.x-2,q.y+2);ctx.closePath();ctx.fill();}else ctx.fillRect(q.x-2,q.y-2,4,4);}
     // Landing zones pulse in the team colour until the airlift is down; airlifts draw as a larger diamond.
     for(const f of this.airlifts.flights){if(!f.marker.visible)continue;const q=map(f.lz);ctx.strokeStyle=f.unit.squad!==undefined?TEAMS[f.unit.squad].css:'#ff7a5d';ctx.globalAlpha=.55+.35*Math.sin(this.elapsed*6);ctx.beginPath();ctx.arc(q.x,q.y,5,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
-    for(const u of [this.player,...this.enemies,...this.allies.tanks.map(a=>a.unit)]){if(u.dead||u.aboard)continue;const q=map(u.visual.root.position);if(u.role==='airlift'){ctx.fillStyle=u.squad!==undefined?TEAMS[u.squad].css:'#ff7a5d';ctx.beginPath();ctx.moveTo(q.x,q.y-4);ctx.lineTo(q.x+4,q.y);ctx.lineTo(q.x,q.y+4);ctx.lineTo(q.x-4,q.y);ctx.closePath();ctx.fill();ctx.strokeStyle='#142328';ctx.stroke();continue;}ctx.fillStyle=u===this.player||u.team==='ally'?'#a4ffe0':u.squad!==undefined?TEAMS[u.squad].css:u.encounter&&!u.encounter.active?'#87685e':'#ff7a5d';ctx.beginPath();ctx.arc(q.x,q.y,u===this.player?3:this.isInfantry(u)?1.2:2,0,Math.PI*2);ctx.fill();}
+    for(const u of [this.player,...this.enemies,...this.allies.tanks.map(a=>a.unit)]){if(u.dead||u.aboard)continue;const q=map(u.visual.root.position);if(u.role==='airlift'){ctx.fillStyle=u.squad!==undefined?TEAMS[u.squad].css:'#ff7a5d';ctx.beginPath();ctx.moveTo(q.x,q.y-4);ctx.lineTo(q.x+4,q.y);ctx.lineTo(q.x,q.y+4);ctx.lineTo(q.x-4,q.y);ctx.closePath();ctx.fill();ctx.strokeStyle='#142328';ctx.stroke();continue;}ctx.fillStyle=u===this.player||u.team==='ally'?'#a4ffe0':u.squad!==undefined?TEAMS[u.squad].css:u.encounter&&!u.encounter.active?'#87685e':'#ff7a5d';ctx.beginPath();ctx.arc(q.x,q.y,u===this.player?4:this.isInfantry(u)?2.6:3.4,0,Math.PI*2);ctx.fill();}
     if(this.convoy){const q=map(this.convoy.position);ctx.fillStyle='#ffcb84';ctx.fillRect(q.x-3,q.y-3,6,6);}
   }
   complete(){
@@ -830,7 +875,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     this.flame.render(this,this.phase!=='paused'?dt:0);
     // Draw moving things between the last two steps, then put the exact logic transforms back.
     const smooth=this.phase==='playing';if(smooth)this.smoother.apply(this.accumulator*60);
-    try{this.budget.beforeRender(this);this.world.update(this.phase!=='paused'?dt:0,this.player.visual.root.position,this.phase==='menu');}finally{if(smooth)this.smoother.restore();}
+    try{this.budget.beforeRender(this);this.world.update(this.phase!=='paused'?dt:0,this.player.visual.root.position,this.phase==='menu');}finally{if(smooth)this.smoother.restore();}this.threats.update(this);
     this.budget.afterRender(this);
     this.projectRelay();requestAnimationFrame(t=>this.frame(t));
   }

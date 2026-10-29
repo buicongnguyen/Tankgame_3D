@@ -25,13 +25,13 @@ test('clearing all hostiles completes from anywhere, waits for reserves, and all
  });expect(Object.values(r).every(Boolean),JSON.stringify(r)).toBe(true);
 });
 
-for(const stage of [3,8,12])test(`uplink ${stage}: finite waves allow preparation and cannot time out with survivors`,async({page})=>{
+for(const stage of [3,8,12])test(`uplink ${stage}: finite waves allow preparation, and holding the uplink for the mission duration after the last wave (and its boss) wins`,async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const r=await page.evaluate(stage=>{
   const g=(window as any).__steel;g.frame=()=>{};g.start(stage,0);g.player.hp=1e6;g.relayHealth=1e6;const initial=g.enemies.length,starts=g.enemies.map((e:any)=>({e,x:e.visual.root.position.x,z:e.visual.root.position.z,wake:e.encounter.group}));
   g.elapsed=7;g.updateEnemies(.02);const first=starts.filter((s:any)=>s.wake===0),firstActive=first.every((s:any)=>s.e.encounter.active),laterIdle=starts.filter((s:any)=>s.wake>0).every((s:any)=>!s.e.encounter.active);
   for(let i=0;i<60*10;i++){g.elapsed+=1/60;g.updateEnemies(1/60);}const marching=first.filter((s:any)=>Math.hypot(s.e.visual.root.position.x,s.e.visual.root.position.z+13)<Math.hypot(s.x,s.z+13)-5).length;
   for(let wave=0;wave<3;wave++){for(const e of g.enemies)if(!e.pending)e.dead=true;g.waves.update(g);g.elapsed=g.waves.nextAt;g.updateEnemies(.01);}const released=g.enemies.every((e:any)=>e.dead||e.encounter.active);
-  g.elapsed=1000;g.step(.01);const noTimeout=g.phase==='playing',finite=g.enemies.length===initial;for(const e of g.enemies)e.dead=true;g.step(.01);return {firstActive,laterIdle,marching,first:first.length,released,noTimeout,finite,complete:g.phase==='finishing',times:[...new Set(starts.map((s:any)=>s.wake))].sort((a:any,b:any)=>a-b)};
+  for(const e of g.enemies)if(e.role==='boss')e.dead=true;g.updateEnemies(.01);const hold=g.missionData().duration;g.elapsed=g.waves.holdFrom+hold-1;g.step(.01);const noTimeout=g.phase==='playing',finite=g.enemies.length===initial;g.elapsed=g.waves.holdFrom+hold+.2;g.step(.01);return {firstActive,laterIdle,marching,first:first.length,released,noTimeout,finite,complete:g.phase==='finishing',times:[...new Set(starts.map((s:any)=>s.wake))].sort((a:any,b:any)=>a-b)};
  },stage);expect(r.firstActive&&r.laterIdle&&r.released&&r.noTimeout&&r.finite&&r.complete,JSON.stringify(r)).toBe(true);expect(r.marching).toBeGreaterThanOrEqual(Math.ceil(r.first*.6));expect(r.times).toEqual([0,1,2,3]);
 });
 

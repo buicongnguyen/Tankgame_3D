@@ -29,6 +29,6 @@ test('aim trigger hysteresis and nub containment',async({browser})=>{
  // Test real pointer/resize events without live combat ending the mission on slow CI renderers.
  await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};});const cdp=await context.newCDPSession(page);
  const r=(await page.locator('#aim-pad').boundingBox())!,n=(await page.locator('#aim-pad .stick-nub').boundingBox())!,max=(r.width-n.width)/2-3;
- for(const [index,strength,fire] of [[0,.27,false],[1,.4,true],[2,.27,true],[3,.18,false],[4,4,true]] as const){await cdp.send('Input.dispatchTouchEvent',{type:index===0?'touchStart':'touchMove',touchPoints:[{x:r.x+r.width/2+strength*max,y:r.y+r.height/2,id:1}]});expect(await page.evaluate(()=>(window as any).__steel.input.touchFiring)).toBe(fire);}
+ for(const [index,strength,fire] of [[0,.4,false],[1,.65,true],[2,.5,true],[3,.4,false],[4,4,true]] as const){await cdp.send('Input.dispatchTouchEvent',{type:index===0?'touchStart':'touchMove',touchPoints:[{x:r.x+r.width/2+strength*max,y:r.y+r.height/2,id:1}]});expect(await page.evaluate(()=>(window as any).__steel.input.touchFiring)).toBe(fire);}
  const nub=(await page.locator('#aim-pad .stick-nub').boundingBox())!;expect(nub.x+nub.width).toBeLessThanOrEqual(r.x+r.width);await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});await expect(page.locator('#aim-pad')).not.toHaveClass(/firing|engaged/);await context.close();
 });
