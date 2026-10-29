@@ -46,25 +46,18 @@ for(const view of VIEWS)for(const fallback of view.touch?[false,true]:[false])te
  const tap=async(selector:string)=>{const l=page.locator(selector).first();await l.scrollIntoViewIfNeeded();view.touch?await l.tap():await l.click();};
  const screens:Record<string,Awaited<ReturnType<typeof audit>>>={};
  screens.menu=await audit(page);
- await tap('.menu-settings>summary');await expect(page.locator('[data-action=quality]')).toBeVisible();screens.settings=await audit(page);
+ await tap('.dock-more>summary');await tap('.menu-settings>summary');await expect(page.locator('[data-action=quality]')).toBeVisible();screens.settings=await audit(page);
  // The settings sheet is a list of full-width rows; the graphics help sits directly under its row.
  const sheet=await page.evaluate(()=>{const box=document.querySelector('.menu-settings .settings')!.getBoundingClientRect(),rows=[...document.querySelectorAll('.menu-settings .settings>button')].map(b=>{const r=b.getBoundingClientRect();return {full:Math.abs(r.width-box.width)<2,tall:r.height>=44};});
   const quality=document.querySelector('.menu-settings [data-action=quality]')!,help=document.querySelector('.menu-settings #graphics-help')!;
   return {rows,helpBelow:Math.abs(help.getBoundingClientRect().top-quality.getBoundingClientRect().bottom)<2,divider:getComputedStyle(quality).borderBottomStyle};});
  expect(sheet.rows.length).toBeGreaterThanOrEqual(4);for(const row of sheet.rows)expect(row).toEqual({full:true,tall:true});expect(sheet).toMatchObject({helpBelow:true,divider:'none'});
- await tap('.menu-settings>summary');
- if(view.name==='phone'||view.name==='small'){
-  // Portrait phones: the footer is a 2 x 2 grid of equal tiles.
-  const tiles=await page.evaluate(()=>['[data-action=leaderboard]','.mobile-fullscreen>button','footer>[data-action=shop]','.menu-settings>summary'].map(s=>{const r=document.querySelector(s)!.getBoundingClientRect();return {x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)};}));
-  expect(new Set(tiles.map(t=>t.w)).size).toBe(1);expect(tiles[0].y).toBe(tiles[1].y);expect(tiles[2].y).toBe(tiles[3].y);expect(tiles[2].y).toBeGreaterThan(tiles[0].y);
- }
- if(view.name==='desktop'){
-  // Desktop keeps the larger type of menu.css.
-  expect(await page.evaluate(()=>['[data-action=leaderboard]','footer>[data-action=shop]','.menu-settings>summary'].map(s=>getComputedStyle(document.querySelector(s)!).fontSize))).toEqual(['14px','14px','14px']);
- }
- expect(await iconsLoad(page,'footer>button[data-action=leaderboard], footer>button[data-action=shop], .menu-settings>summary','::before')).toEqual(['160x160','160x160','160x160']);
- await tap('[data-action=leaderboard]');await expect(page.locator('#rank-back')).toBeVisible();screens.leaderboard=await audit(page);await tap('#rank-back');
- await tap('footer>[data-action=shop]');await expect(page.getByRole('heading',{name:'Field shop'})).toBeVisible();
+ await page.keyboard.press('Escape');await expect(page.locator('details.chip-sheet[open]')).toHaveCount(0);
+ // The command dock: four equal tiles on one row, always on screen.
+ const tiles=await page.evaluate(()=>[...document.querySelectorAll('.command-dock .dock-tile')].map(e=>{const r=e.getBoundingClientRect();return {y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),bottom:r.bottom<=innerHeight+1};}));
+ expect(tiles).toHaveLength(4);expect(Math.max(...tiles.map(t=>t.w))-Math.min(...tiles.map(t=>t.w))).toBeLessThanOrEqual(1);expect(new Set(tiles.map(t=>t.y)).size).toBe(1);for(const t of tiles){expect(t.h).toBeGreaterThanOrEqual(44);expect(t.bottom).toBe(true);}
+ await tap('.dock-more>summary');await tap('[data-action=leaderboard]');await expect(page.locator('#rank-back')).toBeVisible();screens.leaderboard=await audit(page);await tap('#rank-back');
+ await tap('.command-dock [data-action=shop]');await expect(page.getByRole('heading',{name:'Field shop'})).toBeVisible();
  expect(await iconsLoad(page,'.shop-tabs button','::before')).toEqual(Array(4).fill('160x160'));
  expect(await iconsLoad(page,'.credit-total','::before')).toEqual(['160x160']);
  expect((await iconsLoad(page,'[data-weapon-card] .coin-icon')).every(size=>size==='160x160')).toBe(true);
@@ -91,7 +84,7 @@ for(const view of [VIEWS[0],VIEWS[1]])test(`a new pilot's command screen keeps t
 
 test('price chips show buy, upgrade, unaffordable and maxed states apart',async({browser})=>{
  const {context,page}=await open(browser,VIEWS[0]);
- await page.locator('footer>[data-action=shop]').tap();await expect(page.getByRole('heading',{name:'Field shop'})).toBeVisible();
+ await page.locator('.command-dock [data-action=shop]').tap();await expect(page.getByRole('heading',{name:'Field shop'})).toBeVisible();
  const look=()=>page.evaluate(()=>Object.fromEntries(['0','6'].map(id=>{const b=document.querySelector<HTMLButtonElement>(`[data-weapon-card="${id}"] .price-button`)!,s=getComputedStyle(b);return [id,{disabled:b.disabled,image:s.backgroundImage==='none'?'none':s.backgroundImage.includes('rgb(24, 58, 54)')?'teal':s.backgroundImage.includes('rgb(52, 41, 15)')?'gold':'other',color:s.color}];})));
  // Rich pilot: the owned cannon upgrades in teal, the locked micro missiles buy in gold.
  expect(await look()).toEqual({'0':{disabled:false,image:'teal',color:'rgb(232, 255, 241)'},'6':{disabled:false,image:'gold',color:'rgb(244, 209, 151)'}});

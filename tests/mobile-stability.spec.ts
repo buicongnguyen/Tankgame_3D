@@ -30,7 +30,7 @@ test('phone defaults to High, legacy progress and manual Low choice persist',asy
  const legacy={...freshSave(),difficulty:'hard',credits:123,low:false};delete legacy.graphicsChosen;
  await page.evaluate(({key,save})=>{localStorage.removeItem('steel-front-3d-state-v2');localStorage.setItem(key,JSON.stringify(save));},{key:SAVE_KEY,save:legacy});await page.evaluate(()=>(window as any).__steel.storage.flush());await page.reload();await page.waitForFunction(()=>(window as any).__steel?.phase==='menu');
  expect(await page.evaluate(()=>{const s=(window as any).__steel.save;return [s.low,s.difficulty,s.credits];})).toEqual([false,'hard',123]);
- await page.locator('.menu-settings>summary').click();await page.locator('[data-action="quality"]').tap();await expect(page.locator('[data-action="quality"]')).toHaveAttribute('aria-pressed','true');
+ await page.locator('.dock-more>summary').click();await page.locator('.menu-settings>summary').click();await page.locator('[data-action="quality"]').tap();await expect(page.locator('[data-action="quality"]')).toHaveAttribute('aria-pressed','true');
  await page.evaluate(()=>(window as any).__steel.storage.flush());await page.reload();await page.waitForFunction(()=>(window as any).__steel?.phase==='menu');expect(await page.evaluate(()=>(window as any).__steel.save.low)).toBe(true);await context.close();
 });
 

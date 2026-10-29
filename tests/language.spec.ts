@@ -16,7 +16,6 @@ test('opening language choice translates in place, keeps progress and persists a
  await expect(page.locator('[data-action=deploy]')).toContainText('XUẤT KÍCH');
  await expect(page.locator('.briefing h2')).toHaveText('Bình minh');
  await expect(page.locator('[data-action=difficulty][data-value=easy]')).toHaveText('Dễ');
- await expect(page.locator('.mission-setup')).toHaveAttribute('open','');
  expect(await save(page)).toBe(before);
  await page.reload();await page.locator('#game-language').waitFor();
  await expect(page.locator('#game-language [data-language="vi"]')).toHaveAttribute('aria-pressed','true');
@@ -62,7 +61,7 @@ test('Vietnamese shop purchases, profile names and leaderboard filters retain th
  await page.locator('[data-action=profile-reset][data-value="0"]').click();await expect(page.locator('.profiles-panel h1')).toHaveText('Chơi lại Shield từ đầu?');
  await page.locator('[data-action=profiles]').click();await page.locator('[data-action=menu]').last().click();
  await page.evaluate(async()=>{const {recordRun}=await import('/src/three/leaderboard.ts');recordRun(0,0,'easy',60,90,100,'Shield');});
- await page.locator('[data-action=leaderboard]').click();await expect(page.locator('#rank-name')).toHaveValue('Shield');
+ await page.locator('.dock-more>summary').click();await page.locator('[data-action=leaderboard]').click();await expect(page.locator('#rank-name')).toHaveValue('Shield');
  await expect(page.locator('#rank-list tbody tr td').nth(1)).toHaveText('Shield');
  await expect(page.locator('#rank-mode')).toHaveValue('easy');await expect(page.locator('#rank-mode option[value=easy]')).toHaveText('dễ');
  await page.locator('#rank-mode').selectOption('hard');await expect(page.locator('#rank-list')).toContainText('Hoàn thành một nhiệm vụ');

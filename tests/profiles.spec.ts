@@ -75,7 +75,7 @@ test('resetting asks first, clears only that profile and keeps its name and devi
  expect((await state(page)).credits).toBe(500);
  // Settings resets the profile in use.
  await page.locator('[data-action="menu"]').last().click();
- await page.locator('.menu-settings summary').click();await page.getByRole('button',{name:/Reset this profile/i}).click();
+ await page.locator('.dock-more>summary').click();await page.locator('.menu-settings summary').click();await page.getByRole('button',{name:/Reset this profile/i}).click();
  await page.locator('[data-action="profile-reset-confirm"]').click();
  await expect(page.locator('.profile-card').nth(1)).toContainText('0 CR');
  expect(await state(page)).toMatchObject({credits:0,mission:0,sound:true,low:true,pilot:'Pilot 2'});
@@ -174,7 +174,7 @@ test('cached older builds cannot overwrite migrated profiles through the legacy 
 test('queued campaign saves finish before switching and names save through the leaderboard',async({page})=>{
  await open(page);await page.evaluate(async()=>{const g=(window as any).__steel;g.save.credits=9876;void g.persist();await g.switchProfile(1);});
  await page.evaluate(()=>(window as any).__steel.showMenu());
- await page.locator('[data-action="leaderboard"]').click();await page.locator('#rank-name').fill('Ace Two');await page.locator('#rank-save').click();await expect(page.locator('#rank-message')).toContainText('Name saved');
+ await page.locator('.dock-more>summary').click();await page.locator('[data-action="leaderboard"]').click();await page.locator('#rank-name').fill('Ace Two');await page.locator('#rank-save').click();await expect(page.locator('#rank-message')).toContainText('Name saved');
  await page.locator('#rank-back').click();await expect(page.locator('.profile-chip')).toContainText('Ace Two');
  await page.reload();await page.locator('.profile-chip').waitFor();await expect(page.locator('.profile-chip')).toContainText('Ace Two');
  await page.locator('.profile-chip').click();await expect(page.locator('.profile-card').nth(0)).toContainText('9,876 CR');
