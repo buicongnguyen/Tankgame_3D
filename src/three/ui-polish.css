@@ -15,18 +15,18 @@
 .command-screen .briefing>details:not(.mission-setup)>summary::after{content:'+';font-size:18px;color:var(--amber)}
 .command-screen .briefing>details[open]:not(.mission-setup)>summary::after{content:'\2212'}
 
-/* ---------------------------------------------------------------- command screen: footer tiles */
-.command-screen footer{--ui-tile-size:13px;display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px}
-.command-screen footer>button,.command-screen .mobile-fullscreen>button,.command-screen .menu-settings>summary{display:flex;align-items:center;gap:10px;min-height:var(--ui-tap);margin:0;padding:8px 14px;border:1px solid var(--ui-edge);border-radius:4px;background:var(--ui-tile);box-shadow:inset 0 1px 0 #ffffff12,0 3px 12px #0003;color:var(--ui-text);font:700 13px/1.2 'Barlow',Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;text-align:left;white-space:normal}
+/* ---------------------------------------------------------------- command screen: settings and fullscreen tiles */
+
+.command-screen .mobile-fullscreen>button,.command-screen .menu-settings>summary{display:flex;align-items:center;gap:10px;min-height:var(--ui-tap);margin:0;padding:8px 14px;border:1px solid var(--ui-edge);border-radius:4px;background:var(--ui-tile);box-shadow:inset 0 1px 0 #ffffff12,0 3px 12px #0003;color:var(--ui-text);font:700 13px/1.2 'Barlow',Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;text-align:left;white-space:normal}
 /* One size per breakpoint for every tile; the shop selector also outranks its older 11 px rule in menu.css. */
-.command-screen footer>button,.command-screen footer>button[data-action=shop],.command-screen .mobile-fullscreen>button,.command-screen .menu-settings>summary{font-size:var(--ui-tile-size)}
-.command-screen footer>button:hover:not(:disabled),.command-screen .mobile-fullscreen>button:hover:not(:disabled),.command-screen .menu-settings>summary:hover{background:var(--ui-tile-hover);border-color:var(--ui-edge-strong)}
-.command-screen footer>button::before,.command-screen .menu-settings>summary::before{content:'';flex:none;width:28px;height:28px;margin:-4px 0;background:center/contain no-repeat}
-.command-screen footer>button[data-action=leaderboard]::before{background-image:url(./ui-icons/trophy.webp)}
-.command-screen footer>button[data-action=shop]::before{background-image:url(./ui-icons/coins.webp)}
+.command-screen .mobile-fullscreen>button,.command-screen .menu-settings>summary{font-size:var(--ui-tile-size)}
+.command-screen .mobile-fullscreen>button:hover:not(:disabled),.command-screen .menu-settings>summary:hover{background:var(--ui-tile-hover);border-color:var(--ui-edge-strong)}
+.command-screen .menu-settings>summary::before{content:'';flex:none;width:28px;height:28px;margin:-4px 0;background:center/contain no-repeat}
+
+
 .command-screen .menu-settings>summary::before{background-image:url(./ui-icons/gear.webp)}
-.command-screen footer>button[data-action=shop]{min-height:var(--ui-tap);min-width:0;border-color:#f1cf9166;background:linear-gradient(180deg,#3b2c14,#241a0b);color:var(--ui-gold)}
-.command-screen footer>button[data-action=shop]:hover:not(:disabled){background:linear-gradient(180deg,#4a3818,#2e210e);border-color:#f1cf91aa}
+
+
 .command-screen .menu-settings{margin:0 0 0 auto;min-width:150px}
 .command-screen .menu-settings>summary{justify-content:flex-start;list-style:none}
 .command-screen .menu-settings>summary::after{content:'+';margin-left:auto;font-size:18px;color:var(--amber)}
@@ -36,29 +36,29 @@
 
 /* Phones, portrait: a 2 x 2 grid of equal tiles; an open settings sheet takes the full width below. */
 @media(max-width:760px) and (orientation:portrait) and (pointer:coarse){
- .command-screen footer{--ui-tile-size:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:stretch}
- .command-screen footer>*{min-width:0;margin:0}
- .command-screen footer>button,.command-screen .mobile-fullscreen>button,.command-screen .menu-settings>summary{width:100%;height:100%;min-width:0;padding:8px 10px;letter-spacing:.05em}
+ 
+ 
+ .command-screen .mobile-fullscreen>button,.command-screen .menu-settings>summary{width:100%;height:100%;min-width:0;padding:8px 10px;letter-spacing:.05em}
  .command-screen .menu-settings[open]>summary{height:auto}
  .command-screen .mobile-fullscreen>button{justify-content:center}
- .command-screen .menu-settings,.command-screen footer>.menu-settings{min-width:0;margin:0}
+ .command-screen .menu-settings{min-width:0;margin:0}
  .command-screen .menu-settings[open]{grid-column:1/-1;max-width:none;padding:10px 14px 14px}
- .command-screen footer:has(.menu-settings[open])>button[data-action=shop]{grid-column:1/-1}
+ 
 }
 @media(max-width:360px) and (pointer:coarse){
- .command-screen footer{--ui-tile-size:11px}
- .command-screen footer>button,.command-screen .mobile-fullscreen>button,.command-screen .menu-settings>summary{gap:7px;padding:8px;letter-spacing:.02em}
- .command-screen footer>button::before,.command-screen .menu-settings>summary::before{width:22px;height:22px}
+ 
+ .command-screen .mobile-fullscreen>button,.command-screen .menu-settings>summary{gap:7px;padding:8px;letter-spacing:.02em}
+ .command-screen .menu-settings>summary::before{width:22px;height:22px}
 }
 /* Phones, landscape: one row of four tiles. */
 @media(pointer:coarse) and (orientation:landscape) and (max-height:600px){
- .command-screen footer{--ui-tile-size:12px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-items:stretch}
- .command-screen footer>*{min-width:0;margin:0}
- .command-screen footer>button,.command-screen .mobile-fullscreen>button,.command-screen .menu-settings>summary{width:100%;height:100%;padding:8px 10px;letter-spacing:.04em}
+ 
+ 
+ .command-screen .mobile-fullscreen>button,.command-screen .menu-settings>summary{width:100%;height:100%;padding:8px 10px;letter-spacing:.04em}
  .command-screen .menu-settings[open]>summary{height:auto}
  .command-screen .mobile-fullscreen>button{justify-content:center}
- .command-screen .menu-settings,.command-screen footer>.menu-settings{min-width:0;margin:0}
- .command-screen footer:has(.menu-settings[open]){grid-template-columns:repeat(3,minmax(0,1fr))}
+ .command-screen .menu-settings{min-width:0;margin:0}
+ 
  .command-screen .menu-settings[open]{grid-column:1/-1;max-width:none}
 }
 
@@ -135,7 +135,7 @@
 /* ---------------------------------------------------------------- type floor: nothing in a menu below 11 px */
 .panel>.eyebrow,.profile-head .eyebrow,.profile-tag,.skirmish-panel .setup-label,.skirmish-maps button b,.route-item small,.stage-metrics span,.stage-rating small,.stage-rewards small,.control-guide kbd,.control-guide span{font-size:11px}
 .profile-actions button,.profile-actions .quiet{font-size:12px}
-.command-screen .skirmish-entry small,.command-screen .profile-chip span{font-size:11px}
+.command-screen .profile-chip span{font-size:11px}
 .skirmish-panel small{font-size:12px;line-height:1.45}
 
 /* ---------------------------------------------------------------- phones and touch tablets: type floor and touch sizes */
@@ -145,7 +145,7 @@
  .command-screen .profile-chip{min-height:44px;font-size:12px}
  .command-screen .profile-chip span{font-size:11px}
  .command-screen .panel-top .eyebrow,.command-screen .showcase-caption .eyebrow,.command-screen .route-heading .eyebrow,.command-screen .setup-label{font-size:11px}
- .command-screen .showcase-caption span,.command-screen .hangar-button small,.command-screen .skirmish-entry small,.command-screen .route-item small{font-size:11px}
+ .command-screen .showcase-caption span,.command-screen .route-item small{font-size:11px}
  .command-screen .mode-hint,.command-screen .deploy.quiet,.command-screen .briefing>small{font-size:12px}
  .command-screen .difficulty button,.command-screen .level-select button{min-height:44px;font-size:12px}
  .command-screen .mission-setup>summary,.command-screen .campaign-route>summary,.command-screen .briefing>details:not(.mission-setup)>summary{font-size:13px}
@@ -170,7 +170,7 @@
 }
 /* Desktop: tiles match the 14 px summaries of menu.css, and the help text its 13 px. */
 @media(pointer:fine) and (min-width:761px){
- .command-screen footer{--ui-tile-size:14px}
+ 
  .command-screen .settings #graphics-help{font-size:13px}
 }
 

@@ -33,6 +33,10 @@ export function armorMultiplier(target: Point, heading: number, source: Point): 
   const dot = length ? (Math.sin(heading) * dx + Math.cos(heading) * dz) / length : 0;
   return dot > .55 ? .65 : dot < -.55 ? 1.5 : 1;
 }
+/** Unsigned smallest angle between two headings, 0..PI. */
+export function angleGap(a: number, b: number): number {
+  return Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+}
 export function turnToward(current: number, target: number, amount: number): number {
   return current + clamp(Math.atan2(Math.sin(target - current), Math.cos(target - current)), -amount, amount);
 }

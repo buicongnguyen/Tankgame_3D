@@ -1,9 +1,9 @@
 import type {Game} from './game';
-/** Only released waves take part in collision, combat and target selection. */
 /** After the last wave arrives (and any boss with it is destroyed), holding the uplink for the mission's duration
  *  wins: the briefing's "hold for 45 seconds". */
 const hold=(g:Game)=>g.missionData().duration??45;
 const bossAlive=(g:Game)=>g.enemies.some(e=>e.role==='boss'&&!e.dead&&!e.pending);
+/** Only released waves take part in collision, combat and target selection. */
 export class DefenseWaves {
  wave=-1;nextAt=7;total=4;holdFrom=Infinity;
  reset(){this.wave=-1;this.nextAt=7;this.holdFrom=Infinity;}

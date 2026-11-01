@@ -1,3 +1,4 @@
+import {angleGap} from './rules';
 import * as T from 'three';
 import type {Game} from './game';
 
@@ -26,7 +27,7 @@ export class ThreatArrows{
     if(e.dead||e.pending||!e.visual.beam.visible)continue;
     const q=e.visual.root.position,dx=p.x-q.x,dz=p.z-q.z,d=Math.hypot(dx,dz);if(d>(e.role==='boss'?52:RANGE))continue;   // boss beams reach 52 m
     // Only warnings aimed at the player (a beam may also point at the transport or an ally).
-    if(Math.abs(Math.atan2(Math.sin(Math.atan2(dx,dz)-e.aim),Math.cos(Math.atan2(dx,dz)-e.aim)))>.35)continue;
+    if(angleGap(Math.atan2(dx,dz),e.aim)>.35)continue;
     const s=this.v.copy(q).project(cam);let x=(s.x+1)/2*w,y=(1-s.y)/2*h;if(s.z>1){x=w-x;y=h-y;}
     if(s.z<=1&&x>=INSET&&x<=w-INSET&&y>=INSET&&y<=h-INSET)continue;   // on screen: the beam itself is the warning
     this.list.push({x,y,d});
@@ -42,5 +43,4 @@ export class ThreatArrows{
    const ax=cx+dx*k,ay=cy+dy*k,angle=Math.atan2(dy,dx);
    a.style.display='block';a.style.transform=`translate(${ax-10}px,${ay-11}px) rotate(${angle}rad)`;a.style.opacity=String(Math.max(.55,1-t.d/RANGE*.5));});
  }
- clear(){for(const a of this.arrows)a.style.display='none';}
 }

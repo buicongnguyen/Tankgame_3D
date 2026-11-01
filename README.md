@@ -360,7 +360,7 @@ See the [infantry, jeep, patrol and loot balance plan](docs/INFANTRY_JEEPS_PATRO
 
 Every mission outside training opens with a short grace period:
 - **Clear start:** no enemy is placed within 30 m of your deployment point (26 m for infantry), and patrols never walk into that area. On very short routes the zone shrinks to 60% of the route length, but never below 18 m. Escort missions keep their own 36 m zone. An audit of all 16 stages × 3 levels × 4 difficulties found 76 of 192 starts with enemies 5–25 m away and the first hit about 2 s in. The nearest enemy vehicle now starts at least 30 m out, or 22 m on the two 37 m capture routes.
-- **Deployment shield:** 8 s on Easy, 6 s on Normal and 5 s on Hard or Crazy, shown as *DEPLOYMENT SHIELD · Ns*. It protects the escort transport too. Q remains available.
+- **Deployment shield:** holds until first contact (an awake enemy within 40 m, or any attack including Strike, Auto missiles and supply drops), at most 30 s, shown as *DEPLOYMENT SHIELD · Ns*. It protects the escort transport too. Q remains available.
 - **Easy starter cache:** on Easy, two crates parachute in beside you, with 4 laser shots and 2 arc rockets. Both weapons work even before they are bought. The cache is free: it does not use the mission's supply drops or the radio cooldown.
 
 ## Pilot profiles
@@ -465,7 +465,7 @@ Easy gives **6× standard player hull**, or **1,440 HP** before armor upgrades �
 
 ## Stronger escorts and guided support
 
-Transports start with **1,040 HP**, four times their previous hull, on every difficulty. Q and shield pickups protect both vehicles. Escort starts have a clear deployment area; ambushes are spread along the usable route and activate as you approach, including either O-loop branch. Offensive Air Support now uses guided Blender missiles with smoke trails. See [design and verification plan](docs/ESCORT_AND_GUIDED_SUPPORT.md).
+Transports start with **1,040 HP** on Crazy, scaled up by difficulty (1,300 Hard, 1,560 Normal, 2,080 Easy). Q and shield pickups protect both vehicles. Escort starts have a clear deployment area; ambushes are spread along the usable route and activate as you approach, including either O-loop branch. Offensive Air Support now uses guided Blender missiles with smoke trails. See [design and verification plan](docs/ESCORT_AND_GUIDED_SUPPORT.md).
 
 
 ## Auto missiles, specialist skins and Storm Kite

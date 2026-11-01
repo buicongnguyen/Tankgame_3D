@@ -65,3 +65,16 @@ test('the dock reads in Vietnamese too',async({page})=>{
  await open(page);await page.locator('[data-action=language][data-value=vi]').click();
  await expect(page.locator('.dock-more>summary')).toContainText('THÊM');
 });
+
+test('a tap on the dimmed backdrop closes the sheet and does not press the dock tile underneath',async({browser})=>{
+ const context=await browser.newContext({viewport:{width:844,height:390},isMobile:true,hasTouch:true});
+ try{const page=await context.newPage();await open(page);
+  const shop=(await page.locator('.command-dock [data-action=shop]').boundingBox())!;
+  await page.locator('.mission-setup>summary').tap();await expect(page.locator('details.chip-sheet[open]')).toHaveCount(1);
+  const sheet=(await page.locator('.mission-setup>.sheet').boundingBox())!;expect(shop.x+12).toBeLessThan(sheet.x);   // a spot on SHOP outside the sheet
+  await page.touchscreen.tap(shop.x+12,shop.y+shop.height/2);
+  await expect(page.locator('details.chip-sheet[open]')).toHaveCount(0);
+  await page.waitForTimeout(300);expect(await page.evaluate(()=>(window as any).__steel.phase)).toBe('menu');
+  await expect(page.locator('.command-screen')).toBeVisible();await expect(page.locator('.depot-panel')).toHaveCount(0);
+ }finally{await context.close();}
+});

@@ -10,7 +10,7 @@ const save=(page:Page)=>page.evaluate(()=>JSON.stringify((window as any).__steel
 test('opening language choice translates in place, keeps progress and persists across reloads and profiles',async({page})=>{
  await open(page);const before=await save(page);
  await expect(page.locator('html')).toHaveAttribute('lang','en');
- await page.locator('.mission-setup>summary').click();
+ await page.locator('.mission-setup>summary').click();await page.keyboard.press('Escape');
  await page.locator('#game-language [data-language="vi"]').click();
  await expect(page.locator('html')).toHaveAttribute('lang','vi');
  await expect(page.locator('[data-action=deploy]')).toContainText('XUẤT KÍCH');

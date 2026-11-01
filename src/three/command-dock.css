@@ -1,7 +1,8 @@
 /* Command screen and shop layout (2026-10): everything that matters fits one screen on any phone.
    - Command screen: header, hero, mission card with two setup chips and ONE primary action, and a dock of
      four tiles (Shop, Skin, Skirmish, More) always visible at the bottom. No page scroll.
-   - Chips and More open as bottom sheets over the screen (tap outside or the chip again to close).
+   - Chips and More open as bottom sheets over a dimmed backdrop; a tap on the backdrop (or Escape) closes the
+     sheet and never reaches the button underneath.
    - Shop: header and tabs stay on top, DONE stays at the bottom; only the item list scrolls.
    Loaded after ui-polish.css. */
 
@@ -13,30 +14,34 @@
 .command-screen>.command-dock{grid-area:dock}
 .command-screen .briefing h2{margin:0}
 .command-screen .mission-task{margin:0}
+/* Tablet hero eyebrow was 9 px. */
+.command-screen .hero .eyebrow{font-size:11px}
+.command-screen .profile-chip{min-width:56px;min-height:44px}
+/* Narrow phones: the profile chip shows the pilot's name, not "PROFILE 1". */
+@media (max-width:600px){.command-screen .profile-chip>span{display:none}.command-screen .profile-chip strong{max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+@media (max-width:400px){.command-screen .profile-chip>b{display:none}.command-screen .profile-chip{padding-left:8px;padding-right:8px}}
 
-/* Two chips side by side: what you are about to play, tap to change. */
+/* Two chips side by side: what you are about to play, tap to change. The .command-screen prefix beats the
+   older menu.css/style.css placement and "+" markers for these details. */
 .mission-chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .command-screen .mission-chips>details{grid-row:auto;grid-column:auto;margin:0;padding:0;border:0;min-width:0}
-.command-screen .mission-chips>details>summary::after,.command-screen .mission-chips>details>summary:after{content:none;display:none}
-.command-screen .mission-chips>details>summary>span{margin:0;font-size:14px;color:#f4e2bf}
-.command-screen .mission-chips>details>summary{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:56px;padding:8px 12px;border:1px solid #e7bc7a66;border-radius:10px;background:#0c1d27;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#c6d7df;text-align:left}
-.mission-chips>details>summary{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:56px;margin:0;padding:8px 12px;border:1px solid #e7bc7a66;border-radius:10px;background:#0c1d27;font-weight:700;font-size:11px;line-height:1.2;letter-spacing:.08em;text-transform:uppercase;color:#c6d7df;cursor:pointer;list-style:none}
-.mission-chips>details>summary::-webkit-details-marker{display:none}
-.mission-chips>details>summary::after{content:none}
-.mission-chips>details>summary>span{display:block;margin:0;font-weight:600;font-size:14px;line-height:1.25;letter-spacing:0;text-transform:none;color:#f4e2bf;white-space:normal}
-.mission-chips>details[open]>summary{border-color:#f0c983;background:#16303a}
+.command-screen .mission-chips>details>summary{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:56px;margin:0;padding:8px 12px;border:1px solid #e7bc7a66;border-radius:10px;background:#0c1d27;font-weight:700;font-size:11px;line-height:1.2;letter-spacing:.08em;text-transform:uppercase;color:#c6d7df;text-align:left;cursor:pointer;list-style:none}
+.command-screen .mission-chips>details>summary::-webkit-details-marker{display:none}
+.command-screen .mission-chips>details>summary::after{content:none;display:none}
+.command-screen .mission-chips>details>summary>span{display:block;margin:0;font-weight:600;font-size:14px;line-height:1.25;letter-spacing:0;text-transform:none;color:#f4e2bf;white-space:normal}
+.command-screen .mission-chips>details[open]>summary{border-color:#f0c983;background:#16303a}
 
 .mission-actions{display:grid;gap:8px}
 .mission-actions>button{width:100%;margin:0}
 .mission-actions>.primary{min-height:58px;font-size:18px}
 .mission-actions>.quiet{min-height:48px}
 
-/* Dock: four equal tiles, icon over label. */
+/* Dock: four equal tiles, icon over label; captions may take two short lines ("Cobalt Kestrel"). */
 .command-dock{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding-bottom:env(safe-area-inset-bottom)}
-.command-dock .dock-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:66px;margin:0;padding:8px 4px;border:1px solid #9cc9c055;border-radius:12px;background:linear-gradient(180deg,#183441,#0f2430);font-weight:800;font-size:12px;line-height:1.15;letter-spacing:.08em;color:#eef4fa;text-align:center;cursor:pointer;list-style:none}
+.command-dock .dock-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:66px;margin:0;padding:8px 4px;border:1px solid #9cc9c055;border-radius:12px;background:linear-gradient(180deg,#183441,#0f2430);font-weight:800;font-size:12px;line-height:1.15;letter-spacing:.08em;color:#eef4fa;text-align:center;cursor:pointer;list-style:none}
 .command-dock .dock-tile::-webkit-details-marker{display:none}
 .command-dock .dock-tile::after{content:none}
-.command-screen .command-dock .dock-tile small{display:block;margin-top:2px;font-weight:600;font-size:11px;line-height:1.15;letter-spacing:0;color:#f0c983;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.command-screen .command-dock .dock-tile small{display:block;margin-top:2px;font-weight:600;font-size:11px;line-height:1.15;letter-spacing:0;color:#f0c983;max-width:100%;overflow-wrap:anywhere;white-space:normal}
 .command-dock .dock-tile>span:last-child{max-width:100%;min-width:0}
 .dock-icon{width:30px;height:30px;flex:none;background:center/contain no-repeat;object-fit:contain}
 .dock-shop{background-image:url(./ui-icons/coins.webp)}
@@ -45,19 +50,27 @@
 .command-dock .dock-tile[data-action=shop]{border-color:#f0c98399;background:linear-gradient(180deg,#3a2f17,#221b0e)}
 .dock-more{display:contents}
 
-/* Bottom sheets: chips and More keep their place; the content floats above the screen. */
+/* Bottom sheets: chips and More keep their place; the content floats above the screen. The backdrop is the
+   open details' own ::before, so a tap on it targets the details (ui-polish.ts closes it) instead of pressing
+   DEPLOY, a dock tile or the language picker underneath. */
 .chip-sheet>.sheet{display:none}
-.chip-sheet[open]>.sheet{display:block;position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(560px,100vw);max-height:min(78dvh,640px);overflow:auto;z-index:40;box-sizing:border-box;padding:18px 16px max(18px,env(safe-area-inset-bottom));border:1px solid #e7bc7a66;border-bottom:0;border-radius:18px 18px 0 0;background:#0b1a23;box-shadow:0 -12px 40px #000a,0 0 0 100vmax #0008;text-align:left}
+.chip-sheet[open]::before{content:'';position:fixed;inset:0;z-index:39;background:#0008}
+.chip-sheet[open]>.sheet{display:block;position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(560px,100vw);max-height:min(78dvh,640px);overflow:auto;z-index:40;box-sizing:border-box;padding:18px 16px max(18px,env(safe-area-inset-bottom));border:1px solid #e7bc7a66;border-bottom:0;border-radius:18px 18px 0 0;background:#0b1a23;box-shadow:0 -12px 40px #000a;text-align:left}
 .chip-sheet[open]>.sheet>*:first-child{margin-top:0}
 .dock-more>.sheet>button,.dock-more>.sheet .mobile-fullscreen button{width:100%;margin:0 0 8px}
 .dock-more>.sheet>details{margin:8px 0}
-.campaign-route>.sheet .route-list{max-height:none}
+/* More sheet: every entry is a full-width 48 px row. */
+.command-screen .dock-more>.sheet>details>summary{display:flex;align-items:center;justify-content:space-between;min-height:48px;padding:0 14px;border:1px solid #9cc9c055;border-radius:8px;background:#122a35;font-weight:700;font-size:14px;line-height:1.2;letter-spacing:.06em;text-transform:uppercase;color:#eef4fa;cursor:pointer;list-style:none}
+.command-screen .dock-more>.sheet>details>summary::-webkit-details-marker{display:none}
+.command-screen .dock-more>.sheet>button[data-action=leaderboard]{min-height:48px}
+/* Stage picker sheet: a grid of stage cards, scrolling down, not sideways. */
+.command-screen .campaign-route>.sheet .route-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));grid-auto-flow:row;grid-auto-columns:auto;gap:8px;overflow:visible;max-height:none;scroll-snap-type:none}
+.command-screen .campaign-route>.sheet .route-list>*{min-width:0;width:auto}
 
 /* ---------- Phones (portrait): one screen, no scroll ---------- */
 @media (max-width:600px) and (orientation:portrait){
  .command-screen{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"brand" "hero" "card" "dock";gap:10px;padding:max(10px,env(safe-area-inset-top)) 14px 10px}
- .command-screen>.brand{display:flex;align-items:center;gap:8px;padding-bottom:8px}
- .command-screen>.brand{flex-wrap:nowrap}
+ .command-screen>.brand{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;padding-bottom:8px}
  .command-screen>.brand>span:not(.brand-mark){display:none}
  .command-screen>.brand .language-picker{order:0;width:auto;flex:0 1 auto;flex-basis:auto;margin-left:auto}
  .command-screen>.brand .language-picker+.profile-chip{margin-left:0}
@@ -92,45 +105,34 @@
  .command-dock .dock-tile{min-height:56px}
  .chip-sheet[open]>.sheet{max-height:92dvh}
 }
+/* The smallest landscape phones (about 568 x 320): no hero art; the dock becomes a 2 x 2 grid beside the card. */
+@media (orientation:landscape) and (max-height:500px) and (max-width:700px){
+ .command-screen{grid-template-columns:1fr minmax(230px,260px);grid-template-rows:auto 1fr;grid-template-areas:"brand card" "dock card";column-gap:10px}
+ .command-screen>.hero{display:none}
+ .command-dock{grid-template-columns:repeat(2,minmax(0,1fr));align-content:end;gap:6px}
+}
 
 /* ---------- Shop: fixed header and DONE, scrolling list ---------- */
 .depot-panel{display:flex;flex-direction:column;max-height:calc(100dvh - 24px);overflow:hidden;box-sizing:border-box}
 .depot-panel>.shop-category,.depot-panel>.skin-grid,.depot-panel>.skins-list{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;padding-right:2px}
 .depot-panel>[data-action=shop-back]{flex:none;margin-top:12px;position:static}
+.depot-panel .weapon-info>summary h3{white-space:normal;overflow-wrap:anywhere;min-width:0}
 @media (max-width:600px){
  #overlay:has(.depot-panel){overflow:hidden}
  .depot-panel{max-height:100dvh;border-radius:0;padding:12px 14px max(12px,env(safe-area-inset-bottom))}
- .depot-panel>.eyebrow{display:none}
+ /* The tab already names the section; more of the list fits. */
+ .depot-panel>.eyebrow,.depot-panel .depot-heading,.depot-heading>span,.depot-panel .category-help,.shop-weapon-help{display:none}
  .depot-panel .debrief-title h1{font-size:28px}
- /* One compact row per weapon: icon + name + key numbers on the left, the price button on the right. */
+ /* One compact row per item: icon + name + key numbers on the left, the price button on the right. */
  .weapon-shop .upgrade-card{padding:10px 12px;gap:4px}
+ .depot-panel .weapon-shop .upgrade-card,.depot-panel .upgrade-grid .upgrade-card{padding:10px 12px;row-gap:2px}
  .weapon-shop .upgrade-card .weapon-info>summary h3{font-size:16px}
  .weapon-shop .upgrade-card[data-owned=false] .weapon-info>summary .eyebrow{font-size:11px}
  .weapon-shop .upgrade-card .weapon-stat{font-size:12px}
- .weapon-shop .upgrade-card[data-owned=false] .level-bar,.weapon-shop .upgrade-card[data-owned=false] [class*=level]{display:none}
- .shop-weapon-help,.depot-heading>span{display:none}
-}
-
-/* Stage picker sheet: a two-column grid of stage cards, scrolling down, not sideways. */
-.command-screen .campaign-route>.sheet .route-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));grid-auto-flow:row;grid-auto-columns:auto;gap:8px;overflow:visible;max-height:none;scroll-snap-type:none}
-.command-screen .campaign-route>.sheet .route-list>*{min-width:0;width:auto}
-/* More sheet: every entry is a full-width 48 px row. */
-.command-screen .dock-more>.sheet>details>summary{display:flex;align-items:center;justify-content:space-between;min-height:48px;padding:0 14px;border:1px solid #9cc9c055;border-radius:8px;background:#122a35;font-weight:700;font-size:14px;line-height:1.2;letter-spacing:.06em;text-transform:uppercase;color:#eef4fa;cursor:pointer;list-style:none}
-.command-screen .dock-more>.sheet>details>summary::-webkit-details-marker{display:none}
-.command-screen .dock-more>.sheet>button[data-action=leaderboard]{min-height:48px}
-@media (max-width:600px){
- /* The tab already names the section; more of the list fits. */
- .depot-panel .depot-heading,.depot-panel .category-help{display:none}
- .depot-panel .weapon-shop .upgrade-card,.depot-panel .upgrade-grid .upgrade-card{padding:10px 12px;row-gap:2px}
  .depot-panel .weapon-shop .upgrade-card .weapon-stat{margin-top:2px}
+ .weapon-shop .upgrade-card[data-owned=false] .level-bar,.weapon-shop .upgrade-card[data-owned=false] [class*=level]{display:none}
  .depot-panel .skin-card img,.depot-panel .skin-grid img{max-height:96px;width:auto;object-fit:contain}
 }
-/* Tablet hero eyebrow was 9 px; and on narrow phones the profile chip shows the pilot's name, not "PROFILE 1". */
-.command-screen .hero .eyebrow{font-size:11px}
-@media (max-width:600px){.command-screen .profile-chip>span{display:none}.command-screen .profile-chip strong{max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
-@media (orientation:landscape) and (max-height:500px) and (max-width:700px){.command-screen{grid-template-columns:1fr minmax(230px,260px);column-gap:10px}.command-dock{gap:6px}}
-.depot-panel .weapon-info>summary h3{white-space:normal;overflow-wrap:anywhere;min-width:0}
-.command-dock .dock-tile{min-width:0}
 /* Short landscape screens: the header and tabs would leave the list no room, so the whole panel scrolls and
    DONE sticks to its bottom edge instead. */
 @media (max-height:500px){
@@ -138,13 +140,3 @@
  .depot-panel>.shop-category,.depot-panel>.skin-grid{flex:none;overflow:visible}
  .depot-panel>[data-action=shop-back]{position:sticky;bottom:0;z-index:2;box-shadow:0 -10px 18px #0b1a23}
 }
-/* Captions may take two short lines (equal tiles; "Cobalt Kestrel" is longer than a tile on small phones). */
-.command-screen .command-dock .dock-tile small{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.15}
-@media (max-width:400px){.command-screen .profile-chip>b{display:none}.command-screen .profile-chip{padding-left:8px;padding-right:8px}}
-/* The smallest landscape phones (about 568 x 320): no hero art; the dock becomes a 2 x 2 grid beside the card. */
-@media (orientation:landscape) and (max-height:500px) and (max-width:700px){
- .command-screen{grid-template-rows:auto 1fr;grid-template-areas:"brand card" "dock card"}
- .command-screen>.hero{display:none}
- .command-dock{grid-template-columns:repeat(2,minmax(0,1fr));align-content:end}
-}
-.command-screen .profile-chip{min-width:56px;min-height:44px}

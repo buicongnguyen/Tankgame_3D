@@ -13,10 +13,12 @@ addEventListener('pointerdown',()=>{delete root.dataset.input;},true);
 const icons=import.meta.glob<string>('./ui-icons/*.webp',{eager:true,query:'?url',import:'default'});
 const warm=()=>{for(const url of Object.values(icons))new Image().src=url;};
 if('requestIdleCallback' in window)requestIdleCallback(warm,{timeout:3000});else setTimeout(warm,1500);
-// Bottom sheets (command screen chips and More): a tap outside the open sheet, or Escape, closes it.
+// Bottom sheets (command screen chips and More): a tap outside the open sheet, or Escape, closes it. The dimmed
+// backdrop is the open details' own ::before (command-dock.css), so that tap targets the details itself and
+// never presses the button underneath.
 addEventListener('click',event=>{
  const target=event.target instanceof Element?event.target:null;
- for(const sheet of document.querySelectorAll<HTMLDetailsElement>('details.chip-sheet[open]'))if(!target||!sheet.contains(target))sheet.open=false;
+ for(const sheet of document.querySelectorAll<HTMLDetailsElement>('details.chip-sheet[open]'))if(!target||target===sheet||!sheet.contains(target))sheet.open=false;
 },true);
 addEventListener('keydown',event=>{if(event.key==='Escape')for(const sheet of document.querySelectorAll<HTMLDetailsElement>('details.chip-sheet[open]'))sheet.open=false;});
 // Only one sheet at a time.

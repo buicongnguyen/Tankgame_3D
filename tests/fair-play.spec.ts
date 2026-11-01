@@ -101,3 +101,21 @@ test('a portrait phone shows about 22 m to each side in battle (not in menus), a
   expect(r.side).toBeGreaterThan(19);expect(r.side).toBeLessThan(27);expect(r.fov).toBeGreaterThan(55);expect(r.arrows).toBe(1);expect(r.right).toBe(true);
  }finally{await context.close();}
 });
+
+test('calling Strike, Auto missiles or a drop counts as opening fire and ends the deployment shield',async({page})=>{
+ await page.goto('/?e2e');await page.locator('[data-action=deploy]').waitFor();
+ const r=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.save.training={completed:[true,true,true],skipped:true};g.save.difficulty='normal';g.start(1,0);
+  for(const e of g.enemies){e.visual.root.position.x+=500;}
+  for(let i=0;i<60*6;i++)g.step(1/60);const held=g.shieldTime>0;
+  g.action('auto');for(let i=0;i<60*9;i++)g.step(1/60);return {held,after:g.shieldTime,shots:g.shotsFired};});
+ expect(r.held).toBe(true);expect(r.shots).toBe(0);expect(r.after).toBe(0);
+});
+
+test('a transport beside a sleeping guard post still repairs; an awake enemy stops it',async({page})=>{
+ await page.goto('/?e2e');await page.locator('[data-action=deploy]').waitFor();
+ const r=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.save.training={completed:[true,true,true],skipped:true};g.start(2,0);g.clearOpening?.();
+  const e=g.enemies.find((u:any)=>!u.dead);g.enemies=[e];e.pending=false;e.encounter={...(e.encounter??{}),active:false};e.visual.root.position.copy(g.convoy.position).x+=10;
+  g.convoyHealth=g.convoyMax-100;g.convoyHitAt=-100;const start=g.convoyHealth;g.repairConvoy(1);const asleep=g.convoyHealth-start;
+  e.encounter.active=true;const before=g.convoyHealth;g.repairConvoy(1);return {asleep,awake:g.convoyHealth-before};});
+ expect(r.asleep).toBeCloseTo(3,5);expect(r.awake).toBe(0);
+});

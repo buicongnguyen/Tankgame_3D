@@ -12,6 +12,8 @@ export class CombatEffects {
   /** Retired particle records kept for reuse (no allocation in sustained fire). */
   private pool:Particle[]=[];get pooled(){return this.pool.length;}
   get limit(){return this.low?48:230;}
+  /** Half the budget in use: optional effects (other vehicles' dust) wait, so combat feedback always fits. */
+  get crowded(){return this.particles.length>this.limit*.5;}
   private trimPool(max:number){if(this.pool.length>max)this.pool.length=max;}
   private recycle(p:Particle){this.pool.push(p);this.trimPool(Math.max(0,this.limit-this.particles.length));}
   fires:{position:T.Vector3;age:number;next:number;life:number}[]=[];
