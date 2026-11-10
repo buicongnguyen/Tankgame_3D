@@ -1,0 +1,144 @@
+/* One look (2026-11): the navy and gold of the command screen, applied to every panel, button and form
+   control. New UI should use these tokens instead of hex colours.
+   Loaded last. Selectors are wrapped in :where() so screen-specific rules can still override them. */
+:root{
+ --sf-navy-hi:#183441;--sf-navy:#16303a;--sf-navy-lo:#0f2430;--sf-ink:#0b1a23;
+ --sf-gold-hi:#f4d79b;--sf-gold:#f0c983;--sf-gold-lo:#e7bc7a;--sf-on-gold:#221b0e;
+ --sf-text:#eef4fa;--sf-sub:#c6d7df;--sf-dim:#8fa6b1;
+ --sf-edge:#9cc9c055;--sf-edge-soft:#9cc9c033;
+ --sf-ok:#b5f0cb;--sf-danger:#ff8f6b;
+ --sf-radius:12px;--sf-radius-sm:10px;
+ --sf-tile:linear-gradient(180deg,var(--sf-navy-hi),var(--sf-navy-lo));
+ --sf-primary:linear-gradient(180deg,var(--sf-gold-hi),var(--sf-gold-lo));
+ /* The older variables now point at the same family. */
+ --panel:#12262ff5;--line:#9cc9c033;--muted:#a9bcc6;--amber:#f0c983;
+}
+
+/* ---------- Panels ---------- */
+:where(#overlay) .panel:not(.briefing){background:linear-gradient(180deg,var(--sf-navy),var(--sf-navy-lo));border:1px solid var(--sf-edge);border-top:2px solid var(--sf-gold);border-radius:14px;box-shadow:0 24px 70px #04121a99;color:var(--sf-text)}
+:where(#overlay) .panel:not(.briefing) :where(h1,h2){color:var(--sf-text)}
+:where(#overlay) .panel:not(.briefing)>p{color:var(--sf-sub)}
+:where(#overlay .panel:not(.briefing)) .eyebrow{color:var(--sf-gold)}
+@media (max-width:600px){:where(#overlay) .depot-panel.panel{border-radius:0}}
+
+/* ---------- Buttons ---------- */
+:where(#overlay,#hud) button.primary{background:var(--sf-primary);color:var(--sf-on-gold);border:1px solid var(--sf-gold);border-radius:var(--sf-radius-sm);box-shadow:0 6px 18px #0b1a2366,inset 0 1px 0 #fff6}
+:where(#overlay) button.primary:hover:not(:disabled){filter:brightness(1.06)}
+:where(#overlay) button.primary:active:not(:disabled){transform:translateY(1px)}
+/* Plain buttons directly inside a panel (Restart, Back, Save name ...). */
+:where(#overlay .panel:not(.briefing))>button:not(.primary):not(.quiet),:where(#overlay .panel:not(.briefing)) :where(form,.leaderboard-tools,.panel-actions)>button{background:var(--sf-tile);border:1px solid var(--sf-edge);border-radius:var(--sf-radius-sm);color:var(--sf-text);min-height:46px}
+:where(#overlay) .quiet{color:var(--sf-sub);min-height:44px;font-size:12px}
+:where(#overlay) button:focus-visible{outline:2px solid var(--sf-gold);outline-offset:2px}
+
+/* ---------- Form controls ---------- */
+:where(#overlay) :where(select,input[type=text],input:not([type])){min-height:44px;padding:8px 12px;border:1px solid var(--sf-edge);border-radius:var(--sf-radius-sm);background:var(--sf-ink);color:var(--sf-text);font:600 15px/1.2 'Barlow',Arial,sans-serif}
+:where(#overlay) select{padding-right:28px}
+:where(#overlay) :where(select,input):focus-visible{outline:2px solid var(--sf-gold);outline-offset:1px}
+:where(#overlay) option{background:var(--sf-ink);color:var(--sf-text)}
+
+/* ---------- Settings rows ---------- */
+:where(#overlay) .settings>button b{border-color:#f0c98366;background:#f0c98317;color:var(--sf-gold)}
+
+/* ---------- Shop ---------- */
+:where(#overlay) .shop-tabs button[aria-pressed=true]{background:linear-gradient(180deg,#3a2f17,#221b0e);border-color:var(--sf-gold);color:var(--sf-gold-hi);box-shadow:inset 0 -2px 0 var(--sf-gold)}
+:where(#overlay) .credit-total{color:var(--sf-gold)}
+
+/* ---------- Victory ---------- */
+:where(#overlay) .victory-panel .victory-symbol{color:var(--sf-gold);text-shadow:0 0 30px #f0c98366}
+
+/* ---------- Shop details ---------- */
+#overlay .depot-panel .shop-tabs button[aria-pressed=true]{background:linear-gradient(180deg,#3a2f17,#221b0e);border-color:var(--sf-gold);color:var(--sf-gold-hi);box-shadow:inset 0 -2px 0 var(--sf-gold)}
+#overlay .upgrade-card[data-owned=true] .eyebrow{color:var(--sf-ok)}
+
+/* ---------- Leaderboard ---------- */
+.panel.leaderboard-panel{width:min(720px,100%);max-height:calc(100dvh - 24px);overflow:auto;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.leaderboard-panel h1,.leaderboard-panel p{margin:0}
+.leaderboard-panel>p{font-size:14px;line-height:1.45}
+.leaderboard-panel .rank-name{display:flex;gap:8px;align-items:end}
+.leaderboard-panel .rank-name label{flex:1;display:grid;gap:4px;min-width:0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sf-dim)}
+.leaderboard-panel .rank-name input{width:100%;box-sizing:border-box;text-transform:none;letter-spacing:0}
+.leaderboard-panel .rank-name button{flex:none;min-height:44px;border-radius:var(--sf-radius-sm);background:var(--sf-tile);border:1px solid var(--sf-edge);color:var(--sf-text)}
+.leaderboard-panel #rank-message:empty{display:none}
+.leaderboard-panel #rank-message{color:var(--sf-gold)}
+.leaderboard-panel .rank-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.leaderboard-panel .rank-filters select{width:100%;min-width:0;text-transform:capitalize}
+.leaderboard-panel #rank-list{overflow-x:auto;padding:12px;border:1px solid var(--sf-edge-soft);border-radius:var(--sf-radius-sm);background:#0b1a2380;color:var(--sf-sub);font-size:14px}
+.leaderboard-panel table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.leaderboard-panel th{padding:4px 8px 8px;text-align:left;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--sf-dim);border-bottom:1px solid var(--sf-edge-soft)}
+.leaderboard-panel td{padding:9px 8px;border-bottom:1px solid #9cc9c01f;color:var(--sf-text)}
+.leaderboard-panel tbody tr:first-child td{color:var(--sf-gold-hi);font-weight:700}
+.leaderboard-panel td:first-child{width:44px;color:var(--sf-dim)}
+.leaderboard-panel .rank-note{font-size:12px;color:var(--sf-dim)}
+.leaderboard-panel #rank-back{align-self:flex-start;min-width:140px}
+@media (max-width:600px){.leaderboard-panel .rank-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.panel.leaderboard-panel{padding:18px 14px}}
+
+/* ---------- Inner tiles and cards ---------- */
+#overlay .skirmish-maps button,#overlay .skirmish-choice button,#overlay .profile-actions button:not(.primary):not(.quiet){background:var(--sf-tile);border:1px solid var(--sf-edge-soft);border-radius:var(--sf-radius-sm);color:var(--sf-text)}
+#overlay .skirmish-maps .active,#overlay .skirmish-choice .active{background:linear-gradient(180deg,#3a2f17,#221b0e);border-color:var(--sf-gold);color:var(--sf-gold-hi)}
+#overlay .skirmish-strategy{border-radius:0 var(--sf-radius-sm) var(--sf-radius-sm) 0;background:#0b1a2380}
+#overlay .profile-card{border-radius:var(--sf-radius);background:#0b1a2366}
+#overlay .profile-card.active{border-color:var(--sf-gold-lo);background:linear-gradient(180deg,#3a2f1740,#0b1a2366)}
+#overlay .profile-tag{border-radius:6px}
+
+/* ---------- Victory ---------- */
+.panel.victory-panel{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+.victory-panel>button{width:100%;min-height:46px;margin:0}
+.victory-panel>button:not(.primary){background:var(--sf-tile);border:1px solid var(--sf-edge);border-radius:var(--sf-radius-sm);color:var(--sf-text)}
+.victory-panel>small{color:var(--sf-dim);font-size:12px;letter-spacing:.02em}
+.victory-panel .stage-metrics strong,.pause-panel .stage-metrics strong{color:var(--sf-text)}
+.victory-panel .stage-metrics span,.victory-panel .stage-rewards small,.victory-panel .stage-rating small{font-size:11px}
+.victory-panel .stage-rewards dd{color:var(--sf-gold)}
+
+/* ---------- Battle display ----------
+   Same boxes and sizes as before (the phone layouts depend on them); new surfaces, icons and cooldown sweeps. */
+#hud .mission-hud,#hud .hull-block,#hud .weapon-block,#hud #pause,#hud .radio,#hud .abilities button{background:linear-gradient(180deg,#183441e6,#0f2430e6);border:1px solid var(--sf-edge);border-radius:var(--sf-radius-sm);color:var(--sf-text);box-shadow:0 6px 18px #0b1a2340}
+#hud .mission-hud{border-left:3px solid var(--sf-gold)}
+#hud .mission-hud .eyebrow{color:var(--sf-gold)}
+#hud .radio{border-left:3px solid var(--sf-gold);border-radius:0 var(--sf-radius-sm) var(--sf-radius-sm) 0}
+#hud #minimap{border-radius:var(--sf-radius-sm);border:1px solid var(--sf-edge)}
+#hud .hull-track,#hud .reload-track,#hud .objective-track{border-radius:99px;overflow:hidden;background:#0b1a23cc}
+#hud #health-fill{border-radius:99px;background:linear-gradient(90deg,#7fe0a8,var(--sf-ok))}
+#hud #reload-fill{border-radius:99px;background:linear-gradient(90deg,var(--sf-gold-lo),var(--sf-gold-hi))}
+#hud #objective-fill{border-radius:99px;background:var(--sf-gold)}
+#hud.hull-critical #health-fill{background:linear-gradient(90deg,#ff6b57,var(--sf-danger))}
+#hud.hull-critical .hull-block{border-color:var(--sf-danger);animation:hull-alarm 1s ease-in-out infinite}
+#hud.shielded .hull-block{border-color:#8fe0ff;box-shadow:0 0 0 1px #8fe0ff66,0 0 16px #8fe0ff40}
+@keyframes hull-alarm{50%{box-shadow:0 0 0 2px #ff8f6b66,0 0 18px #ff8f6b55}}
+/* Support buttons: an icon over the label, and a dark sweep that drains as the cooldown runs out. */
+#hud .abilities button{position:relative;overflow:hidden}
+#hud .abilities button:not(:disabled){border-color:#f0c98366}
+#hud .abilities button:not(:disabled) .ab-icon{background:var(--sf-gold)}
+#hud .abilities button::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:conic-gradient(#0b1a23c7 calc(var(--cd,0)*360deg),#0000 0)}
+.ab-icon{flex:none;width:18px;height:18px;background:var(--sf-dim);-webkit-mask:center/contain no-repeat;mask:center/contain no-repeat}
+.ab-strike{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='6'/%3E%3Cpath d='M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5'/%3E%3Ccircle cx='12' cy='12' r='1.2' fill='black'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='6'/%3E%3Cpath d='M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5'/%3E%3Ccircle cx='12' cy='12' r='1.2' fill='black'/%3E%3C/svg%3E")}
+.ab-drop{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 10a8.5 8.5 0 0117 0z' fill='black'/%3E%3Cpath d='M4.5 10.5l5.5 6M19.5 10.5l-5.5 6M12 10.5v6' stroke-width='1.6'/%3E%3Crect x='8.8' y='16.5' width='6.4' height='5.5' rx='1' fill='black'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 10a8.5 8.5 0 0117 0z' fill='black'/%3E%3Cpath d='M4.5 10.5l5.5 6M19.5 10.5l-5.5 6M12 10.5v6' stroke-width='1.6'/%3E%3Crect x='8.8' y='16.5' width='6.4' height='5.5' rx='1' fill='black'/%3E%3C/svg%3E")}
+.ab-shield{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2.5l7.5 2.8v5.9c0 4.7-3.1 8.6-7.5 10.3-4.4-1.7-7.5-5.6-7.5-10.3V5.3z' fill='black' stroke='none'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2.5l7.5 2.8v5.9c0 4.7-3.1 8.6-7.5 10.3-4.4-1.7-7.5-5.6-7.5-10.3V5.3z' fill='black' stroke='none'/%3E%3C/svg%3E")}
+.ab-auto{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='5.500' cy='5.500' r='3'/%3E%3Ccircle cx='18.500' cy='5.500' r='3'/%3E%3Ccircle cx='5.500' cy='18.500' r='3'/%3E%3Ccircle cx='18.500' cy='18.500' r='3'/%3E%3Cpath d='M7.700 7.700l8.600 8.600M16.300 7.700l-8.600 8.600'/%3E%3Crect x='9.500' y='9.500' width='5' height='5' rx='1' fill='black'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='5.500' cy='5.500' r='3'/%3E%3Ccircle cx='18.500' cy='5.500' r='3'/%3E%3Ccircle cx='5.500' cy='18.500' r='3'/%3E%3Ccircle cx='18.500' cy='18.500' r='3'/%3E%3Cpath d='M7.700 7.700l8.600 8.600M16.300 7.700l-8.600 8.600'/%3E%3Crect x='9.500' y='9.500' width='5' height='5' rx='1' fill='black'/%3E%3C/svg%3E")}
+@media (pointer:coarse),(max-width:900px){#hud .abilities button{flex-direction:column;justify-content:center;gap:2px}.ab-icon{width:16px;height:16px}}
+@media (prefers-reduced-motion:reduce){#hud.hull-critical .hull-block{animation:none}}
+#hud .abilities button>span{white-space:nowrap}
+#hud #weapon-shortcuts button{background:linear-gradient(180deg,#183441e6,#0f2430e6);border:1px solid var(--sf-edge-soft);border-radius:8px;color:var(--sf-sub)}
+#hud #weapon-shortcuts button[aria-pressed=true]{background:var(--sf-primary);border-color:var(--sf-gold);color:var(--sf-on-gold)}
+#hud .desktop-hint{border-radius:8px;background:#0f2430d9;border:1px solid var(--sf-edge-soft)}
+#hud .weapon-picker button{background:linear-gradient(180deg,#183441f2,#0f2430f2);border:1px solid var(--sf-edge);border-radius:var(--sf-radius-sm);color:var(--sf-text)}
+#hud .weapon-picker button[aria-pressed=true]{border-color:var(--sf-gold);box-shadow:inset 3px 0 0 var(--sf-gold)}
+#hud .switch-gun-label{color:var(--sf-gold)}
+#hud .weapon-picker{border-radius:var(--sf-radius);border:1px solid var(--sf-edge);background:#0f2430f2}
+/* Victory on short landscape screens: the story on the left, results and buttons on the right. */
+@media (max-height:500px) and (min-width:601px){
+ .panel.victory-panel{display:block;columns:2;column-gap:20px;width:min(880px,100%);max-width:880px;padding:12px 16px;text-align:left}
+ .victory-panel>*{break-inside:avoid;margin:0 0 7px}
+ .victory-panel .victory-symbol{display:none}
+ .victory-panel h1{font-size:30px;margin:0 0 6px}
+ .victory-panel h1 br{display:none}
+ .victory-panel .stage-rating{padding:0 0 4px;gap:2px}
+ .victory-panel .stage-rating>span{font-size:26px}
+ .victory-panel .stage-rating small,.victory-panel .reward-note,.victory-panel>small{display:none}
+ .victory-panel .stage-metrics{padding:6px 0}
+ .victory-panel .stage-metrics strong{font-size:17px;margin-top:1px}
+ .victory-panel .stage-rewards{margin:6px 0 0}
+ .victory-panel .stage-rewards>div{padding:2px 0}
+ .victory-panel>.medal-row{break-before:column;-webkit-column-break-before:always}
+ .victory-panel>button{display:block;min-height:44px}
+ .victory-panel .primary{margin:0 0 7px}
+}
