@@ -9,7 +9,7 @@
 .language-check{font-size:14px;opacity:0}
 .language-choice[aria-pressed=true] .language-check{opacity:1}
 .command-screen .language-picker+.profile-chip{margin-left:8px}
-html[lang=vi] body{font-family:Arial,'Segoe UI',sans-serif}
+html[lang=vi] body{font-family:'Barlow',Arial,'Segoe UI',sans-serif}
 html[lang=vi] button,html[lang=vi] .eyebrow{letter-spacing:.025em}
 html[lang=vi] .command-screen .brand{letter-spacing:.04em}
 html[lang=vi] .abilities button{font-size:11px;letter-spacing:0}

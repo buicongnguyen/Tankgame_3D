@@ -142,3 +142,4 @@
  .victory-panel>button{display:block;min-height:44px}
  .victory-panel .primary{margin:0 0 7px}
 }
+html[lang=vi] #hud .abilities button>span{white-space:normal;line-height:1.1}
