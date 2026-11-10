@@ -133,10 +133,4 @@
  .weapon-shop .upgrade-card[data-owned=false] .level-bar,.weapon-shop .upgrade-card[data-owned=false] [class*=level]{display:none}
  .depot-panel .skin-card img,.depot-panel .skin-grid img{max-height:96px;width:auto;object-fit:contain}
 }
-/* Short landscape screens: the header and tabs would leave the list no room, so the whole panel scrolls and
-   DONE sticks to its bottom edge instead. */
-@media (max-height:500px){
- .depot-panel{overflow:auto;overscroll-behavior:contain}
- .depot-panel>.shop-category,.depot-panel>.skin-grid{flex:none;overflow:visible}
- .depot-panel>[data-action=shop-back]{position:sticky;bottom:0;z-index:2;box-shadow:0 -10px 18px #0b1a23}
-}
+/* Short landscape screens: see finish.css (compact one-row header, list scrolls on its own). */

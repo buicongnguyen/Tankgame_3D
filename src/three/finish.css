@@ -1,0 +1,129 @@
+/* Feel and finish (2026-11): damage numbers, the mission title card, the celebrated debrief with medals,
+   the defeat card, and the landscape-phone shop header. Navy and gold, matching the command screen.
+   Loaded after command-dock.css. */
+
+/* ---------- Damage numbers ---------- */
+.hit-layer{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:3;contain:strict}
+.hit-layer b{position:absolute;left:0;top:0;font:800 16px/1 Barlow Condensed,Barlow,system-ui,sans-serif;letter-spacing:.02em;color:#fff;-webkit-text-stroke:3px #0b1a23;paint-order:stroke fill;text-shadow:0 2px 8px #0009;will-change:transform,opacity;white-space:nowrap}
+.hit-layer b.weak{font-size:20px;color:#ffd866}
+.hit-layer b.kill{font-size:23px;color:#ff9a4d}
+
+/* ---------- Mission title card ---------- */
+#title-card{position:fixed;left:50%;top:27%;z-index:4;width:min(84vw,460px);display:grid;gap:6px;justify-items:center;text-align:center;pointer-events:none;transform:translate(-50%,-50%);padding:14px 18px;background:linear-gradient(90deg,#0b1a2300,#0b1a23d9 18%,#0b1a23d9 82%,#0b1a2300);border-block:1px solid #f0c98399}
+#title-card .eyebrow{display:block;font-size:11px;letter-spacing:.16em;color:#f0c983}
+#title-card strong{font:700 34px/1.05 Barlow Condensed,Barlow,system-ui,sans-serif;letter-spacing:.03em;color:#eef4fa;text-transform:uppercase}
+#title-card>span:last-child{font-size:13px;line-height:1.35;color:#c6d7df}
+#title-card.show{animation:title-card 3.2s ease both}
+@keyframes title-card{0%{opacity:0;transform:translate(-50%,-50%) scaleX(.86)}9%{opacity:1;transform:translate(-50%,-50%)}80%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-62%)}}
+@media (max-height:500px){#title-card{top:40%;padding:8px 14px;gap:3px;width:min(56vw,420px)}#title-card strong{font-size:24px}#title-card>span:last-child{font-size:12px}}
+@media (max-width:600px){#title-card strong{font-size:28px}}
+
+/* ---------- Debrief ---------- */
+.panel.debrief-panel,.panel.defeat-panel{background:linear-gradient(180deg,#16303a,#0f2430);border:1px solid #9cc9c055;border-top:2px solid #f0c983;border-radius:14px;gap:12px;box-shadow:0 24px 70px #04121a99}
+.debrief-panel>.eyebrow,.defeat-panel>.eyebrow{display:block;font-size:11px;color:#f0c983}
+.debrief-panel h1,.defeat-panel h1{margin:0;color:#eef4fa}
+.debrief-panel>p,.defeat-panel>p{margin:0;color:#c6d7df}
+.debrief-panel .stage-summary{margin-top:2px}
+.debrief-panel .stage-rating>span{color:#f0c983;text-shadow:0 2px 22px #f0c98355}
+.debrief-panel .stage-rating>span{display:inline-block}
+.debrief-panel .stage-metrics strong{color:#eef4fa}
+.debrief-panel .stage-metrics span,.defeat-panel .stage-metrics span{font-size:11px;white-space:nowrap}
+.debrief-panel .stage-rewards small,.debrief-panel .stage-rating small{font-size:11px}
+.debrief-panel .stage-rewards dd{color:#f0c983}
+.debrief-panel .stage-total{font-size:16px}
+.debrief-balance{font-weight:700;color:#f4e2bf!important}
+.debrief-panel button,.defeat-panel button{min-height:46px;border-radius:10px}
+.debrief-panel button.primary,.defeat-panel button.primary{background:linear-gradient(180deg,#f4d79b,#e7bc7a);color:#221b0e;border-color:#f0c983;font-size:15px;letter-spacing:.1em;min-height:54px}
+.debrief-panel button:not(.primary):not(.quiet),.defeat-panel button:not(.primary):not(.quiet){background:linear-gradient(180deg,#183441,#0f2430);border:1px solid #9cc9c055;color:#eef4fa}
+/* The reveal: title, stars one by one, then the numbers, medals and buttons. */
+.debrief-panel:not(.seen) h1{animation:debrief-rise .45s ease both}
+.debrief-panel:not(.seen) .stage-rating>span{animation:debrief-stars .9s cubic-bezier(.2,1.5,.4,1) .2s both}
+.debrief-panel:not(.seen) .stage-rating strong{animation:debrief-rise .4s ease .75s both}
+.debrief-panel:not(.seen) .stage-metrics{animation:debrief-rise .4s ease .85s both}
+.debrief-panel:not(.seen) .stage-rewards{animation:debrief-rise .4s ease .95s both}
+.debrief-panel:not(.seen) .stage-total dd{animation:debrief-pulse .6s ease 1.3s both}
+.debrief-panel:not(.seen) .medal-row{animation:debrief-rise .4s ease 1.05s both}
+.debrief-panel:not(.seen) .medal.fresh{animation:debrief-pulse .6s ease 1.25s both}
+@keyframes debrief-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes debrief-stars{0%{opacity:0;transform:scale(.3) rotate(-8deg);letter-spacing:30px}60%{opacity:1}100%{opacity:1;transform:none}}
+@keyframes debrief-pulse{0%{transform:scale(1)}40%{transform:scale(1.14);filter:brightness(1.35)}100%{transform:scale(1)}}
+
+/* ---------- Medals ---------- */
+.medal-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%}
+.medal{position:relative;display:grid;justify-items:center;align-content:start;gap:3px;padding:10px 6px 9px;border:1px solid #9cc9c033;border-radius:10px;background:#0b1a2380;text-align:center;color:#8fa6b1}
+.medal i{font-style:normal;font-size:22px;line-height:1;color:#48606c}
+.medal strong{font-size:13px;letter-spacing:.04em;color:#c6d7df}
+.medal small{font-size:11px;line-height:1.25}
+.medal.held{border-color:#e7bc7a66;background:linear-gradient(180deg,#3a2f1766,#221b0e66)}
+.medal.held i{color:#f0c983;text-shadow:0 0 14px #f0c98399}
+.medal.held strong{color:#f4e2bf}
+.medal em{font-style:normal;font-weight:800;font-size:12px;color:#f0c983}
+.medal-goals{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.medal-goals li{display:grid;grid-template-columns:auto auto 1fr;align-items:baseline;gap:8px;font-size:13px;color:#8fa6b1}
+.medal-goals i{font-style:normal;color:#48606c}
+.medal-goals strong{color:#c6d7df}
+.medal-goals small{font-size:12px}
+.medal-goals li.held i{color:#f0c983}
+.medal-goals li.held strong{color:#f4e2bf}
+
+/* ---------- Defeat ---------- */
+.panel.defeat-panel{border-top-color:#ff8f6b}
+.defeat-panel>.eyebrow{color:#ff9d7d}
+.defeat-panel .defeat-cause{padding:10px 12px;border-left:3px solid #ff8f6b;background:#0b1a2380;border-radius:0 8px 8px 0;line-height:1.45;text-align:left}
+.defeat-panel .stage-metrics{border-color:#9cc9c033;width:100%}
+.defeat-panel .stage-metrics strong{color:#eef4fa}
+.defeat-panel small{color:#8fa6b1;font-size:12px}
+.defeat-panel{animation:defeat-fade .35s ease both}
+@keyframes defeat-fade{from{opacity:0}to{opacity:1}}
+
+@media (max-width:600px){
+ .panel.debrief-panel,.panel.defeat-panel{gap:9px;padding:16px 14px}
+ .medal{padding:8px 4px 7px}
+ .debrief-panel .stage-rating{padding:2px 0 6px}
+ .debrief-panel .reward-note{display:none}
+}
+/* Short landscape screens: results on the left, medals and buttons on the right. */
+@media (max-height:500px) and (min-width:601px){
+ .panel.debrief-panel{display:block;columns:2;column-gap:18px;width:min(860px,100%);max-width:860px;padding:12px 16px}
+ .debrief-panel>*{break-inside:avoid;margin:0 0 7px}
+ .debrief-panel>.medal-row{break-before:column;-webkit-column-break-before:always}
+ .debrief-panel>button{display:block;width:100%}
+ .debrief-panel>button:last-child{margin-bottom:0}
+ .debrief-panel h1{font-size:26px}
+ .debrief-panel .stage-rating{padding:0 0 4px;gap:2px}
+ .debrief-panel .stage-rating>span{font-size:28px}
+ .debrief-panel .stage-metrics{padding:6px 0}
+ .debrief-panel .stage-metrics strong{font-size:17px;margin-top:1px}
+ .debrief-panel .stage-rewards{margin:6px 0 0}
+ .debrief-panel .stage-rewards>div{padding:2px 0}
+ .debrief-panel .reward-note,.debrief-panel .stage-rating small{display:none}
+ .debrief-panel button{min-height:44px}
+ .debrief-panel button.primary{min-height:48px}
+ .panel.defeat-panel{gap:8px;padding:12px 16px;width:min(640px,100%);max-width:640px}
+ .defeat-panel h1{font-size:26px}
+ .defeat-panel .stage-metrics{padding:6px 0}
+ .defeat-panel button{min-height:44px}
+}
+
+/* ---------- Shop on short landscape screens ----------
+   Title, credits and DONE share one row and the tabs are slim, so the item list keeps most of the height
+   and scrolls on its own. (DONE used to stick over the first row of items.) */
+@media (max-height:500px){
+ .depot-panel{position:relative;overflow:hidden;padding:10px 14px}
+ .depot-panel>.eyebrow,.depot-panel .depot-heading,.depot-panel .category-help,.shop-weapon-help,.depot-panel>p{display:none}
+ .depot-panel>.debrief-title{padding-right:132px;min-height:44px;margin:0;align-items:center}
+ .depot-panel .debrief-title h1{font-size:24px;margin:0}
+ .depot-panel>.shop-tabs{margin:6px 0}
+ .depot-panel>.shop-tabs button{min-height:44px;padding-block:4px}
+ .depot-panel>.shop-category,.depot-panel>.skin-grid{flex:1 1 auto;min-height:0;overflow:auto}
+ .depot-panel>[data-action=shop-back]{position:absolute;top:10px;right:14px;bottom:auto;width:120px;min-height:44px;margin:0;padding:0 10px;box-shadow:none}
+ .depot-panel>.flag-picker{margin:0 0 6px;padding:3px 10px;min-height:0;gap:8px}
+ .depot-panel>.flag-picker small{display:none}
+ .depot-panel>.flag-picker select{min-height:44px;padding-block:4px}
+}
+
+@media (prefers-reduced-motion:reduce){
+ #title-card.show{animation:title-card-calm 3.2s linear both}
+ .debrief-panel *,.debrief-panel,.defeat-panel{animation:none!important}
+}
+@keyframes title-card-calm{0%,100%{opacity:0}8%,85%{opacity:1}}

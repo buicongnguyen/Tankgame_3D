@@ -34,8 +34,8 @@ export const SAVE_KEY = 'steel-front-3d-v1';
 /** Replays keep paying credits, so large balances are legitimate: clamp, never reset. */
 export const CREDIT_CAP = 999_999;
 export const LEVEL_NAMES=['Approach','Counterattack','Command battle'];
-export interface Save { training?:{completed:boolean[];skipped:boolean}; version: 1; mission: number; level:number; cleared: boolean[]; credits: number; weapons: number[]; weaponLevels:number[]; equippedWeapon: number; autoPack:number; strikeCharges:number; strikeBackgrounds:boolean[]; skins: string[]; skin: string; flag: TankFlag; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; low: boolean; graphicsChosen?: boolean; }
-export const freshSave = (): Save => ({ training:{completed:[false,false,false],skipped:false}, version: 1, mission: 0, level:0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], weaponLevels: Array(WEAPONS.length).fill(0), equippedWeapon: 0, autoPack:0, strikeCharges:0, strikeBackgrounds:Array(MISSIONS.length).fill(false), skins: ['classic','sunburst'], skin:'classic', flag:'none', upgrades: { armor: 0, power: 0, reload: 0, engine:0, shield:0 }, difficulty: 'easy', sound: false, low: false, graphicsChosen: false });
+export interface Save { training?:{completed:boolean[];skipped:boolean}; version: 1; mission: number; level:number; cleared: boolean[]; credits: number; weapons: number[]; weaponLevels:number[]; equippedWeapon: number; autoPack:number; strikeCharges:number; strikeBackgrounds:boolean[]; skins: string[]; skin: string; flag: TankFlag; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; soundChosen?: boolean; medals?: number[]; low: boolean; graphicsChosen?: boolean; }
+export const freshSave = (): Save => ({ training:{completed:[false,false,false],skipped:false}, version: 1, mission: 0, level:0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], weaponLevels: Array(WEAPONS.length).fill(0), equippedWeapon: 0, autoPack:0, strikeCharges:0, strikeBackgrounds:Array(MISSIONS.length).fill(false), skins: ['classic','sunburst'], skin:'classic', flag:'none', upgrades: { armor: 0, power: 0, reload: 0, engine:0, shield:0 }, difficulty: 'easy', sound: true, soundChosen: false, medals: Array(MISSIONS.length*3).fill(0), low: false, graphicsChosen: false });
 export function parseSave(raw: string | null): Save {
   try {
     const s = JSON.parse(raw || 'null');
@@ -70,7 +70,10 @@ export function parseSave(raw: string | null): Save {
     // Older automatic mobile Low settings upgrade to High. Explicit selections and
     // legacy Low saves without a preference marker remain deliberate choices.
     const graphicsChosen=s.graphicsChosen===true||(s.graphicsChosen===undefined&&s.low===true);
-    return { ...s, sound: s.sound === true, low: graphicsChosen && s.low === true, graphicsChosen };
+    // Sound is on until the player switches it off; saves from before that choice was recorded start with it on.
+    const soundChosen=s.soundChosen===true;
+    const medals=Array.from({length:MISSIONS.length*3},(_,i)=>Number.isInteger(s.medals?.[i])?s.medals[i]&7:0);
+    return { ...s, sound: soundChosen ? s.sound === true : true, soundChosen, medals, low: graphicsChosen && s.low === true, graphicsChosen };
   } catch { return freshSave(); }
 }
 /** Advance only the next unfinished level; old stages stay available for replay. */

@@ -132,6 +132,19 @@ The eight icons are Blender renders from `tools/blender/build_ui_icons.py`: cred
 & 'C:\Users\n\source\repos\3d_astra\.tools\blender-4.5.3-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_ui_icons.py
 ```
 
+## Feel and finish
+
+- **Sound** is synthesised in `src/three/sfx.ts` (no audio files): guns, hits, kills, blasts and short win, defeat, star and medal jingles. It is on until the player switches it off in Settings.
+- **Damage numbers** float over hostile units (`hit-feedback.ts`). Hits on one unit within 0.14 s are summed into one number; rear-armor hits are gold. A tank kill holds the simulation for 45 ms and a boss kill for 110 ms (not with reduced motion).
+- **Mission title card:** stage, level and objective show for three seconds as a level starts. It never takes a tap.
+- **Debrief:** stars and totals reveal in order, and the main button is **NEXT LEVEL**, which starts the next level of the stage directly (**NEXT STAGE** opens the next briefing).
+- **Medals** (`medals.ts`): three optional goals per level, 25 credits each the first time.
+  - *Swift*: finish inside the target time. Defense missions have *Bulwark* instead: keep the uplink above 60%.
+  - *Flanker*: land 3 rear-armor hits.
+  - *Self-reliant*: win without Strike or supply drops. Escorts have *Safe passage* (transport above 60%) and rescues have *No one left* (both rescued tanks survive).
+- **Defeat card:** time, kills and hostiles remaining, with Retry, Shop and Return to command.
+- **Landscape phone shop:** title, credits and DONE share one row, so the item list keeps the height and DONE never covers an item.
+
 ## Soldiers and towns
 
 - **Soldiers move like individuals.** Each soldier's stride advances with the distance it walks, starting from a phase set by where it spawned, so no two march in step and their feet keep pace with the ground. Soldiers bob as they walk and lean into turns. While calm they breathe and look around, their rifles kick when they fire, and a hit staggers them. All of this is visual only: a shot always leaves from the aimed muzzle (`src/three/soldier-life.ts`).

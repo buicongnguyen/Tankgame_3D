@@ -42,7 +42,7 @@ export class SpecialWeapons{
     const marker=new T.Mesh(new T.RingGeometry(info.splash-.16,info.splash,48),new T.MeshBasicMaterial({color:0xc392ff,side:T.DoubleSide,forceSinglePass:true,transparent:true,opacity:.65,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1}));marker.rotation.x=-Math.PI/2;marker.position.copy(landing).y=.12;g.world.entities.add(marker);
     this.arcs.push({mesh,marker,from,target:landing,age:0,duration:1.5,damage,radius:info.splash});
    }
-   g.tone(140,.18,.05);
+   g.sfx.play('laser');
   }
  }
  update(g:Game,dt:number){
