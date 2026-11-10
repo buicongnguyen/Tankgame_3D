@@ -6,13 +6,13 @@
 export type Sfx =
   | 'cannon' | 'rocket' | 'rapid' | 'laser'
   | 'hit' | 'weak' | 'kill' | 'bossKill' | 'blast' | 'hurt'
-  | 'buy' | 'deploy' | 'win' | 'star' | 'medal' | 'fail';
+  | 'buy' | 'deploy' | 'win' | 'star' | 'medal' | 'fail' | 'alarm';
 
 /** Shortest gap between two plays of the same sound, in seconds. */
 const GAP: Record<Sfx, number> = {
   cannon: .05, rocket: .06, rapid: .045, laser: .08,
   hit: .05, weak: .08, kill: .08, bossKill: .5, blast: .09, hurt: .12,
-  buy: .05, deploy: .3, win: .5, star: .05, medal: .05, fail: .5,
+  buy: .05, deploy: .3, win: .5, star: .05, medal: .05, fail: .5, alarm: 1,
 };
 const MAX_VOICES = 14;
 
@@ -99,6 +99,7 @@ export class SoundBank {
         case 'win': [523, 659, 784, 1046].forEach((f, i) => this.sweep('triangle', f, f, i === 3 ? .5 : .16, .07, i * .11)); break;
         case 'star': this.sweep('triangle', 880 * v, 880 * v, .05, .06); this.sweep('sine', 1760 * v, 1760 * v, .22, .05, .03); break;
         case 'medal': this.sweep('triangle', 1175, 1175, .07, .05); this.sweep('sine', 1568, 1568, .26, .05, .06); break;
+        case 'alarm': [0, .22, .44].forEach(t => { this.sweep('square', 740, 740, .1, .035, t); this.sweep('square', 520, 520, .1, .035, t + .1); }); break;
         case 'fail': [392, 330, 262].forEach((f, i) => this.sweep('triangle', f, f * .97, i === 2 ? .5 : .2, .06, i * .17)); break;
       }
     } catch { /* Audio is optional. */ }

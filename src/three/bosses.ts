@@ -23,7 +23,7 @@ type MissileBoss='missile'|'helicopter'|'siege-mech'|'missile-truck'|'quadcopter
 const isMissile=(kind:BossKind):kind is MissileBoss=>['missile','helicopter','siege-mech','missile-truck','quadcopter'].includes(kind);
 export const flyingBoss=(kind:BossKind|undefined)=>kind==='helicopter'||kind==='quadcopter'||kind==='jet';
 const isMech=(kind:BossKind)=>kind==='quad-mech'||kind==='siege-mech';
-interface State{jetEnd?:Point;jetStart?:Point;jetShot?:number;auxTime:number;auxRound?:number;rounds?:number;launches?:T.Vector3[];phase:'tracking'|'charging'|'exposed'|'landing'|'firing';time:number;burst?:number;landing?:Point;heading:number;targets:Point[];markers:T.Mesh[];rockets:T.Mesh[];}
+interface State{/** 0, then 1 below two thirds health and 2 below one third: the boss attacks sooner each stage. */stage?:number;jetEnd?:Point;jetStart?:Point;jetShot?:number;auxTime:number;auxRound?:number;rounds?:number;launches?:T.Vector3[];phase:'tracking'|'charging'|'exposed'|'landing'|'firing';time:number;burst?:number;landing?:Point;heading:number;targets:Point[];markers:T.Mesh[];rockets:T.Mesh[];}
 export class BossCombat{
  navigation=new Map<number,GroundNavigation>();
  states=new Map<Unit,State>();
@@ -35,6 +35,9 @@ export class BossCombat{
   if(u.dead||dt<=0||g.phase!=='playing')return;
   const kind=u.bossKind??bossKind(g.mission),cfg=BOSS[kind],p=u.visual.root.position,target=g.hostileTarget(u).visual.root.position;
   let s=this.states.get(u);if(!s){s={auxTime:.7,phase:'tracking',time:2.2+g.enemies.indexOf(u)%4*.55,heading:u.aim,targets:[],markers:[],rockets:[]};this.states.set(u,s);}
+  // Boss stages: at two thirds and one third health it comes on faster. Its warning and exposed windows keep their length.
+  {const stage=u.hp<u.max/3?2:u.hp<u.max*2/3?1:0;if(stage>(s.stage??0)){s.stage=stage;g.world.shake(.4);g.sfx.play('blast',1.2);g.radioMessage(stage===1?'IVO / It is hurt and coming on faster. Keep moving between its attacks.':'MARA / Its core is failing. It will throw everything it has. Stay on it.',4.5);}
+   if(s.phase==='tracking')dt*=1+.22*(s.stage??0);}
   if(kind==='jet'){this.jet(g,u,s,dt);return;}
   const core=u.visual.root.getObjectByName('Core');if(core)core.visible=s.phase==='exposed';u.visual.beam.visible=false;u.visual.root.userData.walking=false;
   if(kind==='quadcopter')for(let i=0;i<4;i++){const rotor=u.visual.root.getObjectByName('Rotor'+i);if(rotor)rotor.rotation.y+=dt*(i%2?-1:1)*(s.phase==='exposed'?8:32);}

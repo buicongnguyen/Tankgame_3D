@@ -143,3 +143,26 @@
  .victory-panel .primary{margin:0 0 7px}
 }
 html[lang=vi] #hud .abilities button>span{white-space:normal;line-height:1.1}
+
+/* ---------- Story scenes ---------- */
+.panel.story-panel{width:min(640px,100%);max-height:calc(100dvh - 24px);display:flex;flex-direction:column;gap:12px;box-sizing:border-box;text-align:left}
+.story-lines{display:flex;flex-direction:column;gap:10px;min-height:120px;overflow:auto;overscroll-behavior:contain}
+.story-line{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start;opacity:.55;transition:opacity .2s}
+.story-line.current{opacity:1;animation:story-in .28s ease both}
+.story-line .portrait{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:2px solid var(--who,var(--sf-gold));background:radial-gradient(circle at 35% 30%,#ffffff22,#0b1a23);color:var(--who,var(--sf-gold));font:800 20px/1 'Barlow Condensed','Barlow',Arial,sans-serif}
+.story-line strong{display:flex;align-items:baseline;gap:8px;font-size:13px;letter-spacing:.12em;color:var(--who,var(--sf-gold))}
+.story-line strong small{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--sf-dim)}
+.story-line p{margin:3px 0 0;font-size:16px;line-height:1.45;color:var(--sf-text)}
+.story-line.who-ivo{--who:#8fd3ff}
+.story-line.who-mara{--who:var(--sf-gold)}
+.story-line.who-voice{--who:var(--sf-ok)}
+.story-line.who-warden{--who:var(--sf-danger)}
+.story-line.who-warden p{font-family:ui-monospace,'Cascadia Mono',Consolas,monospace;font-size:14px;letter-spacing:.04em;color:#ffd0c2}
+.story-actions{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
+.story-actions .primary{min-height:50px}
+@keyframes story-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#hud .radio[data-who=warden]{border-left-color:var(--sf-danger);color:#ffd0c2}
+#hud .radio[data-who=voice]{border-left-color:var(--sf-ok)}
+@media (max-width:600px){.panel.story-panel{padding:16px 14px}.story-line p{font-size:15px}}
+@media (max-height:500px){.panel.story-panel{padding:10px 14px;gap:8px}.story-lines{min-height:0}.story-line{grid-template-columns:36px 1fr}.story-line .portrait{width:36px;height:36px;font-size:16px}.story-line p{font-size:14px}.story-actions .primary{min-height:44px}}
+@media (prefers-reduced-motion:reduce){.story-line.current{animation:none}}

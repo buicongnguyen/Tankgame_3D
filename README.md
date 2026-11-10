@@ -145,6 +145,22 @@ The eight icons are Blender renders from `tools/blender/build_ui_icons.py`: cred
 - **Defeat card:** time, kills and hostiles remaining, with Retry, Shop and Return to command.
 - **Landscape phone shop:** title, credits and DONE share one row, so the item list keeps the height and DONE never covers an item.
 
+## One look
+
+`src/three/theme.css` holds the navy and gold colour tokens (`--sf-*`) and applies them to every panel, button, form control and the battle display. New UI should use the tokens, not hex colours. Support buttons carry an icon and a cooldown sweep; the hull bar turns red under 30% and gains a blue edge while shielded. Vietnamese uses the bundled Barlow font.
+
+## Smarter fights
+
+- **Squad tactics** (`squad-tactics.ts`): of the hostile tanks that see the player, the first holds the firing line and the others circle, left and right in turn, until they are outside the front arc of the player's gun. A light tank under 35% hull falls back to 27 m and keeps firing. Easy keeps the head-on behaviour apart from the fall-back.
+- **Boss stages** (`bosses.ts`): below two thirds and one third health a boss tracks and attacks 22% and 44% sooner. Its warning and exposed windows keep their length.
+- **Counterattack** (`counterattack.ts`): on level 2 of assault and escort stages, once half the patrol is down, a group (3 units on Easy, 4 on Normal, 6 on Hard and Crazy) drives in from the deployment end of the route, or from the map edge farthest from the player. The target time gains 25 s. Destroying the whole patrol in one blow skips it.
+
+## Story
+
+`src/three/story.ts` holds the script for all 16 stages with English and Vietnamese side by side: a scene before each stage, a scene after its final level, and two radio lines during level 1 (one at 14 s, one when half the patrol is down). Scenes show once per save (`save.story`) and can be skipped. Scripted test runs (`?e2e`) leave scenes and radio lines off unless a test sets `storyScenes`.
+
+The arc: *The Road* (stages 1-6) breaks the siege; *The Network* (7-13) reveals that Warden is Meridian's own road-control network, still obeying its last order to close every road; *Citadel* (14-16) carries in the order that opens them.
+
 ## Soldiers and towns
 
 - **Soldiers move like individuals.** Each soldier's stride advances with the distance it walks, starting from a phase set by where it spawned, so no two march in step and their feet keep pace with the ground. Soldiers bob as they walk and lean into turns. While calm they breathe and look around, their rifles kick when they fire, and a hit staggers them. All of this is visual only: a shot always leaves from the aimed muzzle (`src/three/soldier-life.ts`).

@@ -54,6 +54,10 @@ import { createActivity,refreshActivityLabels } from './activities';
 import { awardStage } from './results';
 import type { StageResult } from './results';
 import { SoundBank } from './sfx';
+import { squadTactic } from './squad-tactics';
+import { Counterattack } from './counterattack';
+import { CAST, STORY, markScene, normalizeScenes, sceneSeen } from './story';
+import type { Line } from './story';
 import { HitFeedback } from './hit-feedback';
 import { MEDAL_REWARD, heldMedals, medalsEarned, medalsFor, recordMedals } from './medals';
 import type { Medal } from './medals';
@@ -101,6 +105,13 @@ export class Game {
   readonly sfx=new SoundBank(()=>this.save.sound); hits!:HitFeedback;
   /** Medal tallies for the level being played, and what the last finished level earned. */
   rearHits=0; supportCalls=0; medalResult:{defs:Medal[];held:boolean[];fresh:boolean[];bonus:number}|null=null;
+  /** One-time radio calls for squad tactics this mission. */
+  tacticCalls:{flank?:boolean;fallBack?:boolean}={};
+  readonly counter=new Counterattack();
+  /** Story scenes and radio beats. Scripted test runs (?e2e) switch them on only where they test them. */
+  storyScenes=!new URLSearchParams(location.search).has('e2e');
+  scene:{lines:Line[];index:number;then:()=>void;last:string}|null=null;
+  private beats={early:false,half:false,initial:0};
   /** Seconds the simulation holds still after a tank or boss kill, so the hit lands. */
   hitStop=0;
   fieldWeaponCount=1;artilleryCooldown=0;powerBoost=0;trailClock=0;dustClock=0;
@@ -277,7 +288,9 @@ export class Game {
     }
     if(action==='skirmish-next'&&this.skirmish&&!this.skirmish.last){this.skirmish.round++;this.startSkirmishBattle();return;}
     if(action==='deploy'){this.save.training??={completed:[false,false,false],skipped:false};this.save.training.skipped=true;this.persist();}
-    if(action==='deploy')this.start(this.mission,this.level);
+    if(action==='deploy'&&!this.playScene('before','DEPLOY',()=>this.start(this.mission,this.level)))this.start(this.mission,this.level);
+    if(action==='story-next'&&this.scene){if(this.scene.index<this.scene.lines.length-1){this.scene.index++;this.showScene();}else this.endScene();}
+    if(action==='story-skip'&&this.scene)this.endScene();
     if(action==='resume')this.resume();
     if(action==='retry'){if(this.training)this.startTraining(this.training.id);else if(this.skirmish)this.startSkirmishBattle();else this.start(this.mission,this.level);}
     if(action==='menu'){this.leaveTraining();this.prepare(this.save.mission);this.showMenu();}
@@ -364,7 +377,7 @@ export class Game {
     this.level=clamp(level,0,2);this.mission=index;const m=this.missionData();this.allies.clear();this.waves.reset();this.clearLesson();
     this.finishDelay=0;this.finishDeadline=0;this.stageResult=null;this.medalResult=null;this.debriefSeen=false;
     this.airSupport.clear();this.hazards.reset(index);this.bosses.clear();this.airlifts.clear();this.flame.clear();this.special.clear();this.auto.clear();this.specialAmmo=ammoCaps(this.save.skin).map((cap,i)=>this.save.weapons.includes(WEAPONS.findIndex(w=>w.ammoSlot===i))?cap:0);this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.clearBarrage();this.mission=index;if(this.training)this.world.buildCompact(this.training.id);else if(this.skirmish){this.world.build(index,'assault',this.level,this.save.difficulty,this.skirmish.scale);this.world.ring.visible=false;}else if(index===0&&this.level===0&&this.save.difficulty==='easy')this.world.buildCompact(3);else this.world.build(index,m.kind,this.level,this.save.difficulty);this.encounters.reset();this.salvageDrops=0;this.shots=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;this.convoyDistance=0;this.convoyReverse=null;this.world.loopReverse=false;
-    this.elapsed=0;this.capture=0;this.kills=0;this.shotsFired=0;this.rearHits=0;this.supportCalls=0;this.hitStop=0;this.hits.clear();this.reload=0;this.weapon=this.save.equippedWeapon;this.shieldTime=0;this.shieldCooldown=0;this.relayMax=Math.round(300*objectiveHealth(this.save.difficulty));this.relayHealth=this.relayMax;this.convoyMax=Math.round(ESCORT.health*objectiveHealth(this.save.difficulty));this.convoyHealth=this.convoyMax;this.convoyHitAt=-Infinity;this.contact=false;this.escortDeploying=false;this.deployShieldUntil=0;
+    this.elapsed=0;this.capture=0;this.kills=0;this.shotsFired=0;this.tacticCalls={};this.rearHits=0;this.supportCalls=0;this.hitStop=0;this.hits.clear();this.reload=0;this.weapon=this.save.equippedWeapon;this.shieldTime=0;this.shieldCooldown=0;this.relayMax=Math.round(300*objectiveHealth(this.save.difficulty));this.relayHealth=this.relayMax;this.convoyMax=Math.round(ESCORT.health*objectiveHealth(this.save.difficulty));this.convoyHealth=this.convoyMax;this.convoyHitAt=-Infinity;this.contact=false;this.escortDeploying=false;this.deployShieldUntil=0;
     // Skirmish starts mid-map so teams can come from every side; spawn search keeps it clear of cover and mines.
     const route=this.world.layout,spawn=this.skirmish?{x:0,z:0}:route.spawn;this.player=this.makeUnit(spawn.x,spawn.z,'player');this.player.heading=this.player.aim=route.heading;this.world.applySkin(this.player.visual.root,this.save.skin,this.save.flag);
     if(m.kind==='escort'){this.convoy=this.world.clone('transport');this.convoy.position.set(route.points[0].x,0,route.points[0].z);this.convoy.rotation.y=route.heading;this.world.entities.add(this.convoy);const field=this.world.shield.clone();field.name='ConvoyShield';field.position.set(0,1.1,0);field.scale.set(1.2,.9,1.6);field.visible=false;this.convoy.add(field);}
@@ -389,6 +402,7 @@ export class Game {
     for(let i=0;i<encounter.jeeps;i++)deploy(i,encounter.jeeps,'jeep');
     this.escortDeploying=false;this.deploying=false;this.skirmish?.deploy(this);this.enemies.forEach((u,i)=>{if(!this.training&&!this.skirmish&&!u.pending)assignPatrol(this,u,i);});if(!this.training&&!this.skirmish)placeLookouts(this);this.allies.setup(this);
     this.world.shield.visible=false;this.world.cursor.visible=false;
+    this.counter.reset(this);this.beats={early:false,half:false,initial:0};
     this.syncVisual(this.player);this.enemies.forEach(e=>this.syncVisual(e));this.updateHud();
   }
   start(index:number,level=unlockedLevel(this.save,index)){this.prepare(index,level);if(!this.training&&!this.skirmish){grantBackgroundStrikes(this.save,index);this.auto.ammo=ammoCapacity(this.save.skin,this.save.autoPack);this.save.autoPack=0;}this.persist();this.setPhase('playing');this.world.target.copy(this.player.visual.root.position);const offset=this.world.cameraOffset(this.player.visual.root.position);this.world.target.x+=offset.x;this.world.target.z+=offset.z;this.world.update(0,this.player.visual.root.position);this.updateHud();setHtml(this.overlay,'');this.radioMessage(this.training?this.training.mission().radio:this.skirmish?this.missionData().radio:index===0?'IVO / Tap SWITCH GUN or press C. Tank wrecks may refill special weapons.':this.missionData().radio,9);this.last=performance.now();this.accumulator=0;this.sfx.play('deploy');this.showTitleCard();this.openingSupport();}
@@ -563,7 +577,7 @@ export class Game {
   }
   updateEnemies(dt:number){
     const m=this.missionData(),playerPos=this.player.visual.root.position;
-    if(this.training)this.training.update(this);else if(this.skirmish)this.skirmish.update(this,dt);else {this.waves.update(this);this.encounters.update(this);}
+    if(this.training)this.training.update(this);else if(this.skirmish)this.skirmish.update(this,dt);else {this.waves.update(this);this.encounters.update(this);this.counter.update(this);this.storyBeats();}
     this.airlifts.update(this,dt);
     for(let i=0;i<this.enemies.length;i++){
       const e=this.enemies[i];if(e.dead||e.pending||e.role==='airlift')continue;if(e.encounter&&!e.encounter.active){if(!this.training)updatePatrol(this,e,dt);
@@ -586,8 +600,10 @@ export class Game {
       e.aim=turnToward(e.aim,desired,dt*2*(this.skirmish?.pace??1));
       const obstruction=this.world.covers.some(c=>c.hp>0&&c!==e.perch?.cover&&segmentBox(p,target,c,this.unitRadius(e)+.2)!==null);
       if(!ordered&&!e.perch&&(e.role!=='sentry'||dist>26||obstruction)){
-        const advance=dist>(investigating?2:capturing?4:17)||obstruction?1:dist<10&&!investigating&&!capturing?-.55:0;
-        const side=investigating||capturing?0:e.role==='raider'?.5:obstruction?.7:0;
+        // Tanks with the player in sight fight as a squad: one holds the line, the rest flank, the wounded fall back.
+        const tactic=!obstruction&&!investigating&&!capturing&&target===playerPos&&!this.skirmish&&!this.training?squadTactic(this,e,i,dist):null;
+        const advance=tactic?tactic.advance:dist>(investigating?2:capturing?4:17)||obstruction?1:dist<10&&!investigating&&!capturing?-.55:0;
+        const side=tactic?tactic.side:investigating||capturing?0:e.role==='raider'?.5:obstruction?.7:0;
         const detour=obstruction?this.navigation.next(this.world,p,target):null;
         const direction=detour?Math.atan2(detour.x-p.x,detour.z-p.z):desired+Math.sin(this.elapsed*.8+i)*.2;
         const speed=this.enemySpeed(e);
@@ -752,7 +768,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     return this.level===2&&this.enemies.some(e=>e.role==='boss'&&!e.dead)?Math.min(.98,progress):progress;
   }
   step(dt:number){
-    if(this.phase==='finishing'){this.finishDelay=Math.max(0,this.finishDelay-dt);if(this.finishDelay<1e-6){if(this.training){this.showTrainingResult();return;}if(this.skirmish){this.showSkirmishResult();return;}if(this.level===2&&(this.mission===5||this.mission===8||this.mission===MISSIONS.length-1)){this.setPhase('victory');this.showVictory();}else this.showDepot();}return;}
+    if(this.phase==='finishing'){this.finishDelay=Math.max(0,this.finishDelay-dt);if(this.finishDelay<1e-6){if(this.training){this.showTrainingResult();return;}if(this.skirmish){this.showSkirmishResult();return;}if(this.level!==2||!this.playScene('after','CONTINUE',()=>this.showResults()))this.showResults();}return;}
     if(this.phase!=='playing')return;
     this.trailClock-=dt;this.elapsed+=dt;this.repairConvoy(dt);this.hazards.update(this,dt);if(this.player.dead){this.fail();return;}this.updatePlayer(dt);this.updateEnemies(dt);this.updateShots(dt);this.updateActivities(dt);this.special.update(this,dt);this.flame.update(this,dt);if(this.trailClock<=0)this.trailClock=.06;
     for(const unit of [this.player,...this.enemies,...this.allies.active])if(!this.isInfantry(unit))unit.visual.turret.position.y+=((unit.role==='jeep'?1.64:unit.visual.turret.userData.restY??1.17)-unit.visual.turret.position.y)*Math.min(1,dt*12);
@@ -766,7 +782,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     this.hudTimer+=dt;if(this.hudTimer>.1){this.hudTimer=0;this.updateHud();}
     this.radioTimer-=dt;this.radio.classList.toggle('visible',this.radioTimer>0);
   }
-  radioMessage(text:string,duration=5){setText(this.radio,text);this.radioTimer=duration;this.radio.classList.add('visible');}
+  radioMessage(text:string,duration=5){delete this.radio.dataset.who;setText(this.radio,text);this.radioTimer=duration;this.radio.classList.add('visible');}
   updateHud(){
     if(!this.player)return;
     const m=this.missionData();setText(this.el('mission-number'),this.skirmish?`SKIRMISH ${this.skirmish.round+1}/${this.skirmish.battles}${this.skirmish.scale>1?' · LARGE':''} · ${AI_SPEEDS[this.skirmish.config.speed].label.toUpperCase()} AI · ${MODES[normalizeDifficulty(this.save.difficulty)??'normal'].label.toUpperCase()}`:`STAGE ${String(this.mission+1).padStart(2,'0')} · LEVEL ${this.level+1}/3 · ${MODES[normalizeDifficulty(this.save.difficulty)??'normal'].label.toUpperCase()}`);setText(this.el('mission-name'),m.name);
@@ -856,8 +872,26 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   /** The next level of this stage can start straight from the debrief. */
   nextLevelOpen(){return !this.training&&!this.skirmish&&this.level<2&&this.level+1<=unlockedLevel(this.save,this.mission);}
   /** A short title over the battlefield as the level starts: where you are and what to do. */
-  showTitleCard(){const card=this.el('title-card');if(this.training){card.hidden=true;return;}const m=this.missionData();
-    setHtml(card,`<span class="eyebrow">${this.skirmish?'SKIRMISH':`STAGE ${this.mission+1} / ${MISSIONS.length} · LEVEL ${this.level+1} / 3`}</span><strong>${m.name}</strong><span>${m.objective}</span>`);
+  showTitleCard(){if(this.training){this.el('title-card').hidden=true;return;}const m=this.missionData();this.banner(this.skirmish?'SKIRMISH':`STAGE ${this.mission+1} / ${MISSIONS.length} · LEVEL ${this.level+1} / 3`,m.name,m.objective);}
+  /** Play a stage's story scene once per save. Returns false when there is nothing to show. */
+  playScene(part:'before'|'after',last:string,then:()=>void){
+    if(!this.storyScenes||this.training||this.skirmish||part==='before'&&this.level!==0)return false;
+    const seen=this.save.story=normalizeScenes(this.save.story,MISSIONS.length);if(sceneSeen(seen,this.mission,part))return false;
+    markScene(seen,this.mission,part);this.persist();if(part==='after')this.setPhase('depot');this.scene={lines:STORY[this.mission][part],index:0,then,last};this.overlay.hidden=false;this.showScene();return true;}
+  private storyText(line:Line){return getLanguage()==='vi'?line[2]:line[1];}
+  showScene(){const s=this.scene!,vi=getLanguage()==='vi';
+    setHtml(this.overlay,`<section class="panel story-panel"><span class="eyebrow">STAGE ${this.mission+1} / ${MISSIONS.length} · ${MISSIONS[this.mission].name}</span><div class="story-lines" translate="no" aria-live="polite">${s.lines.slice(0,s.index+1).map((line,i)=>`<div class="story-line who-${line[0]}${i===s.index?' current':''}"><span class="portrait" aria-hidden="true">${CAST[line[0]].name[0]}</span><div><strong>${CAST[line[0]].name}<small>${CAST[line[0]].role[vi?1:0]}</small></strong><p>${this.storyText(line)}</p></div></div>`).join('')}</div><div class="story-actions"><button class="quiet" data-action="story-skip">Skip</button><button class="primary" data-action="story-next">${s.index<s.lines.length-1?'NEXT':s.last} →</button></div></section>`);
+    const lines=this.overlay.querySelector('.story-lines');if(lines)lines.scrollTop=lines.scrollHeight;this.focusPrimary();this.sfx.tone(s.lines[s.index][0]==='warden'?150:520,.06,.03);}
+  endScene(){const s=this.scene;this.scene=null;s?.then();}
+  /** Two radio lines per stage carry the story during the first level: one early, one when half the patrol is down. */
+  storyBeats(){if(!this.storyScenes||this.level!==0||this.beats.half)return;const story=STORY[this.mission];
+    const living=this.enemies.filter(e=>!e.dead&&!e.pending).length;if(!this.beats.initial)this.beats.initial=living;
+    const say=(line:Line)=>{this.radio.replaceChildren(document.createTextNode(`${CAST[line[0]].name} / ${this.storyText(line)}`));this.radio.dataset.who=line[0];this.radioTimer=6.5;this.radio.classList.add('visible');};
+    if(!this.beats.early&&this.elapsed>=14&&this.radioTimer<=0){this.beats.early=true;say(story.early);}
+    else if(this.beats.early&&this.elapsed>=30&&living<=Math.ceil(this.beats.initial/2)&&this.radioTimer<=0){this.beats.half=true;say(story.half);}}
+  /** A three-second banner over the battlefield (mission title, counterattack warning). It never takes a tap. */
+  banner(eyebrow:string,title:string,text:string){const card=this.el('title-card');
+    setHtml(card,`<span class="eyebrow">${eyebrow}</span><strong>${title}</strong><span>${text}</span>`);
     card.hidden=false;card.classList.remove('show');void card.offsetWidth;card.classList.add('show');card.onanimationend=e=>{if(e.target===card)card.hidden=true;};}
   medalSummary(){const r=this.medalResult;if(!r)return '';
     return `<section class="medal-row" aria-label="Medals">${r.defs.map((d,i)=>`<div class="medal${r.held[i]?' held':''}${r.fresh[i]?' fresh':''}"><i aria-hidden="true">✦</i><strong>${d.name}</strong><small>${d.goal}</small>${r.fresh[i]?`<em>+${MEDAL_REWARD} CR</em>`:''}</div>`).join('')}</section>`;}
@@ -890,6 +924,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   }
   private sweepMax:Record<string,number>={};
   private sweep(id:string,left:number){const el=this.el(id);if(left<=0){if(this.sweepMax[id]){this.sweepMax[id]=0;el.style.removeProperty('--cd');}return;}const max=this.sweepMax[id]=Math.max(this.sweepMax[id]??0,left),value=(left/max).toFixed(2);if(el.style.getPropertyValue('--cd')!==value)el.style.setProperty('--cd',value);}
+  showResults(){if(this.level===2&&(this.mission===5||this.mission===8||this.mission===MISSIONS.length-1)){this.setPhase('victory');this.showVictory();}else this.showDepot();}
   /** The reveal animation and chimes play once per finished level, not again after a visit to the shop. */
   debriefSeen=false;
   showDepot(){
