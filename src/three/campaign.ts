@@ -34,8 +34,8 @@ export const SAVE_KEY = 'steel-front-3d-v1';
 /** Replays keep paying credits, so large balances are legitimate: clamp, never reset. */
 export const CREDIT_CAP = 999_999;
 export const LEVEL_NAMES=['Approach','Counterattack','Command battle'];
-export interface Save { training?:{completed:boolean[];skipped:boolean}; version: 1; mission: number; level:number; cleared: boolean[]; credits: number; weapons: number[]; weaponLevels:number[]; equippedWeapon: number; autoPack:number; strikeCharges:number; strikeBackgrounds:boolean[]; skins: string[]; skin: string; flag: TankFlag; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; soundChosen?: boolean; medals?: number[]; /** Story scenes already shown, per stage (story.ts). */ story?: number[]; low: boolean; graphicsChosen?: boolean; }
-export const freshSave = (): Save => ({ training:{completed:[false,false,false],skipped:false}, version: 1, mission: 0, level:0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], weaponLevels: Array(WEAPONS.length).fill(0), equippedWeapon: 0, autoPack:0, strikeCharges:0, strikeBackgrounds:Array(MISSIONS.length).fill(false), skins: ['classic','sunburst'], skin:'classic', flag:'none', upgrades: { armor: 0, power: 0, reload: 0, engine:0, shield:0 }, difficulty: 'easy', sound: true, soundChosen: false, medals: Array(MISSIONS.length*3).fill(0), story: Array(MISSIONS.length).fill(0), low: false, graphicsChosen: false });
+export interface Save { training?:{completed:boolean[];skipped:boolean}; version: 1; mission: number; level:number; cleared: boolean[]; credits: number; weapons: number[]; weaponLevels:number[]; equippedWeapon: number; autoPack:number; strikeCharges:number; strikeBackgrounds:boolean[]; skins: string[]; perkSkins?: string[]; skin: string; flag: TankFlag; upgrades: Record<Upgrade, number>; difficulty: Difficulty; sound: boolean; soundChosen?: boolean; medals?: number[]; /** Story scenes already shown, per stage (story.ts). */ story?: number[]; low: boolean; graphicsChosen?: boolean; }
+export const freshSave = (): Save => ({ training:{completed:[false,false,false],skipped:false}, version: 1, mission: 0, level:0, cleared: Array(MISSIONS.length).fill(false), credits: 0, weapons: [], weaponLevels: Array(WEAPONS.length).fill(0), equippedWeapon: 0, autoPack:0, strikeCharges:0, strikeBackgrounds:Array(MISSIONS.length).fill(false), skins: ['classic','sunburst'], perkSkins: [], skin:'classic', flag:'none', upgrades: { armor: 0, power: 0, reload: 0, engine:0, shield:0 }, difficulty: 'easy', sound: true, soundChosen: false, medals: Array(MISSIONS.length*3).fill(0), story: Array(MISSIONS.length).fill(0), low: false, graphicsChosen: false });
 export function parseSave(raw: string | null): Save {
   try {
     const s = JSON.parse(raw || 'null');
@@ -56,6 +56,8 @@ export function parseSave(raw: string | null): Save {
     if(!Array.isArray(s.weapons)||s.weapons.some((w:unknown)=>!Number.isInteger(w)||Number(w)<1||Number(w)>=WEAPONS.length)||new Set(s.weapons).size!==s.weapons.length)return freshSave();
     if(!Number.isInteger(s.equippedWeapon)||s.equippedWeapon<0||s.equippedWeapon>=WEAPONS.length||!ownsWeapon(s,s.equippedWeapon))s.equippedWeapon=0;
     s.skins=[...new Set(['classic','sunburst',...(Array.isArray(s.skins)?s.skins.filter((id:unknown)=>SKINS.some(skin=>skin.id===id)):[])])];
+    // Skins owned before bonuses were retired keep theirs; skins bought later are cosmetic.
+    s.perkSkins=Array.isArray(s.perkSkins)?s.perkSkins.filter((id:unknown)=>s.skins.includes(id)):[...s.skins];
     if(!s.skins.includes(s.skin))s.skin='classic';
     s.flag=normalizeFlag(s.flag);
     // Extend either historical campaign length without changing purchases or progress.

@@ -22,6 +22,10 @@ export const SKINS=[
 ] as const;
 export type SkinId=keyof typeof SKIN_PALETTES;
 export const getSkin=(id:string)=>SKINS.find(s=>s.id===id)??SKINS[0];
+/** The skin whose performance bonus counts: the equipped one if the save grandfathered it, otherwise the plain classic. */
+export const perkSkin=(save:Save)=>save.perkSkins?.includes(save.skin)?save.skin:'classic';
+export const skinPerks=(save:Save)=>getSkin(perkSkin(save));
+export const skinBonusText=(save:Save,id:string)=>save.perkSkins?.includes(id)?getSkin(id).bonus:'Cosmetic paint';
 export const skinPalette=(id:string)=>SKIN_PALETTES[getSkin(id).id];
 export function buySkin(save:Save,id:string){const skin=SKINS.find(s=>s.id===id);if(!skin||skin.price===0||save.skins.includes(id)||save.credits<skin.price)return false;save.credits-=skin.price;save.skins.push(id);save.skin=id;return true;}
 

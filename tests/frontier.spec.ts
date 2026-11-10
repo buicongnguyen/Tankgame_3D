@@ -81,7 +81,7 @@ for(const mission of [9,10,11,12,13,14,15])test(`frontier ${mission+1} looks dis
 test('real movement applies sand to both sides and ice stops at cover',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();
  const result=await page.evaluate(()=>{const g=(window as any).__steel;g.frame=()=>{};g.start(11);g.world.covers=[];for(const e of g.enemies)e.dead=true;
- g.player.visual.root.position.set(-23,0,30);g.save.skin='volt';g.input.keys.add('KeyD');g.updatePlayer(.1);const player=g.player.visual.root.position.x+23;
+ g.player.visual.root.position.set(-23,0,30);g.save.perkSkins=['volt'];g.save.skin='volt';g.input.keys.add('KeyD');g.updatePlayer(.1);const player=g.player.visual.root.position.x+23;
  g.player.visual.root.position.set(60,0,55);g.input.reset();const e=g.enemies[0];e.dead=false;e.visual.root.position.set(-23,0,30);g.moveUnit(e,.9,0,.1);const enemy=e.visual.root.position.x+23;e.visual.root.position.set(0,0,0);g.moveUnit(e,.9,0,.1);const road=e.visual.root.position.x;
  g.start(9);for(const u of g.enemies)u.dead=true;g.world.covers=[];g.player.visual.root.position.set(-24,0,30);g.player.velocity={x:9,z:0};g.moveUnit(g.player,0,0,.1);const coast=g.player.visual.root.position.x>-24;
  g.player.visual.root.position.set(-24,0,30);g.player.velocity={x:9,z:0};g.world.covers=[{x:-22,z:30,w:1,d:4,hp:Infinity}];g.moveUnit(g.player,0,0,.1);const blocked=g.player.visual.root.position.x===-24&&g.player.velocity.x===0;

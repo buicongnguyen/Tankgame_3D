@@ -74,7 +74,7 @@ test('solid rock collides on all four edges, survives weapons and shares one ins
 
 test('new Blender markings survive detail changes and skin swaps with correct live bonuses',async({page})=>{
  await page.goto('/?e2e');await page.getByRole('button',{name:'DEPLOY'}).click();const result=await page.evaluate(async()=>{
-  const g=(window as any).__steel;g.frame=()=>{};const rows=[];g.save.skins.push('comet','sentinel','talon','nova','prism');
+  const g=(window as any).__steel;g.frame=()=>{};const rows=[];g.save.skins.push('comet','sentinel','talon','nova','prism');g.save.perkSkins=[...g.save.skins];
   for(const id of ['comet','sentinel','talon','nova','prism']){g.save.skin=id;g.start(0),g.clearOpening();g.enemies=[];g.world.covers=[];g.world.activities=[];g.world.navigationRevision++;g.player.visual.root.position.set(0,0,0);g.input.move={x:1,z:0};g.updatePlayer(.1);g.action('shield');g.shoot(g.player,true);const paint=g.player.visual.root.getObjectByName('SkinMarkings');rows.push({id,distance:g.player.visual.root.position.x,damage:g.shots.at(-1).damage,shield:g.shieldTime,stars:paint.userData.stars});}
   const root=g.player.visual.root,paint=root.getObjectByName('SkinMarkings'),geometry=paint.geometry;await g.world.load(true);g.world.settings(true);const low=root.getObjectByName('SkinMarkings')===paint&&paint.geometry===geometry;
   for(let i=0;i<30;i++)for(const id of ['comet','sentinel','talon','nova','prism'])g.world.applySkin(root,id);let count=0;root.traverse((o:any)=>{if(o.name==='SkinMarkings')count++;});const shared=root.getObjectByName('SkinMarkings').geometry===geometry;

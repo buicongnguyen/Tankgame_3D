@@ -34,7 +34,7 @@ test('Auto targets vehicles only, keeps ammo on empty calls, tracks and retarget
 });
 
 test('Quartermaster refills to raised caps, prefers an available advanced slot and keeps Auto through graphics swaps',async({page})=>{
- await battle(page);const r=await page.evaluate(async()=>{const g=(window as any).__steel;g.save.skin='quartermaster';g.save.weapons=[3,4,7];g.save.autoPack=6;g.start(0);g.frame=()=>{};g.enemies=[];g.world.covers=[];g.world.activities=[];g.player.visual.root.position.set(0,0,0);const initial=[...g.specialAmmo,g.auto.ammo];
+ await battle(page);const r=await page.evaluate(async()=>{const g=(window as any).__steel;g.save.perkSkins=['quartermaster'];g.save.skin='quartermaster';g.save.weapons=[3,4,7];g.save.autoPack=6;g.start(0);g.frame=()=>{};g.enemies=[];g.world.covers=[];g.world.activities=[];g.player.visual.root.position.set(0,0,0);const initial=[...g.specialAmmo,g.auto.ammo];
  const {createActivity}=await import('/src/three/activities.ts');g.specialAmmo=[14,7,4];for(const kind of ['laser','arc'])g.world.activities.push(createActivity(g.world.entities,kind,0,0,99));g.updateActivities(.01);const capped=[...g.specialAmmo];g.weapon=4;g.specialAmmo[1]=1;g.shoot(g.player,true);const fallback=g.weapon===7;g.pause();await g.changeQuality();g.resume();return {initial,capped,fallback,retained:g.auto.ammo===8&&g.save.autoPack===0};});expect(r).toEqual({initial:[15,8,4,0,8],capped:[15,8,4],fallback:true,retained:true});
 });
 

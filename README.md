@@ -161,6 +161,10 @@ The eight icons are Blender renders from `tools/blender/build_ui_icons.py`: cred
 
 The arc: *The Road* (stages 1-6) breaks the siege; *The Network* (7-13) reveals that Warden is Meridian's own road-control network, still obeying its last order to close every road; *Citadel* (14-16) carries in the order that opens them.
 
+## Skins are paint
+
+Skin performance bonuses (speed, damage, shield, ammo) are retired. A save made before this change keeps the bonuses of every skin it already owned (`save.perkSkins`, filled once when the save is read); a skin bought afterwards is cosmetic, and the shop says "Cosmetic paint". Stats come from `skinPerks(save)` / `perkSkin(save)` in `skins.ts`, never straight from `getSkin(save.skin)`.
+
 ## Soldiers and towns
 
 - **Soldiers move like individuals.** Each soldier's stride advances with the distance it walks, starting from a phase set by where it spawned, so no two march in step and their feet keep pace with the ground. Soldiers bob as they walk and lean into turns. While calm they breathe and look around, their rifles kick when they fire, and a hit staggers them. All of this is visual only: a shot always leaves from the aimed muzzle (`src/three/soldier-life.ts`).
