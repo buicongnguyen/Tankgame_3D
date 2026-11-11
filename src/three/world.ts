@@ -9,6 +9,7 @@ import {mode} from './difficulty';
 import {crewMaterial,packCrewSurfaces} from './crew-material';
 import {buildRouteScenery,instanceCoverClones} from './route-scenery';
 import {instancedMaterial} from './instancing';
+import {buildFences} from './screens';
 import {buildGuardLandmarks} from './enemy-posts';
 import {stageLayout,overlapsReservation,roadDistance,projectRoute,routeSample} from './stage-layout';
 import {terrainAt,terrainSpeed} from './terrain';
@@ -38,7 +39,7 @@ import { CombatEffects } from './effects';
 import { BOUNDS, buildActivities, loadPickupModels } from './activities';
 import type { Activity } from './activities';
 export interface TankVisual { root: T.Group; hull: T.Object3D; turret: T.Object3D; muzzle: T.Object3D; bar: T.Mesh; beam: T.Mesh; }
-export interface Cover extends Box { kind: 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'concrete-block' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; boundary?:boolean; /** Visual template when it differs from `kind` (tree variants). */ model?:string; scenery?:{parts:T.InstancedMesh[];index:number;maxHP:number}; section?: {parts:T.InstancedMesh[];index:number;wall:object}; }
+export interface Cover extends Box { kind: 'fence' | 'barricade' | 'crate' | 'barrel' | 'pine' | 'house' | 'stonewall' | 'steelwall' | 'hill' | 'concrete-block' | 'fuelcrate' | 'glacier' | 'volcano' | 'volcanic-rock' | 'palm' | 'jungle-tree' | 'cityblock' | 'white-pine'; hp: number; mesh: T.Group; boundary?:boolean; /** Visual template when it differs from `kind` (tree variants). */ model?:string; scenery?:{parts:T.InstancedMesh[];index:number;maxHP:number}; section?: {parts:T.InstancedMesh[];index:number;wall:object}; }
 /** Square precast landmarks (formerly indestructible hills and basalt outcrops). */
 export const LANDMARK_BLOCK_HP=1000;
 interface Effect { mesh: T.Mesh; life: number; max: number; velocity: T.Vector3; }
@@ -271,6 +272,8 @@ export class World {
     }
   }
   /** `scale` 2 builds a Large skirmish battlefield: this stage's map as the core, plus an outer ring. */
+  /** Plank fences belong to campaign stages; the game switches them off for skirmish maps. */
+  fences=true;
   build(index:number,kind:string,level=0,difficulty='normal',scale=1) {
     this.bounds={x:BOUNDS.x*scale,z:BOUNDS.z*scale};this.clear();this.missionKind=kind;this.navigationRevision++;this.layout=stageLayout(index,level,kind,difficulty);
     const ring=scale>1?planOuterRing(this.layout,this.bounds,index,BIOMES[index]==='river'):[];
@@ -307,7 +310,7 @@ export class World {
     // Extraction pylons frame the road.
     const previous=this.layout.points.at(-2)!,angle=Math.atan2(exit.x-previous.x,exit.z-previous.z);
     for(const side of [-4,4]){const x=exit.x+Math.cos(angle)*side,z=exit.z-Math.sin(angle)*side;this.box(.45,3.2,.45,0x3e5751,x,1.6,z);this.box(.65,.2,.65,0x98f3bf,x,3.3,z);}
-    this.environment.build(this,index);if(ring.length)buildOuterRing(this,ring);if(scale>1)this.environment.weather?.scale.set(scale,1,scale);this.buildLandmarkBlocks();buildRouteScenery(this);buildGuardLandmarks(this,kind);buildGroundDressing(this,index);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;instanceCoverClones(this);this.buildRoad(kind);this.batchScenery();this.sceneryBatches.rebuild(this.arena);this.townLife.build(this,index);this.biomeLife.build(this,index);this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
+    this.environment.build(this,index);if(ring.length)buildOuterRing(this,ring);if(scale>1)this.environment.weather?.scale.set(scale,1,scale);this.buildLandmarkBlocks();buildRouteScenery(this);buildGuardLandmarks(this,kind);if(this.fences&&kind!=='defense')buildFences(this);buildGroundDressing(this,index);for(const cover of this.covers)if(cover.kind==='stonewall')cover.hp=176;instanceCoverClones(this);this.buildRoad(kind);this.batchScenery();this.sceneryBatches.rebuild(this.arena);this.townLife.build(this,index);this.biomeLife.build(this,index);this.activities=buildActivities(this.arena,this.layout.supplies);for(const a of this.activities)if(a.kind==='repair')a.remaining=Math.max(40,mode(difficulty).repairCapacity-level*20);
     this.freezeStatic();this.target.set(0,0,0);
   }
   buildCompact(id:number){

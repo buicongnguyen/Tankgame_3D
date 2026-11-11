@@ -161,6 +161,15 @@ The eight icons are Blender renders from `tools/blender/build_ui_icons.py`: cred
 
 The arc: *The Road* (stages 1-6) breaks the siege; *The Network* (7-13) reveals that Warden is Meridian's own road-control network, still obeying its last order to close every road; *Citadel* (14-16) carries in the order that opens them.
 
+## Pacing and plank fences
+
+`src/three/screens.ts`:
+
+- **Group hold-back.** Enemies are placed in up to four groups along the route. On Easy a later group does not wake on sight while any earlier group is alive; on Normal while more than two earlier enemies are alive. Coming within 20 m (Easy) or 26 m (Normal), shooting a unit, or the convoy or an ally coming into view wakes it as before. Hard and Crazy are unchanged.
+- **Plank fences.** Assault, escort and capture stages get wooden fences (60 HP, 6 m; 1 to 5 on assault and escort stages, 0 or 1 on capture), one each side of the road 10 to 17 m short of groups 2 to 4. They keep off the road, water and mud, and stay 3 m clear of other cover so a tank can always pass. A fence blocks sight like any cover.
+- **Ramming.** The player's tank breaks a fence or a crate by driving into it at 3 m/s or more (`RAM_RATE`). Concrete, trees and buildings still stop it.
+- `desktop.css` holds the PC layout: centred dialogs, a wide shop and a two-column debrief.
+
 ## Skins are paint
 
 Skin performance bonuses (speed, damage, shield, ammo) are retired. A save made before this change keeps the bonuses of every skin it already owned (`save.perkSkins`, filled once when the save is read); a skin bought afterwards is cosmetic, and the shop says "Cosmetic paint". Stats come from `skinPerks(save)` / `perkSkin(save)` in `skins.ts`, never straight from `getSkin(save.skin)`.

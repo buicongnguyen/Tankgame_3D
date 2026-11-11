@@ -15,6 +15,7 @@ import {fullscreenButton} from './fullscreen';
 import {grantBackgroundStrikes} from './strike-bank';
 import {AutoMissiles,buyAutoPack} from './auto-missiles';
 import {ammoCapacity, perkSkin, skinPerks, skinBonusText} from './skins';
+import {ramCover} from './screens';
 import {coin} from './shop-icons';
 import {Flamethrower,FLAME} from './flamethrower';
 import {enemyHealth} from './unit-health';
@@ -106,6 +107,7 @@ export class Game {
   /** Medal tallies for the level being played, and what the last finished level earned. */
   rearHits=0; supportCalls=0; medalResult:{defs:Medal[];held:boolean[];fresh:boolean[];bonus:number}|null=null;
   /** One-time radio calls for squad tactics this mission. */
+  fenceCalled=false;
   tacticCalls:{flank?:boolean;fallBack?:boolean}={};
   readonly counter=new Counterattack();
   /** Story scenes and radio beats. Scripted test runs (?e2e) switch them on only where they test them. */
@@ -376,9 +378,10 @@ export class Game {
     this.budget?.newBattle(this);
     this.level=clamp(level,0,2);this.mission=index;const m=this.missionData();this.allies.clear();this.waves.reset();this.clearLesson();
     this.finishDelay=0;this.finishDeadline=0;this.stageResult=null;this.medalResult=null;this.debriefSeen=false;
-    this.airSupport.clear();this.hazards.reset(index);this.bosses.clear();this.airlifts.clear();this.flame.clear();this.special.clear();this.auto.clear();this.specialAmmo=ammoCaps(perkSkin(this.save)).map((cap,i)=>this.save.weapons.includes(WEAPONS.findIndex(w=>w.ammoSlot===i))?cap:0);this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.clearBarrage();this.mission=index;if(this.training)this.world.buildCompact(this.training.id);else if(this.skirmish){this.world.build(index,'assault',this.level,this.save.difficulty,this.skirmish.scale);this.world.ring.visible=false;}else if(index===0&&this.level===0&&this.save.difficulty==='easy')this.world.buildCompact(3);else this.world.build(index,m.kind,this.level,this.save.difficulty);this.encounters.reset();this.salvageDrops=0;this.shots=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;this.convoyDistance=0;this.convoyReverse=null;this.world.loopReverse=false;
+    this.airSupport.clear();this.hazards.reset(index);this.bosses.clear();this.airlifts.clear();this.flame.clear();this.special.clear();this.auto.clear();this.specialAmmo=ammoCaps(perkSkin(this.save)).map((cap,i)=>this.save.weapons.includes(WEAPONS.findIndex(w=>w.ammoSlot===i))?cap:0);this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.clearBarrage();this.mission=index;if(this.training)this.world.buildCompact(this.training.id);else if(this.skirmish){this.world.fences=false;this.world.build(index,'assault',this.level,this.save.difficulty,this.skirmish.scale);this.world.ring.visible=false;}else if(index===0&&this.level===0&&this.save.difficulty==='easy')this.world.buildCompact(3);else{this.world.fences=true;this.world.build(index,m.kind,this.level,this.save.difficulty);};this.encounters.reset();this.salvageDrops=0;this.shots=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;this.convoyDistance=0;this.convoyReverse=null;this.world.loopReverse=false;
     this.elapsed=0;this.capture=0;this.kills=0;this.shotsFired=0;this.tacticCalls={};this.rearHits=0;this.supportCalls=0;this.hitStop=0;this.hits.clear();this.reload=0;this.weapon=this.save.equippedWeapon;this.shieldTime=0;this.shieldCooldown=0;this.relayMax=Math.round(300*objectiveHealth(this.save.difficulty));this.relayHealth=this.relayMax;this.convoyMax=Math.round(ESCORT.health*objectiveHealth(this.save.difficulty));this.convoyHealth=this.convoyMax;this.convoyHitAt=-Infinity;this.contact=false;this.escortDeploying=false;this.deployShieldUntil=0;
     // Skirmish starts mid-map so teams can come from every side; spawn search keeps it clear of cover and mines.
+    this.fenceCalled=false;
     const route=this.world.layout,spawn=this.skirmish?{x:0,z:0}:route.spawn;this.player=this.makeUnit(spawn.x,spawn.z,'player');this.player.heading=this.player.aim=route.heading;this.world.applySkin(this.player.visual.root,this.save.skin,this.save.flag);
     if(m.kind==='escort'){this.convoy=this.world.clone('transport');this.convoy.position.set(route.points[0].x,0,route.points[0].z);this.convoy.rotation.y=route.heading;this.world.entities.add(this.convoy);const field=this.world.shield.clone();field.name='ConvoyShield';field.position.set(0,1.1,0);field.scale.set(1.2,.9,1.6);field.visible=false;this.convoy.add(field);}
     // Skirmish battles replace the campaign encounters with their own teams (deployed below).
@@ -461,6 +464,7 @@ export class Game {
       let to=resolve(candidateCrush);const crushing=candidateCrush&&distance(from,to)/stepTime>=3;
       if(candidateCrush&&!crushing)to=resolve(false);
       p.set(to.x,p.y,to.z);
+      if(candidateCrush&&(to.x!==from.x+sx||to.z!==from.z+sz))ramCover(this,{x:from.x+sx,z:from.z+sz},r,stepTime);
       if(to.x!==from.x+sx)unit.velocity.x=0;if(to.z!==from.z+sz)unit.velocity.z=0;
       if(crushing){const corner={x:to.x,z:from.z};for(const other of this.enemies){if(other.dead||other.pending||!this.isInfantry(other))continue;
         const radius=r+this.unitRadius(other)*.7,target=other.visual.root.position;
@@ -656,7 +660,7 @@ export class Game {
   hitCover(cover:Cover,damage:number,laser=false,hitEffect=true,at?:Point){
     if(cover.hp<=0||laser&&isConcrete(cover))return;
     cover.hp-=damage;this.world.updateConcrete(cover);
-    const surface=cover.kind==='barrel'||cover.kind==='fuelcrate'?'fuel':['pine','white-pine','palm','jungle-tree','house','crate'].includes(cover.kind)?'wood':['barricade','stonewall','hill','concrete-block','glacier','volcano','volcanic-rock','cityblock'].includes(cover.kind)?'stone':'metal';
+    const surface=cover.kind==='barrel'||cover.kind==='fuelcrate'?'fuel':['pine','white-pine','palm','jungle-tree','house','crate','fence'].includes(cover.kind)?'wood':['barricade','stonewall','hill','concrete-block','glacier','volcano','volcanic-rock','cityblock'].includes(cover.kind)?'stone':'metal';
     // A 14 m landmark shows each hit on the struck face, not buried at its centre.
     const landmark=cover.kind==='concrete-block',where=landmark?(at?new T.Vector3(clamp(at.x,cover.x-cover.w/2,cover.x+cover.w/2),1.4,clamp(at.z,cover.z-cover.d/2,cover.z+cover.d/2)):cover.mesh.position.clone().setY(3.6)):cover.mesh.position.clone().setY(.7);
     if(hitEffect||cover.hp<=0)this.world.fx.surface(where,surface,cover.hp<=0);

@@ -5,6 +5,7 @@ import type {Game,Unit} from './game';
 import type {Point} from './rules';
 import {distance,segmentBox} from './rules';
 import {projectRoute} from './stage-layout';
+import {holdsBack} from './screens';
 
 export interface EncounterOrder {group:number;anchor:Point;meters:number;active:boolean;wakeAt?:number;}
 /** Trunk/obstacle footprints block sight; destroyed cover immediately opens a firing lane. */
@@ -37,7 +38,7 @@ export class RouteEncounters {
    if(!scan||!escortReady(g,u))continue;
    // The small Easy approach has two encounters despite its arena-wide sight range.
    if(g.mission===0&&g.level===0&&g.save.difficulty==='easy'&&order.group>0&&(this.progress<layout.length*.35||g.enemies.some(e=>!e.dead&&e.encounter?.group===0)))continue;
-   if(seesTarget(g,u,player))this.alert(g,u,player);
+   if(!holdsBack(g,u,order)&&seesTarget(g,u,player))this.alert(g,u,player);
    else if(g.convoy&&seesTarget(g,u,g.convoy.position))this.alert(g,u,g.convoy.position);
    else {const ally=g.allies.active.find(a=>!a.dead&&seesTarget(g,u,a.visual.root.position));if(ally)this.alert(g,u,ally.visual.root.position);}
   }

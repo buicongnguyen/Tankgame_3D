@@ -84,7 +84,7 @@ test('story: a stage opens with a scene once, radio beats follow, and the closin
   await page.locator('[data-action=story-next]').click();
   expect(await page.evaluate(()=>{const g=(window as any).__steel;return {phase:g.phase,seen:g.save.story[0]};})).toEqual({phase:'playing',seen:1});
   const beats=await page.evaluate(()=>{const g=(window as any).__steel;g.clearOpening?.();g.shieldTime=999;g.radioTimer=0;g.elapsed=14;g.storyBeats();const early=g.radio.textContent;
-   g.radioTimer=0;g.elapsed=31;for(const e of g.enemies.slice(0,Math.ceil(g.enemies.length/2)+1))g.damageUnit(e,99999,g.player.visual.root.position);g.storyBeats();return {early,half:g.radio.textContent};});
+   g.radioTimer=0;g.elapsed=31;for(const e of g.enemies.slice(0,Math.ceil(g.enemies.length/2)+1))g.damageUnit(e,99999,g.player.visual.root.position);g.radioTimer=0;g.storyBeats();return {early,half:g.radio.textContent};});
   expect(beats.early).toContain('MARA / Keep the gun toward them.');expect(beats.half).toContain('IVO / The loop just changed.');
   const replay=await page.evaluate(()=>{const g=(window as any).__steel;g.showMenu();g.prepare(0,0);g.menuAction('deploy');return {phase:g.phase,scene:!!document.querySelector('.story-panel')};});
   expect(replay).toEqual({phase:'playing',scene:false});
