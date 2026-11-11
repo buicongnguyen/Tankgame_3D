@@ -1,0 +1,45 @@
+/* PC layout: screens are wide and short, so every menu fits one screen and nothing needs the mouse wheel.
+   Loaded last; applies only to wide, reasonably tall windows (phones and tablets keep their layouts). */
+@media (min-width:1024px) and (min-height:600px){
+  /* Sheets open as centred dialogs, not phone bottom sheets that run off the screen edge. */
+  .chip-sheet[open]>.sheet{top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(620px,92vw);max-height:min(88dvh,820px);border:1px solid #e7bc7a66;border-radius:16px;padding:22px 22px 18px;box-shadow:0 24px 70px #000c}
+  .chip-sheet[open]::before{background:#000a;backdrop-filter:blur(2px)}
+  .chip-sheet[open]>.sheet .manual{max-height:min(46dvh,420px)}
+  .campaign-route[open]>.sheet{width:min(760px,92vw)}
+
+  /* Shop: a wide panel so cards sit in more columns and the list fits above DONE. */
+  .depot-panel,.compact .depot-panel{max-width:min(1180px,94vw);width:min(1180px,94vw);padding:18px 24px}
+  .depot-panel>.eyebrow{display:none}
+  .depot-panel .debrief-title{margin:0 0 8px}
+  .depot-panel .debrief-title h1{font-size:30px;margin:0}
+  .depot-panel>.shop-tabs{margin:0 0 10px}
+  .depot-panel .weapon-shop,.depot-panel .upgrade-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .depot-panel .skin-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:8px 0}
+  .depot-panel .skin-card{display:grid;grid-template-columns:64px minmax(0,1fr);grid-auto-rows:min-content;column-gap:8px;row-gap:2px;align-content:start;padding:8px}
+  .depot-panel .skin-card>img{grid-column:1;grid-row:1/4;align-self:center}
+  .depot-panel .skin-card>h2,.depot-panel .skin-card>.skin-stars,.depot-panel .skin-card>p{grid-column:2;line-height:1.25}
+  .depot-panel .skin-card>.skin-stars{font-size:11px}
+  .depot-panel .skin-card>button{grid-column:1/-1;margin-top:4px}
+  .chip-sheet[open]>.sheet>button[data-action=leaderboard]{text-align:left;padding-inline:14px;border-radius:8px}
+  .depot-panel .skin-card img,.depot-panel .skin-grid img{width:64px;height:auto;max-height:52px;object-fit:contain;margin:0}
+  .depot-panel .skin-card h2{font-size:13px;margin:0}
+  .depot-panel .skin-card p{font-size:11px;margin:0}
+  .depot-panel .skin-card button{min-height:44px;padding-block:4px}
+  .depot-panel>[data-action=shop-back]{min-height:46px;margin-top:10px}
+}
+/* Short PC windows (720 px and below): trim headings further. */
+@media (min-width:1024px) and (min-height:600px) and (max-height:780px){
+  .depot-panel .category-help,.depot-panel .shop-weapon-help,.depot-panel>p,.depot-panel .depot-heading{display:none}
+  .depot-panel .flag-picker{margin:0 0 4px;padding:4px 10px}
+  .depot-panel .flag-picker small{display:none}
+  .depot-panel .skin-card img,.depot-panel .skin-grid img{max-height:44px}
+}
+/* Debrief on PC windows under 900 px tall: results on the left, medals and every button on the right,
+   so NEXT, Shop and Return are on screen without scrolling. */
+@media (min-width:1024px) and (min-height:600px) and (max-height:900px){
+  .panel.debrief-panel{display:block;columns:2;column-gap:28px;width:min(920px,92vw);max-width:920px;padding:22px 26px}
+  .debrief-panel>*{break-inside:avoid;margin:0 0 10px}
+  .debrief-panel>.medal-row{break-before:column;-webkit-column-break-before:always}
+  .debrief-panel>button{display:block;width:100%}
+  .debrief-panel>button:last-child{margin-bottom:0}
+}

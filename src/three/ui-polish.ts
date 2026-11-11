@@ -2,6 +2,7 @@ import './ui-polish.css';
 import './command-dock.css';
 import './finish.css';
 import './theme.css';
+import './desktop.css';
 // Keyboard users keep their focus rings on touch screens; everyone else sees none from programmatic focus.
 // Typing in a text field (including a phone keyboard, which also sends key events) does not count.
 const root=document.documentElement;
