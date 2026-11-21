@@ -161,6 +161,22 @@ The eight icons are Blender renders from `tools/blender/build_ui_icons.py`: cred
 
 The arc: *The Road* (stages 1-6) breaks the siege; *The Network* (7-13) reveals that Warden is Meridian's own road-control network, still obeying its last order to close every road; *Citadel* (14-16) carries in the order that opens them.
 
+## Message boxes and buttons
+
+`src/three/ui-kit.css` (loaded last) gives every dialog, button and battle message one look. It follows Codex's mockups, which live outside the repo in `docs/ui-mockups/` of the owner's clone.
+
+The design rules: a 4 px spacing scale, 12 px panel corners, a 3 px gradient accent rail and an 8 px cut on primary buttons. Cyan marks ordinary panels, coral marks defeat and gold marks results.
+
+- **Scenes:** pause, defeat, results, victory and the shop sit over the painted cover with the wordmark top-left. On wide screens the panel moves right, so the Kestrel shows on the left.
+- **Buttons:**
+  - primary: a plasma gradient with a bottom-right cut and two grip lines;
+  - secondary: dark glass with a cyan outline;
+  - minor actions: cyan text links.
+- **Controls inside panels:** option chips and the shop's underline tabs light up in cyan when selected, and settings show their values as rectangular chips. Price chips keep their purchase colours.
+- **Radio:** a comms card with a speaker badge, a name line with a waveform, and the message. `game.radioCard()` splits the translated "WHO / text" line and keeps the separator hidden in the text, so scripts still read the full line.
+
+The kit is visual only: markup, sizes and wording stay as before, and `tests/ui-polish.spec.ts` keeps auditing touch sizes and type.
+
 ## Command screen cover
 
 The command screen shows the war across the Meridian system.

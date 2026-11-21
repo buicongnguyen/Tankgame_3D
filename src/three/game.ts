@@ -1,4 +1,4 @@
-import {setHtml,setText,setAttribute,getLanguage,isLanguage,languagePicker,setLanguage,translateTree} from './i18n';
+import {setHtml,setText,setAttribute,getLanguage,isLanguage,languagePicker,setLanguage,translateTree,t} from './i18n';
 import {TANK_FLAGS,normalizeFlag,flagPreview} from './tank-flags';
 import {TrainingSession,TRAINING} from './training';
 import {Airlifts} from './airlift';
@@ -819,9 +819,14 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     this.hudTimer+=dt;if(this.hudTimer>.1){this.hudTimer=0;this.updateHud();}
     this.radioTimer-=dt;this.radio.classList.toggle('visible',this.radioTimer>0);
   }
+  /** Comms card layout: a name line and the message. The " / " stays in the text (hidden by CSS), so the radio still
+   *  reads "WHO / message" for screen readers and scripts. `full` is already translated. */
+  radioCard(full:string){const r=this.radio,cut=full.indexOf(' / ');if(cut<0){r.replaceChildren(document.createTextNode(full));return;}
+    const part=(tag:string,cls:string,text:string)=>{const e=document.createElement(tag);e.className=cls;e.textContent=text;return e;};
+    r.replaceChildren(part('b','radio-name',full.slice(0,cut)),part('span','radio-sep',' / '),part('span','radio-text',full.slice(cut+3)));}
   /** Speaker badge for the radio comms card (ui-kit.css): the callsign of a "WHO / text" line, or none. */
   speaker(who?:string,initial?:string){const r=this.radio;if(who){r.dataset.who=who;r.dataset.initial=(initial??who[0]).toUpperCase();}else{delete r.dataset.who;delete r.dataset.initial;}}
-  radioMessage(text:string,duration=5){const call=/^([A-Z][A-Z ]{1,14}?) \/ /.exec(text);this.speaker(call?call[1].toLowerCase().replace(/ /g,'-'):undefined);setText(this.radio,text);this.radioTimer=duration;this.radio.classList.add('visible');}
+  radioMessage(text:string,duration=5){const call=/^([A-Z][A-Z ]{1,14}?) \/ /.exec(text);this.speaker(call?call[1].toLowerCase().replace(/ /g,'-'):undefined);this.radioCard(t(text));this.radioTimer=duration;this.radio.classList.add('visible');}
   updateHud(){
     if(!this.player)return;
     const m=this.missionData();setText(this.el('mission-number'),this.skirmish?`SKIRMISH ${this.skirmish.round+1}/${this.skirmish.battles}${this.skirmish.scale>1?' · LARGE':''} · ${AI_SPEEDS[this.skirmish.config.speed].label.toUpperCase()} AI · ${MODES[normalizeDifficulty(this.save.difficulty)??'normal'].label.toUpperCase()}`:`STAGE ${String(this.mission+1).padStart(2,'0')} · LEVEL ${this.level+1}/3 · ${MODES[normalizeDifficulty(this.save.difficulty)??'normal'].label.toUpperCase()}`);setText(this.el('mission-name'),m.name);
@@ -925,7 +930,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   /** Two radio lines per stage carry the story during the first level: one early, one when half the patrol is down. */
   storyBeats(){if(!this.storyScenes||this.level!==0||this.beats.half)return;const story=STORY[this.mission];
     const living=this.enemies.filter(e=>!e.dead&&!e.pending).length;if(!this.beats.initial)this.beats.initial=living;
-    const say=(line:Line)=>{this.radio.replaceChildren(document.createTextNode(`${CAST[line[0]].name} / ${this.storyText(line)}`));this.speaker(line[0],CAST[line[0]].name[0]);this.radioTimer=6.5;this.radio.classList.add('visible');};
+    const say=(line:Line)=>{this.radioCard(`${CAST[line[0]].name} / ${this.storyText(line)}`);this.speaker(line[0],CAST[line[0]].name[0]);this.radioTimer=6.5;this.radio.classList.add('visible');};
     if(!this.beats.early&&this.elapsed>=14&&this.radioTimer<=0){this.beats.early=true;say(story.early);}
     else if(this.beats.early&&this.elapsed>=30&&living<=Math.ceil(this.beats.initial/2)&&this.radioTimer<=0){this.beats.half=true;say(story.half);}}
   /** A three-second banner over the battlefield (mission title, counterattack warning). It never takes a tap. */

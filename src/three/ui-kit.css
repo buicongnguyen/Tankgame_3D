@@ -1,140 +1,164 @@
-/* UI kit (2026-11-21): one modern sci-fi look for every message box and button, matching the space cover.
-   Loaded last (main.ts, after cover.css). Visual only: layout, sizes and text stay where the other files put them,
-   so the touch-size and 11 px audits keep holding.
-   - Panels: deep glass, hairline neon edge, a gradient accent rail on top, corner brackets drawn as background
-     layers (no pseudo-elements, so no clash with older rules). Tone per panel: defeat = coral, victory = gold.
-   - Buttons: three tiers. Primary = plasma gradient with chamfered corners and a light sheen; secondary = glass
-     with a neon edge; quiet = text link. Focus rings are real outlines (keyboard users need them), drawn inside the chamfered primary.
-   - Battle messages: the radio becomes a comms card with a speaker badge (data-who / data-initial from game.ts);
-     the stage title becomes a cinematic band. */
+/* UI kit v2 (2026-11-22): every message box and button follows Codex's mockups (docs/ui-mockups/, README for the
+   rationale: 4 px spacing scale, 12 px modal corners, 3 px accent rail, 8 px cut on primary buttons; cyan = normal,
+   coral = defeat, gold = results). Loaded last (main.ts, after cover.css). Visual only: markup, sizes and text stay
+   as the other files set them, so the 44 px touch and 11 px type audits keep holding.
+   - Scene: pause, defeat, results, victory and the shop sit over the painted cover (dimmed) with the wordmark
+     top-left; on wide screens the panel moves right so the Kestrel shows on the left.
+   - Panels: teal-navy glass, cyan hairline, gradient rail, one corner bracket (top-right), tone emblems.
+   - Buttons: primary = plasma gradient, 8 px cut on the bottom-right, two grip lines; secondary = dark glass with a
+     cyan outline and a darker left band; quiet = cyan text link.
+   - Battle: radio comms card (portrait badge, name line with a waveform, message), cinematic stage title band,
+     navy glass HUD cards. */
 
 :root{
- --kit-glass:linear-gradient(165deg,#101d46f5,#0a1132f7 55%,#150b32f7);
- --kit-edge:#6fe2ff45;--kit-edge-hi:#9ff0ffaa;--kit-neon:#5fe6ff;--kit-violet:#a46bff;--kit-plasma:#ff4fa0;
- --kit-text:#eef6ff;--kit-dim:#a9bddc;--kit-gold:#ffd36b;--kit-coral:#ff6b6b;
- --kit-rail:linear-gradient(90deg,var(--kit-neon),var(--kit-violet) 50%,var(--kit-plasma));
- --kit-bracket:var(--kit-neon);--kit-cut:10px;
+ --kit-glass:linear-gradient(160deg,#112a3df2,#0b1b2cf5 55%,#0a1626f7);
+ --kit-edge:#5fe6ff5c;--kit-edge-hi:#9ff0ffaa;--kit-neon:#5fe6ff;--kit-violet:#926bff;--kit-magenta:#d74da8;
+ --kit-text:#eef6ff;--kit-dim:#a9bfd0;--kit-gold:#ffd76b;--kit-coral:#ff5e7a;--kit-link:#7fe8ff;
+ --kit-rail:linear-gradient(90deg,var(--kit-neon),var(--kit-violet) 50%,var(--kit-magenta));
+ --kit-bracket:var(--kit-neon);--kit-cut:8px;
+ --kit-shield:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4 56 14v18c0 14-10 24-24 28C18 56 8 46 8 32V14Z' fill='%23102133' stroke='%23ff5e7a' stroke-width='4'/%3E%3Cpath d='M32 14 46 20v12c0 8-6 15-14 18-8-3-14-10-14-18V20Z' fill='%23ff5e7a'/%3E%3Cpath d='M35 18 27 34h7l-5 13 11-18h-7l5-11Z' fill='%23102133'/%3E%3C/svg%3E");
+ --kit-crest:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4 56 14v18c0 14-10 24-24 28C18 56 8 46 8 32V14Z' fill='%23102133' stroke='%23ffd76b' stroke-width='3'/%3E%3Cpath d='m32 17 4.4 9 9.9 1.4-7.2 7 1.7 9.8-8.8-4.6-8.8 4.6 1.7-9.8-7.2-7 9.9-1.4Z' fill='%23ffd76b'/%3E%3C/svg%3E");
 }
 
-/* ---------- Backdrop behind dialogs during play ---------- */
-body:not([data-phase=menu]) #overlay:not([hidden]){background:radial-gradient(ellipse at 50% 40%,#0a1438b3,#03051ae6 75%)}
+/* ---------- Scene behind dialogs: the painted cover, dimmed, with the wordmark ---------- */
+body:is([data-phase=paused],[data-phase=failed],[data-phase=victory],[data-phase=depot]) #overlay:not([hidden]){background:radial-gradient(ellipse at 50% 40%,#0a1438d9,#03051af2 75%)}
+body:is([data-phase=paused],[data-phase=failed],[data-phase=victory],[data-phase=depot]) #overlay::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+ background:linear-gradient(90deg,#03051a33,#03051ab3 55%,#03051ae6),var(--cover-art,none);background-size:auto,cover;background-position:0 0,30% 50%;background-repeat:no-repeat}
+:root[data-cover-art=portrait] body:is([data-phase=paused],[data-phase=failed],[data-phase=victory],[data-phase=depot]) #overlay::before{background:linear-gradient(180deg,#03051a33,#03051ad9 45%,#03051af2),var(--cover-art,none);background-size:auto,100% auto;background-position:0 0,50% 0;background-repeat:no-repeat}
+@media (orientation:landscape) and (min-width:1000px) and (min-height:560px){
+ body:is([data-phase=paused],[data-phase=failed],[data-phase=victory],[data-phase=depot]) #overlay:not([hidden]){justify-items:end;padding-right:max(28px,7vw)}
+ :root[data-cover-logo] body:is([data-phase=paused],[data-phase=failed],[data-phase=victory],[data-phase=depot]) #overlay::after{content:'';position:fixed;left:4vw;top:6vh;width:min(300px,22vw);aspect-ratio:2048/640;background:var(--cover-logo) center/contain no-repeat;pointer-events:none;filter:drop-shadow(0 6px 16px #000a)}
+}
 
 /* ---------- Panels ---------- */
 #overlay .panel:not(.briefing){
- position:relative;color:var(--kit-text);border:1px solid var(--kit-edge);border-radius:10px;
+ position:relative;color:var(--kit-text);border:1px solid var(--kit-edge);border-radius:12px;
  background:
   var(--kit-rail) 0 0/100% 3px no-repeat,
-  linear-gradient(var(--kit-bracket),var(--kit-bracket)) 5px 7px/14px 2px no-repeat,
-  linear-gradient(var(--kit-bracket),var(--kit-bracket)) 5px 7px/2px 14px no-repeat,
-  linear-gradient(var(--kit-bracket),var(--kit-bracket)) calc(100% - 5px) calc(100% - 5px)/14px 2px no-repeat,
-  linear-gradient(var(--kit-bracket),var(--kit-bracket)) calc(100% - 5px) calc(100% - 5px)/2px 14px no-repeat,
-  radial-gradient(ellipse at 50% 0,#2a7bff22,transparent 60%),
+  linear-gradient(var(--kit-bracket),var(--kit-bracket)) calc(100% - 12px) 12px/22px 2px no-repeat,
+  linear-gradient(var(--kit-bracket),var(--kit-bracket)) calc(100% - 12px) 12px/2px 22px no-repeat,
+  radial-gradient(ellipse at 70% 0,#2a9bff1a,transparent 55%),
   var(--kit-glass);
- box-shadow:0 30px 90px #000d,0 0 0 1px #00000080,inset 0 1px 0 #ffffff1a,inset 0 0 70px #2a7bff12;
+ box-shadow:0 30px 90px #000d,0 0 0 1px #0008,inset 0 1px 0 #ffffff14,inset 0 0 70px #2ab4ff0f;
 }
-#overlay .panel:not(.briefing) .eyebrow,#overlay .panel:not(.briefing)>.eyebrow{color:var(--kit-neon);text-shadow:0 0 10px #5fe6ff66;letter-spacing:.2em}
-#overlay .panel:not(.briefing) :is(h1,h2){color:#fff;text-shadow:0 0 22px #6fb8ff44,0 2px 0 #0008}
+#overlay .panel:not(.briefing) .eyebrow{color:var(--kit-neon);letter-spacing:.2em;text-shadow:0 0 10px #5fe6ff55}
+#overlay .panel:not(.briefing)>.eyebrow::after{content:'';display:inline-block;vertical-align:middle;width:56px;height:14px;margin-left:12px;opacity:.85;
+ background:linear-gradient(currentColor,currentColor) 0 50%/2px 4px,linear-gradient(currentColor,currentColor) 6px 50%/2px 8px,linear-gradient(currentColor,currentColor) 12px 50%/2px 12px,linear-gradient(currentColor,currentColor) 18px 50%/2px 6px,linear-gradient(currentColor,currentColor) 24px 50%/2px 14px,linear-gradient(currentColor,currentColor) 30px 50%/2px 8px,linear-gradient(currentColor,currentColor) 36px 50%/2px 11px,linear-gradient(currentColor,currentColor) 42px 50%/2px 5px,linear-gradient(currentColor,currentColor) 48px 50%/2px 9px,linear-gradient(currentColor,currentColor) 54px 50%/2px 4px;background-repeat:no-repeat}
+#overlay .panel:not(.briefing) :is(h1,h2){color:#fff;text-shadow:0 2px 0 #0008}
 #overlay .panel:not(.briefing)>p{color:var(--kit-dim)}
-/* Tones */
-#overlay .panel.defeat-panel{--kit-rail:linear-gradient(90deg,#ff8a5c,var(--kit-coral) 50%,#ff3d6e);--kit-bracket:var(--kit-coral);border-color:#ff6b6b55}
-#overlay .panel.defeat-panel .eyebrow{color:#ff9a84;text-shadow:0 0 10px #ff6b6b66}
-#overlay .panel.victory-panel{--kit-rail:linear-gradient(90deg,#fff1b0,var(--kit-gold) 45%,#ff9a3c);--kit-bracket:var(--kit-gold);border-color:#ffd36b55}
-#overlay .panel.victory-panel .eyebrow{color:var(--kit-gold);text-shadow:0 0 10px #ffd36b66}
-/* Stat tiles in debriefs read as instrument readouts. */
-#overlay .panel :is(.result-stats,.stage-metrics){border-color:#6fe2ff2e}
-#overlay .panel :is(.result-stats,.stage-metrics) strong{color:#fff;text-shadow:0 0 12px #6fb8ff55}
+/* The shop header carries the credit counter in that corner: no bracket there. */
+#overlay .panel.depot-panel:not(.debrief-panel){--kit-bracket:transparent}
+/* Tones and emblems */
+#overlay .panel.defeat-panel{--kit-bracket:var(--kit-coral);--kit-rail:linear-gradient(90deg,var(--kit-coral),var(--kit-violet) 55%,var(--kit-magenta));border-color:#ff5e7a66;
+ background:var(--kit-rail) 0 0/100% 3px no-repeat,var(--kit-shield) calc(100% - 26px) 30px/58px 58px no-repeat,radial-gradient(ellipse at 80% 0,#ff5e7a1f,transparent 55%),linear-gradient(160deg,#2a1b2ef2,#161526f5 55%,#0d1424f7)}
+#overlay .panel.defeat-panel .eyebrow{color:#ff7a8c;text-shadow:0 0 10px #ff5e7a55}
+#overlay .panel:is(.victory-panel,.debrief-panel){--kit-bracket:var(--kit-gold);--kit-rail:linear-gradient(90deg,var(--kit-gold),var(--kit-violet) 55%,var(--kit-magenta));border-color:#ffd76b66;
+ background:var(--kit-rail) 0 0/100% 3px no-repeat,var(--kit-crest) calc(100% - 26px) 30px/58px 58px no-repeat,radial-gradient(ellipse at 80% 0,#ffd76b1a,transparent 55%),linear-gradient(160deg,#2a2a2cf2,#17202cf5 55%,#0d1624f7)}
+#overlay .panel:is(.victory-panel,.debrief-panel) .eyebrow{color:var(--kit-gold);text-shadow:0 0 10px #ffd76b55}
+#overlay .panel:is(.defeat-panel,.debrief-panel)>:is(.eyebrow,h1){padding-right:72px}
+@media (max-width:600px),(max-height:560px){#overlay .panel.defeat-panel{background-size:100% 3px,44px 44px,auto,auto;background-position:0 0,calc(100% - 16px) 18px,0 0,0 0}#overlay .panel:is(.victory-panel,.debrief-panel){background-size:100% 3px,44px 44px,auto,auto;background-position:0 0,calc(100% - 16px) 18px,0 0,0 0}#overlay .panel:is(.defeat-panel,.debrief-panel)>:is(.eyebrow,h1){padding-right:52px}}
+/* Stats read as tiles with a tone line on top. */
+#overlay .panel :is(.result-stats,.stage-metrics){gap:8px;border:0}
+#overlay .panel :is(.result-stats,.stage-metrics)>span{min-width:0;padding:10px 12px;border-radius:6px;background:#ffffff08;border-top:2px solid #5fe6ff66}
+@media (max-width:380px){#overlay .panel :is(.result-stats,.stage-metrics){gap:4px}#overlay .panel :is(.result-stats,.stage-metrics)>span{padding:8px 5px}}
+#overlay .panel.defeat-panel :is(.result-stats,.stage-metrics)>span{border-top-color:#ff5e7a99}
+#overlay .panel.debrief-panel :is(.result-stats,.stage-metrics)>span{border-top-color:#ffd76b99}
+#overlay .panel :is(.result-stats,.stage-metrics) strong{color:#fff;font-family:'Barlow Condensed','Arial Narrow',sans-serif}
+#overlay .panel .medal-row .medal{border:1px solid #ffffff1f;border-radius:8px;background:#ffffff06}
+#overlay .panel .medal-row .medal.held{border-color:#ffd76baa;background:linear-gradient(180deg,#4a3a16cc,#2a2312cc);color:var(--kit-gold)}
 
-/* ---------- Buttons: primary ---------- */
+/* ---------- Primary button ---------- */
 :is(#overlay,#hud) button.primary,#overlay [data-action=shop-back]{
- position:relative;overflow:hidden;border:0;border-radius:4px;color:#1c0c12;
- background:linear-gradient(100deg,#ffd76b,#ff9a3c 52%,#ff5e7a);
- clip-path:polygon(var(--kit-cut) 0,100% 0,100% calc(100% - var(--kit-cut)),calc(100% - var(--kit-cut)) 100%,0 100%,0 var(--kit-cut));
- box-shadow:inset 0 1px 0 #ffffff80,inset 0 -3px 0 #00000033;
- font-weight:800;letter-spacing:.14em;text-transform:uppercase;text-shadow:0 1px 0 #ffffff55;
- transition:filter .15s,transform .1s;
-}
-:is(#overlay,#hud) button.primary:hover:not(:disabled),#overlay [data-action=shop-back]:hover{background:linear-gradient(100deg,#ffe28a,#ffaa52 52%,#ff7090);filter:brightness(1.05)}
-:is(#overlay,#hud) button.primary:active:not(:disabled),#overlay [data-action=shop-back]:active{transform:translateY(1px);filter:brightness(.95)}
+ overflow:hidden;border:0;border-radius:4px;color:#1a0c10;
+ background:linear-gradient(#1a0c1066,#1a0c1066) 14px 50%/1px 50% no-repeat,linear-gradient(#1a0c1066,#1a0c1066) 18px 50%/1px 50% no-repeat,linear-gradient(100deg,#ffd76b,#ff9a3c 52%,#ff5e7a);
+ clip-path:polygon(0 0,100% 0,100% calc(100% - var(--kit-cut)),calc(100% - var(--kit-cut)) 100%,0 100%);
+ box-shadow:inset 0 1px 0 #ffffff80;font-weight:800;letter-spacing:.12em;text-transform:uppercase;transition:filter .15s,transform .1s}
+:is(#overlay,#hud) button.primary:hover:not(:disabled),#overlay [data-action=shop-back]:hover{filter:brightness(1.08) saturate(1.05)}
+:is(#overlay,#hud) button.primary:active:not(:disabled),#overlay [data-action=shop-back]:active{transform:translateY(1px);filter:brightness(.92)}
+:is(#overlay,#hud) button.primary:disabled{filter:grayscale(.6) brightness(.65)}
 :is(#overlay,#hud) button.primary:focus-visible,#overlay [data-action=shop-back]:focus-visible{outline:2px solid #fff;outline-offset:-5px}
-#overlay .panel button.primary::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,#ffffff8c 50%,transparent 65%);transform:translateX(-110%);animation:kit-sheen 4.6s ease-in-out infinite;pointer-events:none}
-@keyframes kit-sheen{0%,60%{transform:translateX(-110%)}90%,100%{transform:translateX(110%)}}
+/* Positioned for the sheen, weakly: the landscape shop pins DONE into its header (finish.css) and must win. */
+:where(#overlay,#hud) button.primary,:where(#overlay) [data-action=shop-back]{position:relative}
+#overlay .panel button.primary::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,#ffffff70 50%,transparent 65%);transform:translateX(-110%);animation:kit-sheen 5s ease-in-out infinite;pointer-events:none}
+@keyframes kit-sheen{0%,62%{transform:translateX(-110%)}92%,100%{transform:translateX(110%)}}
 
-/* ---------- Buttons: secondary (direct actions in a panel) ---------- */
+/* ---------- Secondary buttons (direct actions in a panel) ---------- */
 #overlay .panel:not(.briefing)>button:not(.primary):not(.quiet):not([data-action=shop-back]),
 #overlay .panel:not(.briefing) :is(.panel-actions,.victory-actions,.defeat-actions,.story-actions)>button:not(.primary):not(.quiet),
 #overlay .panel:not(.briefing) :is(form,.leaderboard-tools)>button:not(.primary){
- border:0;border-radius:8px;color:var(--kit-text);
- background:linear-gradient(180deg,#18295cf0,#0d1640f5);
- box-shadow:inset 0 0 0 1px #6fe2ff66,inset 0 1px 0 #ffffff1a;
- font-weight:700;letter-spacing:.12em;text-transform:uppercase;
-}
+ border:1px solid #5fe6ff73;border-left:3px solid #1f4a5e;border-radius:4px;color:var(--kit-text);
+ background:linear-gradient(180deg,#14304a,#0c2033);box-shadow:inset 0 1px 0 #ffffff12;clip-path:none;
+ font-weight:700;letter-spacing:.1em;text-transform:uppercase}
 #overlay .panel:not(.briefing)>button:not(.primary):not(.quiet):not([data-action=shop-back]):hover:not(:disabled),
 #overlay .panel:not(.briefing) :is(.panel-actions,.victory-actions,.defeat-actions,.story-actions)>button:not(.primary):not(.quiet):hover:not(:disabled),
-#overlay .panel:not(.briefing) :is(form,.leaderboard-tools)>button:not(.primary):hover:not(:disabled){background:linear-gradient(180deg,#203674f0,#122050f5);box-shadow:inset 0 0 0 1px var(--kit-edge-hi),inset 0 1px 0 #ffffff26,inset 0 0 24px #2ad4ff33}
+#overlay .panel:not(.briefing) :is(form,.leaderboard-tools)>button:not(.primary):hover:not(:disabled){border-color:var(--kit-edge-hi);border-left-color:var(--kit-neon);background:linear-gradient(180deg,#183a58,#0f2840)}
 #overlay .panel:not(.briefing) button:not(.primary):focus-visible{outline:2px solid var(--kit-neon);outline-offset:2px}
-#overlay .panel.defeat-panel>button:not(.primary):not(.quiet){box-shadow:inset 0 0 0 1px #ff8a7a66,inset 0 1px 0 #ffffff1a}
+#overlay .panel:not(.briefing) button:not(.primary):disabled{opacity:.45}
 
-/* ---------- Buttons: quiet (text links) ---------- */
-#overlay .panel:not(.briefing) .quiet,#overlay .panel:not(.briefing) button.quiet{background:none;border:0;color:var(--kit-dim);letter-spacing:.08em;text-decoration:underline;text-decoration-color:#a9bddc55;text-underline-offset:4px}
-#overlay .panel:not(.briefing) .quiet:hover{color:#fff;text-decoration-color:var(--kit-neon)}
+/* ---------- Quiet buttons: cyan text links ---------- */
+#overlay .panel:not(.briefing) .quiet,#overlay .panel:not(.briefing) button.quiet{background:none;border:0;color:var(--kit-link);font-weight:700;letter-spacing:.06em;text-decoration:none}
+#overlay .panel:not(.briefing) .quiet:hover{color:#fff;text-decoration:underline;text-underline-offset:4px}
 
-/* ---------- Settings rows ---------- */
-#overlay .settings>button{border-bottom-color:#6fe2ff22!important}
-#overlay .settings>button b{border:1px solid #5fe6ff77;background:linear-gradient(180deg,#5fe6ff26,#5fe6ff0d);color:var(--kit-neon);box-shadow:0 0 12px #2ad4ff22}
-#overlay .settings>button[data-action=sound] b{position:relative;padding-left:22px}
-#overlay .settings>button[data-action=sound] b::before{content:'';position:absolute;left:9px;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+/* ---------- Settings rows: rectangular value chips ---------- */
+#overlay .settings>button{border-bottom-color:#5fe6ff26!important;font-weight:700}
+#overlay .settings>button b{border:1px solid #5fe6ff66;border-radius:4px;background:#0a1a2a;color:#fff;box-shadow:none;letter-spacing:.06em}
+
+/* ---------- Inside panels: option chips, fields, cards, tabs ----------
+   Price chips, skin and field-pack buttons keep their gold/teal/grey purchase states (tests/ui-polish.spec.ts). */
+#overlay .panel:not(.briefing) button:not(.primary):not(.quiet):not(.price-button):not([data-action=shop-back]):not(.language-choice):is(.skirmish-maps button,.skirmish-choice button,.profile-actions button,.difficulty button,.level-select button,.leaderboard-tools button,form button){
+ border:1px solid #5fe6ff4d;border-radius:6px;color:var(--kit-text);background:linear-gradient(180deg,#13293ef0,#0b1b2cf5);box-shadow:inset 0 1px 0 #ffffff10;clip-path:none}
+#overlay .panel:not(.briefing) button:not(.primary):not(.quiet):not(.price-button):not([data-action=shop-back]):not(.language-choice):is(.skirmish-maps button,.skirmish-choice button,.profile-actions button,.difficulty button,.level-select button,.leaderboard-tools button,form button):hover:not(:disabled):not([aria-pressed=true]):not(.active):not(.selected){border-color:var(--kit-edge-hi);background:linear-gradient(180deg,#183a58f0,#0f2840f5)}
+#overlay .panel:not(.briefing) button:not(.primary):not(.quiet):not(.price-button):not([data-action=shop-back]):not(.language-choice):is(.skirmish-maps button,.skirmish-choice button,.difficulty button,.level-select button):is([aria-pressed=true],.active,.selected){
+ border-color:var(--kit-neon);color:#fff;background:linear-gradient(180deg,#1b5a72,#103a52);box-shadow:0 0 0 1px #5fe6ff55,0 0 16px #2ad4ff33,inset 0 1px 0 #ffffff26}
+/* Shop tabs: underline tabs (icons kept). */
+#overlay .depot-panel .shop-tabs{background:none;border:0;gap:6px}
+#overlay .depot-panel .shop-tabs button{border:0;border-bottom:3px solid #ffffff1f;border-radius:6px 6px 0 0;background:transparent;color:#dfeaf2;box-shadow:none}
+#overlay .depot-panel .shop-tabs button:hover:not([aria-pressed=true]){background:#ffffff08;border-bottom-color:#5fe6ff66}
+#overlay .depot-panel .shop-tabs button[aria-pressed=true]{border-bottom-color:var(--kit-neon);background:linear-gradient(180deg,#5fe6ff1a,#5fe6ff08);color:var(--kit-link)}
+#overlay .panel:not(.briefing) :is(input[type=text],input:not([type]),select){border:1px solid #5fe6ff4d;border-radius:6px;background:#091827;color:var(--kit-text)}
+#overlay .panel:not(.briefing) :is(input[type=text],input:not([type]),select):focus-visible{outline:none;border-color:var(--kit-neon);box-shadow:0 0 0 3px #5fe6ff33}
+#overlay .panel:not(.briefing) :is(.profile-card,.upgrade-card,.skin-card,.leaderboard-empty,.leaderboard-row,.skirmish-strategy){border-color:#5fe6ff2e;background:linear-gradient(180deg,#10243acc,#0a1826cc)}
+#overlay .panel:not(.briefing) .upgrade-card[data-owned=true]{border-left:3px solid var(--kit-neon)}
+#overlay .panel:not(.briefing) .profile-card.active{border-color:var(--kit-neon);box-shadow:0 0 0 1px #5fe6ff44,0 0 24px #2ad4ff26}
+#overlay .panel:not(.briefing) .profile-tag{background:var(--kit-neon);color:#06102a}
+#overlay .depot-panel .credit-total{color:var(--kit-gold)}
+/* Language picker: the chosen language is a pale cyan chip with dark text. */
+#overlay .language-options{border:1px solid #5fe6ff66;background:#091827cc}
+#overlay .language-choice{background:transparent;color:var(--kit-link)}
+#overlay .language-choice[aria-pressed=true]{background:#9ff0ff;color:#06202a;box-shadow:none}
 
 /* ---------- Story scenes ---------- */
-#overlay .story-line .portrait{background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--who,#5fe6ff) 45%,#fff 0%),color-mix(in srgb,var(--who,#5fe6ff) 35%,#050a20) 70%);color:#fff;border:2px solid var(--who,#5fe6ff);box-shadow:0 0 16px color-mix(in srgb,var(--who,#5fe6ff) 50%,transparent),inset 0 -6px 10px #0006;text-shadow:0 1px 3px #000}
+#overlay .story-line .portrait{background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--who,#5fe6ff) 45%,#fff 0%),color-mix(in srgb,var(--who,#5fe6ff) 30%,#06121e) 70%);color:#fff;border:2px solid var(--who,#5fe6ff);box-shadow:0 0 14px color-mix(in srgb,var(--who,#5fe6ff) 45%,transparent);text-shadow:0 1px 3px #000}
 #overlay .story-line.current p{color:#fff}
 
 /* ---------- Battle: radio comms card ---------- */
-#hud .radio{--who:var(--kit-neon);padding-left:58px;min-height:52px;display:flex;align-items:center;border:1px solid var(--kit-edge);border-left:3px solid var(--who);border-radius:6px;
- background:linear-gradient(90deg,color-mix(in srgb,var(--who) 20%,transparent),transparent 45%),linear-gradient(100deg,#0e1c46f2,#0a1232eb);
- box-shadow:0 12px 30px #0009,inset 0 1px 0 #ffffff14;color:var(--kit-text);transform:translateX(-8px);transition:opacity .3s,transform .3s}
+#hud .radio{--who:var(--kit-neon);display:block;padding:10px 14px 10px 62px;min-height:58px;border:1px solid var(--kit-edge);border-left:1px solid var(--kit-edge);border-radius:8px;
+ background:linear-gradient(160deg,#112a3df2,#0b1b2cf5);box-shadow:0 12px 30px #0009,inset 0 1px 0 #ffffff14;color:var(--kit-text);transform:translateX(-8px);transition:opacity .3s,transform .3s}
 #hud .radio.visible{transform:none}
-#hud .radio::before{content:attr(data-initial);position:absolute;left:10px;top:50%;width:36px;height:36px;margin-top:-18px;border-radius:50%;display:grid;place-items:center;
- background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--who) 60%,#fff 0%),color-mix(in srgb,var(--who) 30%,#050a20) 72%);
- border:2px solid var(--who);color:#fff;font:800 16px/1 'Barlow Condensed','Arial Narrow',sans-serif;text-shadow:0 1px 3px #000;box-shadow:0 0 12px color-mix(in srgb,var(--who) 55%,transparent)}
+#hud .radio::before{content:attr(data-initial);position:absolute;left:12px;top:50%;width:38px;height:38px;margin-top:-19px;border-radius:50%;display:grid;place-items:center;
+ background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--who) 35%,#123) 0%,#0b1b2c 75%);border:2px solid var(--who);color:var(--who);font:800 16px/1 'Barlow Condensed','Arial Narrow',sans-serif}
 #hud .radio:not([data-initial])::before{content:'\25C9'}
-#hud .radio[data-who=ivo]{--who:#8fd3ff}
-#hud .radio[data-who=mara],#hud .radio[data-who=kestrel]{--who:var(--kit-gold)}
+#hud .radio .radio-name{display:block;color:var(--who);font-weight:800;font-size:11px;letter-spacing:.2em;line-height:1.3}
+#hud .radio .radio-name::after{content:'';display:inline-block;vertical-align:middle;width:44px;height:12px;margin-left:8px;opacity:.9;
+ background:linear-gradient(currentColor,currentColor) 0 50%/2px 3px,linear-gradient(currentColor,currentColor) 5px 50%/2px 7px,linear-gradient(currentColor,currentColor) 10px 50%/2px 11px,linear-gradient(currentColor,currentColor) 15px 50%/2px 5px,linear-gradient(currentColor,currentColor) 20px 50%/2px 12px,linear-gradient(currentColor,currentColor) 25px 50%/2px 7px,linear-gradient(currentColor,currentColor) 30px 50%/2px 9px,linear-gradient(currentColor,currentColor) 35px 50%/2px 4px,linear-gradient(currentColor,currentColor) 40px 50%/2px 8px;background-repeat:no-repeat}
+#hud .radio .radio-sep{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#hud .radio .radio-text{display:block}
+#hud .radio[data-who=ivo]{--who:#7fd8ff}
+#hud .radio:is([data-who=mara],[data-who=kestrel]){--who:var(--kit-gold)}
 #hud .radio[data-who=warden]{--who:var(--kit-coral)}
 #hud .radio:is([data-who=voice],[data-who=convoy],[data-who=rescue]){--who:#7dffb0}
 #hud .radio:is([data-who=armory],[data-who=supply],[data-who=auto]){--who:#c9a6ff}
 #hud .radio[data-who=earthquake]{--who:#ff9a3c}
-@media (max-width:600px),(max-height:500px){#hud .radio{padding-left:46px;min-height:42px}#hud .radio::before{left:7px;width:30px;height:30px;margin-top:-15px;font-size:14px}}
+@media (max-width:600px),(max-height:500px){#hud .radio{padding-left:50px;min-height:46px}#hud .radio::before{left:8px;width:32px;height:32px;margin-top:-16px;font-size:14px}}
 
-/* ---------- Battle: stage title band ---------- */
-#title-card{background:linear-gradient(90deg,transparent,#0a1232e6 18%,#0a1232e6 82%,transparent),linear-gradient(90deg,transparent,var(--kit-neon) 30%,var(--kit-violet) 50%,var(--kit-plasma) 70%,transparent) 0 0/100% 2px no-repeat,linear-gradient(90deg,transparent,#5fe6ff66,transparent) 0 100%/100% 1px no-repeat;border:0}
-#title-card .eyebrow{color:var(--kit-neon);text-shadow:0 0 10px #5fe6ff88}
-#title-card strong{color:#fff;text-shadow:0 0 24px #6fb8ff66,0 2px 0 #0008}
-
-/* ---------- Inside panels: option buttons, fields, cards, tabs ----------
-   Price chips, skin and field-pack buttons keep their gold/teal/grey purchase states (tests/ui-polish.spec.ts);
-   settings rows keep their flat list style. */
-#overlay .panel:not(.briefing) button:not(.primary):not(.quiet):not(.price-button):not([data-action=shop-back]):not(.language-choice):is(.skirmish-maps button,.skirmish-choice button,.profile-actions button,.shop-tabs button,.difficulty button,.level-select button,.leaderboard-tools button,form button){
- border:1px solid #6fe2ff40;border-radius:8px;color:var(--kit-text);background:linear-gradient(180deg,#14234ef0,#0b1438f5);box-shadow:inset 0 1px 0 #ffffff12;clip-path:none}
-#overlay .panel:not(.briefing) button:not(.primary):not(.quiet):not(.price-button):not([data-action=shop-back]):not(.language-choice):is(.skirmish-maps button,.skirmish-choice button,.profile-actions button,.shop-tabs button,.difficulty button,.level-select button,.leaderboard-tools button,form button):hover:not(:disabled):not([aria-pressed=true]):not(.active):not(.selected){border-color:#9ff0ffaa;background:linear-gradient(180deg,#1b2f66f0,#10204cf5)}
-#overlay .panel:not(.briefing) button:not(.primary):not(.quiet):not(.price-button):not([data-action=shop-back]):not(.language-choice):is(.skirmish-maps button,.skirmish-choice button,.shop-tabs button,.difficulty button,.level-select button):is([aria-pressed=true],.active,.selected){
- border-color:var(--kit-neon);color:#fff;background:linear-gradient(180deg,#1b4f7a,#10305a);box-shadow:0 0 0 1px #5fe6ff55,0 0 16px #2ad4ff40,inset 0 1px 0 #ffffff26}
-#overlay .depot-panel .shop-tabs{background:none;border-color:#6fe2ff22}
-#overlay .panel:not(.briefing) :is(input[type=text],input:not([type]),select){border:1px solid #6fe2ff40;border-radius:8px;background:#070d28;color:var(--kit-text)}
-#overlay .panel:not(.briefing) :is(input[type=text],input:not([type]),select):focus-visible{outline:none;border-color:var(--kit-neon);box-shadow:0 0 0 3px #5fe6ff33}
-#overlay .panel:not(.briefing) :is(.profile-card,.upgrade-card,.skin-card,.leaderboard-empty,.leaderboard-row,.skirmish-strategy){border-color:#6fe2ff2e;background:linear-gradient(180deg,#0f1b44cc,#0a1232cc)}
-#overlay .panel:not(.briefing) .profile-card.active{border-color:var(--kit-neon);box-shadow:0 0 0 1px #5fe6ff44,0 0 24px #2ad4ff26}
-#overlay .panel:not(.briefing) .profile-tag{background:var(--kit-neon);color:#06102a}
-/* Language picker (menu header and pause): the chosen language lights in neon. */
-:is(#overlay) .language-options{border-color:#6fe2ff40;background:#070d28cc}
-:is(#overlay) .language-choice{background:linear-gradient(180deg,#14234ef0,#0b1438f5);color:var(--kit-text)}
-:is(#overlay) .language-choice[aria-pressed=true]{background:linear-gradient(180deg,#1b4f7a,#10305a);color:#fff;box-shadow:inset 0 0 0 1px var(--kit-neon),0 0 14px #2ad4ff40}
-
-/* ---------- Battle HUD cards and buttons: the same navy glass ---------- */
-body #hud :is(.mission-hud,.hull-block,.weapon-block,#pause,.abilities button){
- background:linear-gradient(180deg,#101d46e6,#0a1232eb);border-color:#6fe2ff40;box-shadow:0 10px 26px #0008,inset 0 1px 0 #ffffff14}
-body #hud .mission-hud{border-left:3px solid var(--kit-neon)}
+/* ---------- Battle: stage title band and HUD cards ---------- */
+#title-card{background:linear-gradient(90deg,transparent,#0b1b2ce6 18%,#0b1b2ce6 82%,transparent),linear-gradient(90deg,transparent,#5fe6ff99 25%,#5fe6ff99 75%,transparent) 0 0/100% 1px no-repeat,linear-gradient(90deg,transparent,#5fe6ff66 25%,#5fe6ff66 75%,transparent) 0 100%/100% 1px no-repeat;border:0}
+#title-card .eyebrow{color:var(--kit-neon)}
+#title-card strong{color:#fff;text-shadow:0 2px 0 #0008}
+body #hud :is(.mission-hud,.hull-block,.weapon-block,#pause,.abilities button){background:linear-gradient(160deg,#112a3de6,#0b1b2ceb);border-color:#5fe6ff4d;box-shadow:0 10px 26px #0008,inset 0 1px 0 #ffffff14}
+body #hud .mission-hud{border-left:1px solid #5fe6ff4d}
 body #hud .mission-hud .eyebrow{color:var(--kit-neon)}
-body #hud :is(#pause,.abilities button):hover:not(:disabled){border-color:#9ff0ffaa;background:linear-gradient(180deg,#16285ae6,#0d1640eb)}
+body #hud :is(#pause,.abilities button):hover:not(:disabled){border-color:var(--kit-edge-hi);background:linear-gradient(160deg,#163650e6,#0e2438eb)}
 
 /* Phones hide a focus ring that no key asked for (ui-polish.css rule); keep that true for the kit outlines. */
 @media(pointer:coarse){html:not([data-input=keys]) :is(#overlay,#hud) button:focus-visible{outline:none!important}}
