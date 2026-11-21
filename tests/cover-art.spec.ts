@@ -15,6 +15,10 @@ test(`painted cover, logo and stage planets load (${view.name})`,async({browser}
   await expect(page.locator('.command-screen h1')).toContainText('STEEL');
   const worlds=await page.locator('.campaign-route .route-item').evaluateAll(items=>items.map(e=>(e as HTMLElement).style.getPropertyValue('--world')));
   expect(worlds).toHaveLength(16);
+  // Absolute addresses only: a relative url() inside a CSS variable resolves against the built stylesheet in
+  // /assets/, which 404ed on Pages while dev (inline CSS) looked fine.
+  const vars=await page.evaluate(()=>['--cover-art','--cover-logo'].map(v=>document.documentElement.style.getPropertyValue(v)));
+  for(const v of [...vars,...worlds])expect(v,v).toMatch(/url\("?https?:\/\//);
   const urls=worlds.map(w=>/url\("?([^")]+)"?\)/.exec(w)![1]);
   expect(new Set(urls).size).toBe(16);
   for(const url of urls){const r=await page.request.get(new URL(url,page.url()).href);expect(r.status(),url).toBe(200);expect(r.headers()['content-type']).toContain('image/webp');}

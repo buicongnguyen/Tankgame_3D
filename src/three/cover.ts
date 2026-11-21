@@ -213,12 +213,16 @@ export function refreshCover() {
 }
 
 /** Painted key art (docs/COVER_ART_PROMPTS.md, public/cover/). Variant B was chosen for both shapes. */
+/** Absolute address for a public file. These URLs go into CSS variables, and a relative url() in a variable
+ *  resolves against the stylesheet that uses it: in the built game that is /assets/, so "./cover/x.webp"
+ *  became /assets/cover/x.webp and 404ed on Pages (2026-11-21). Dev inlines the CSS, so only the build broke. */
+export const publicUrl = (path: string) => new URL(import.meta.env.BASE_URL + path, document.baseURI).href;
 export const COVER_ART = { landscape: 'cover/key-art-landscape-b.webp', portrait: 'cover/key-art-portrait-b.webp', logo: 'cover/logo-steel-front.webp' };
 let artWanted = '';
 /** Show the painted cover for this screen shape once it has decoded; the procedural sky stays underneath. */
 export function refreshArt() {
   const root = document.documentElement, portrait = innerHeight > innerWidth * 1.15;
-  const src = import.meta.env.BASE_URL + (portrait ? COVER_ART.portrait : COVER_ART.landscape);
+  const src = publicUrl(portrait ? COVER_ART.portrait : COVER_ART.landscape);
   if (src === artWanted) return; artWanted = src;
   const img = new Image(); img.decoding = 'async'; img.src = src;
   img.decode().then(() => {
@@ -227,12 +231,12 @@ export function refreshArt() {
   }).catch(() => { if (artWanted === src) artWanted = ''; });
 }
 function loadLogo() {
-  const root = document.documentElement, src = import.meta.env.BASE_URL + COVER_ART.logo, img = new Image();
+  const root = document.documentElement, src = publicUrl(COVER_ART.logo), img = new Image();
   img.decoding = 'async'; img.src = src;
   img.decode().then(() => { root.style.setProperty('--cover-logo', `url("${src}")`); root.dataset.coverLogo = 'ready'; }).catch(() => {});
 }
 /** Small stage-planet picture for stage index i (0-based). */
-export const worldArt = (i: number) => `${import.meta.env.BASE_URL}cover/world-${String(i + 1).padStart(2, '0')}-sm.webp`;
+export const worldArt = (i: number) => publicUrl(`cover/world-${String(i + 1).padStart(2, '0')}-sm.webp`);
 
 let installed = false;
 export function installCover() {
