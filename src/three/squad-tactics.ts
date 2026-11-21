@@ -1,5 +1,6 @@
 import type { Game, Unit } from './game';
 import { angleGap } from './rules';
+import { holdDistance } from './surprise';
 
 /**
  * Campaign squad tactics for hostile tanks that have the player in sight.
@@ -36,5 +37,5 @@ export function squadTactic(g: Game, e: Unit, index: number, dist: number): { ad
   const bearing = Math.atan2(p.x - player.x, p.z - player.z);
   const flanked = angleGap(bearing, g.player.aim) > FLANK_ARC;
   if (!g.tacticCalls.flank) { g.tacticCalls.flank = true; g.radioMessage('IVO / They are splitting up. One is circling for your rear armor.', 4); }
-  return { advance: dist > 15 ? .75 : dist < 10 ? -.55 : 0, side: flanked ? 0 : (rank % 2 ? 1 : -1) * .95 };
+  return { advance: dist > holdDistance(g, e, 15) ? .75 : dist < 10 ? -.55 : 0, side: flanked ? 0 : (rank % 2 ? 1 : -1) * .95 };
 }

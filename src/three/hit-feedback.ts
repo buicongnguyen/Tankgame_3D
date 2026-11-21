@@ -5,7 +5,7 @@ import * as T from 'three';
  * into a single number, so rapid fire and flame ticks read as one figure instead of a blur.
  * A fixed pool of DOM labels is reused; nothing is created while fighting.
  */
-type Kind = 'normal' | 'weak' | 'kill';
+type Kind = 'normal' | 'weak' | 'kill' | 'ambush';
 interface Pending { sum: number; age: number; kind: Kind; at: T.Vector3; }
 interface Label { el: HTMLElement; at: T.Vector3; age: number; live: boolean; drift: number; }
 
@@ -29,12 +29,12 @@ export class HitFeedback {
   }
 
   /** Note damage done to a hostile unit at a world position. */
-  add(unit: object, amount: number, at: T.Vector3, weak: boolean, killed: boolean) {
+  add(unit: object, amount: number, at: T.Vector3, weak: boolean, killed: boolean, ambush = false) {
     if (!(amount > 0)) return;
     let p = this.pending.get(unit);
     if (!p) { p = { sum: 0, age: 0, kind: 'normal', at: new T.Vector3() }; this.pending.set(unit, p); }
     p.sum += amount; p.at.copy(at);
-    if (killed) { p.kind = 'kill'; p.age = WINDOW; } else if (weak && p.kind === 'normal') p.kind = 'weak';
+    if (killed) { p.kind = 'kill'; p.age = WINDOW; } else if (ambush) p.kind = 'ambush'; else if (weak && p.kind === 'normal') p.kind = 'weak';
   }
 
   private spawn(p: Pending) {

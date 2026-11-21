@@ -28,7 +28,7 @@ test('touch: a light push aims without firing, a firm push fires only once the t
 
 test('touch aim assist settles on a nearby enemy and leads a moving one',async({page})=>{
  await battle(page);
- const r=await page.evaluate(()=>{const g=(window as any).__steel,p=g.player.visual.root.position;
+ const r=await page.evaluate(()=>{const g=(window as any).__steel,p=g.player.visual.root.position;g.aimMode='assist';
   const e=g.enemies.find((u:any)=>!u.dead&&!g.isInfantry(u)&&u.role!=='boss');g.enemies=[e];g.world.covers=[];g.world.navigationRevision++;
   e.visual.root.position.set(p.x+2,0,p.z-20);e.encounter=undefined;
   // Stick pointed 8 degrees off the enemy, on the side it is about to drive toward.

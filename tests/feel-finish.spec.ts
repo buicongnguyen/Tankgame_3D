@@ -50,7 +50,7 @@ test('the sound bank plays named sounds, spaces out repeats and respects the sou
 test('hostile hits show summed damage numbers; rear hits stand out and count for the Flanker medal',async({page})=>{
  await ready(page);
  const r=await page.evaluate(()=>{const g=(window as any).__steel;g.start(0,0);g.clearOpening?.();
-  const e=g.enemies.find((u:any)=>!g.isInfantry(u)&&u.role!=='jeep'&&!u.dead);e.pending=false;e.hp=e.max=400;const p=e.visual.root.position;
+  const e=g.enemies.find((u:any)=>!g.isInfantry(u)&&u.role!=='jeep'&&!u.dead);e.pending=false;if(e.encounter)e.encounter.active=true;e.hp=e.max=400;const p=e.visual.root.position;
   const front={x:p.x+Math.sin(e.heading)*8,z:p.z+Math.cos(e.heading)*8},rear={x:p.x-Math.sin(e.heading)*8,z:p.z-Math.cos(e.heading)*8};
   g.damageUnit(e,20,front);g.damageUnit(e,20,front);g.hits.update(.2,g.world.camera,innerWidth,innerHeight);
   const first=[...document.querySelectorAll('.hit-layer b:not([hidden])')].map(b=>[b.textContent,b.className]);

@@ -16,6 +16,9 @@ import {grantBackgroundStrikes} from './strike-bank';
 import {AutoMissiles,buyAutoPack} from './auto-missiles';
 import {ammoCapacity, perkSkin, skinPerks, skinBonusText} from './skins';
 import {ramCover} from './screens';
+import {AMBUSH_MULTIPLIER, fireRange, holdDistance, isAmbush} from './surprise';
+import {AIM_LABEL, AIM_HELP, ASSIST_ANGLE, AUTO_RANGE, MOUSE_IDLE, loadAimMode, nextAimMode, storeAimMode} from './aim-mode';
+import type {AimMode} from './aim-mode';
 import {coin} from './shop-icons';
 import {Flamethrower,FLAME} from './flamethrower';
 import {enemyHealth} from './unit-health';
@@ -97,6 +100,7 @@ export class Game {
   /** The deployment shield waits for the first contact instead of running out before any enemy is awake. */
   private contact=false;
   /** Recent ground speed of each enemy, for touch aim lead. */
+  aimMode:AimMode=loadAimMode();private mouseSeen={x:NaN,y:NaN,at:-9};
   private aimTrack=new WeakMap<Unit,{x:number;z:number;vx:number;vz:number;t:number}>();
   readonly threats=new ThreatArrows(); convoy:T.Group|null=null;convoyBlocked=false;
   overlay:HTMLElement; hud:HTMLElement; radio:HTMLElement; mini:HTMLCanvasElement;
@@ -204,7 +208,7 @@ export class Game {
   focusPrimary(){requestAnimationFrame(()=>this.overlay.querySelector<HTMLButtonElement>('.primary')?.focus({preventScroll:true}));}
   missionData(){if(this.training)return this.training.mission();if(this.skirmish)return this.skirmish.mission(this.mission);return levelMission(this.mission,this.level);}
   route(){const frontier=this.save.cleared.indexOf(false);return MISSIONS.map((m,i)=>`<button class="route-item ${i===this.mission?'selected':''}" data-action="mission" data-value="${i}" ${frontier>=0&&i>frontier?'disabled':''}><span class="route-index">${this.save.cleared[i]?'✓':String(i+1).padStart(2,'0')}</span><span><small>${m.kind.toUpperCase()} · ${this.save.cleared[i]?3:i===this.save.mission?this.save.level:0}/3</small><strong>${m.name}</strong></span><span class="route-state">${frontier>=0&&i>frontier?'LOCKED':i===this.mission?'◂':'↗'}</span></button>`).join('');}
-  settings(){return `<div class="settings">${this.phase==='paused'?languagePicker('pause-language'):''}<button data-action="training" data-value="0">REPLAY TRAINING</button>${fullscreenButton()}<button data-action="sound">SOUND <b>${this.save.sound?'ON':'OFF'}</b></button><button data-action="quality" aria-pressed="${this.save.low}" aria-describedby="graphics-help" ${this.qualityChanging?'disabled':''}>GRAPHICS <b>${this.qualityChanging?'LOADING…':this.save.low?'LOW DETAIL':'HIGH DETAIL'}</b></button><a href="./legacy.html">Original 2D ↗</a><small id="graphics-help" role="status">${this.qualityError?'Could not load graphics. Tap to retry.':'Low detail: simpler models · fewer effects · 30 FPS cap'}</small></div>`;}
+  settings(){return `<div class="settings">${this.phase==='paused'?languagePicker('pause-language'):''}<button data-action="training" data-value="0">REPLAY TRAINING</button>${fullscreenButton()}<button data-action="sound">SOUND <b>${this.save.sound?'ON':'OFF'}</b></button><button data-action="aim" title="${AIM_HELP[this.aimMode]}">AIM <b>${AIM_LABEL[this.aimMode]}</b></button><button data-action="quality" aria-pressed="${this.save.low}" aria-describedby="graphics-help" ${this.qualityChanging?'disabled':''}>GRAPHICS <b>${this.qualityChanging?'LOADING…':this.save.low?'LOW DETAIL':'HIGH DETAIL'}</b></button><a href="./legacy.html">Original 2D ↗</a><small id="graphics-help" role="status">${this.qualityError?'Could not load graphics. Tap to retry.':'Low detail: simpler models · fewer effects · 30 FPS cap'}</small></div>`;}
   controls(){return '<div class="control-guide"><span><kbd>W A S D</kbd> Drive</span><span><kbd>I J K L / MOUSE</kbd> Aim</span><span><kbd>SPACE / F / CLICK</kbd> Fire</span><span><kbd>C / 1–9</kbd> Switch gun</span><span><kbd>Q</kbd> Shield</span><span><kbd>E</kbd> Auto vehicle missile</span><span><kbd>R / T</kbd> Strike / Drop</span><span><kbd>ESC</kbd> Pause</span><p class="touch-guide">On touch: left stick drives; right stick aims and fires. Tap Switch Gun to choose a gun. Strike, Drop, Shield and Auto have separate buttons.</p></div>';}
   showMenu(){
     if(this.saveConflict){this.saveProblem('conflict');return;}
@@ -302,6 +306,7 @@ export class Game {
     if(action==='level'&&this.phase==='menu'){const level=Number(value);if(Number.isInteger(level)&&level>=0&&level<=unlockedLevel(this.save,this.mission)){this.prepare(this.mission,level);this.showMenu();}}
     if(action==='difficulty'&&this.phase==='menu'){const selected=normalizeDifficulty(value);if(selected){this.save.difficulty=selected;this.persist();this.prepare(this.mission,this.level);this.showMenu();}}
     if(action==='sound'){this.save.sound=!this.save.sound;this.save.soundChosen=true;this.persist();if(this.save.sound)this.tone(440,.08,.05);if(this.phase==='paused')this.renderPause();else this.showMenu();}
+    if(action==='aim'){this.aimMode=nextAimMode(this.aimMode);storeAimMode(this.aimMode);if(this.phase==='paused')this.renderPause();else this.showMenu();}
     if(action==='quality')void this.changeQuality();
     if(action==='buy'&&this.phase==='depot')this.buy(value as Upgrade);
   }
@@ -528,22 +533,30 @@ export class Game {
   }
   /** Touch aim assist: a stick pointed within 12 degrees of a visible enemy (40 m) settles on it, leading a moving
    *  target by the shell's flight time. Mouse and keys aim exactly; arc rockets and flames have their own aiming. */
-  private assistAim(p:T.Vector3){
+  private assistAim(p:T.Vector3,want:number|null,tolerance:number){
     const info=WEAPONS[this.weapon];if(info.arc||info.flame)return;
-    const want=Math.atan2(this.input.aim.x,this.input.aim.z);let best:Unit|null=null,bestDiff=.21,bestD=0;
+    let best:Unit|null=null,bestDiff=want===null?AUTO_RANGE:tolerance,bestD=0;
     for(const e of this.enemies){
       if(e.dead||e.pending||e.perch||this.airborne(e))continue;
       const q=e.visual.root.position,dx=q.x-p.x,dz=q.z-p.z,d=Math.hypot(dx,dz);if(d>40||d<2)continue;
       let track=this.aimTrack.get(e);if(!track){track={x:q.x,z:q.z,vx:0,vz:0,t:this.elapsed};this.aimTrack.set(e,track);}
       const gap=this.elapsed-track.t;if(gap>0&&gap<.25){track.vx+=((q.x-track.x)/gap-track.vx)*.3;track.vz+=((q.z-track.z)/gap-track.vz)*.3;}else if(gap>=.25){track.vx=track.vz=0;}
       track.x=q.x;track.z=q.z;track.t=this.elapsed;
-      const diff=angleGap(Math.atan2(dx,dz),want);
+      const diff=want===null?d:angleGap(Math.atan2(dx,dz),want);
       if(diff<bestDiff&&clearSight(this,p,q)){best=e;bestDiff=diff;bestD=d;}
     }
     if(!best)return;
     const q=best.visual.root.position,track=this.aimTrack.get(best)!,flight=info.speed>0?bestD/info.speed:0,speed=Math.hypot(track.vx,track.vz),k=speed>9?9/speed:1;
     let lx=track.vx*k*flight,lz=track.vz*k*flight;const lead=Math.hypot(lx,lz);if(lead>6){lx*=6/lead;lz*=6/lead;}
     this.aimPoint.set(q.x+lx,0,q.z+lz);
+  }
+  /** Mouse counts as aiming while it moves, and for a moment after. */
+  private mouseAiming(){const m=this.input.mouse,s=this.mouseSeen;if(!this.input.hasMouse)return false;if(m.x!==s.x||m.y!==s.y){s.x=m.x;s.y=m.y;s.at=this.elapsed;}return this.elapsed-s.at<MOUSE_IDLE;}
+  private applyAimMode(p:T.Vector3,keys:boolean){
+    if(this.aimMode==='manual'||keys)return;
+    if(this.input.touchAiming)this.assistAim(p,Math.atan2(this.input.aim.x,this.input.aim.z),ASSIST_ANGLE.stick);
+    else if(this.mouseAiming())this.assistAim(p,Math.atan2(this.aimPoint.x-p.x,this.aimPoint.z-p.z),ASSIST_ANGLE.mouse);
+    else if(this.aimMode==='auto')this.assistAim(p,null,0);
   }
   /** A transport out of contact patches itself up slowly: 3 HP/s once no awake enemy is within 30 m for 4 s. */
   private repairConvoy(dt:number){
@@ -561,7 +574,7 @@ export class Game {
     if(this.input.touchAiming||this.input.hasTouchAim)this.aimPoint.set(p.x+this.input.aim.x*28,0,p.z+this.input.aim.z*28);
     else if(this.input.hasMouse){this.ray.setFromCamera(this.input.mouse,this.world.camera);this.ray.ray.intersectPlane(this.plane,this.aimPoint);}
     else this.aimPoint.set(p.x+Math.sin(this.player.heading)*15,0,p.z+Math.cos(this.player.heading)*15);
-    if(this.input.touchAiming)this.assistAim(p);
+    this.applyAimMode(p,aimX!==0||aimZ!==0);
     if(WEAPONS[this.weapon].arc){const target=rocketTarget(p,this.aimPoint,this.enemies.filter(e=>!e.dead&&!e.pending).map(e=>e.visual.root.position),this.input.touchAiming||this.input.hasTouchAim,this.world.bounds);this.aimPoint.set(target.x,0,target.z);}
     if(WEAPONS[this.weapon].flame){const dx=this.aimPoint.x-p.x,dz=this.aimPoint.z-p.z,r=Math.hypot(dx,dz);if(r>FLAME.range)this.aimPoint.set(p.x+dx/r*FLAME.range,0,p.z+dz/r*FLAME.range);}
     this.player.aim=turnToward(this.player.aim,Math.atan2(this.aimPoint.x-p.x,this.aimPoint.z-p.z),dt*9);
@@ -606,7 +619,7 @@ export class Game {
       if(!ordered&&!e.perch&&(e.role!=='sentry'||dist>26||obstruction)){
         // Tanks with the player in sight fight as a squad: one holds the line, the rest flank, the wounded fall back.
         const tactic=!obstruction&&!investigating&&!capturing&&target===playerPos&&!this.skirmish&&!this.training?squadTactic(this,e,i,dist):null;
-        const advance=tactic?tactic.advance:dist>(investigating?2:capturing?4:17)||obstruction?1:dist<10&&!investigating&&!capturing?-.55:0;
+        const advance=tactic?tactic.advance:dist>(investigating?2:capturing?4:holdDistance(this,e,17))||obstruction?1:dist<10&&!investigating&&!capturing?-.55:0;
         const side=tactic?tactic.side:investigating||capturing?0:e.role==='raider'?.5:obstruction?.7:0;
         const detour=obstruction?this.navigation.next(this.world,p,target):null;
         const direction=detour?Math.atan2(detour.x-p.x,detour.z-p.z):desired+Math.sin(this.elapsed*.8+i)*.2;
@@ -616,7 +629,7 @@ export class Game {
       }
       if(!ordered&&e.role==='sentry'&&dist<=26&&!obstruction&&terrainAt(this.world.environment.biome,p)==='ice')this.moveUnit(e,0,0,dt);
       const canFire=(target===playerPos||target===this.convoy?.position||this.allies.active.some(a=>target===a.visual.root.position)||objectiveTarget&&!capturing)&&clearSight(this,p,target,e.perch?.cover);
-      const range=objectiveTarget?24:38;
+      const range=objectiveTarget?24:fireRange(this,e,38);
       if(dist<range&&canFire)e.cooldown-=dt;else e.cooldown=Math.max(e.cooldown,AIM_WARNING_SECONDS);
       const beam=e.visual.beam;beam.visible=canFire&&e.cooldown<AIM_WARNING_SECONDS&&dist<range;beam.scale.z=dist;beam.position.set(p.x+Math.sin(e.aim)*dist/2,.12,p.z+Math.cos(e.aim)*dist/2);beam.rotation.y=e.aim;
       this.syncVisual(e);
@@ -631,13 +644,13 @@ export class Game {
     if(this.airborne(unit)&&!antiAir)return;
     if(unit===this.player&&this.shieldTime>0)this.contact=true;   // a blocked hit ends the deployment hold
     if(unit.dead||unit.pending||unit===this.player&&this.shieldTime>0)return;
-    if(unit!==this.player&&unit.team!=='ally'&&damage>0)this.encounters.alert(this,unit,source);
+    let ambush=false;if(unit!==this.player&&unit.team!=='ally'&&damage>0){ambush=isAmbush(this,unit);if(ambush)damage*=AMBUSH_MULTIPLIER;this.encounters.alert(this,unit,source);}
     // The player's armor faces where the gun points (twin-stick driving turns the hull toward travel, so retreating
     // would always show the rear). Bosses have their own armored/exposed phases instead of facing armor.
     const multiplier=this.isInfantry(unit)||unit.role==='jeep'||unit.role==='airlift'||unit.role==='boss'?1:armorMultiplier(unit.visual.root.position,unit===this.player?unit.aim:unit.heading,source);
     const dealt=damage*multiplier*(unit.role==='boss'?this.bosses.multiplier(unit):1);unit.hp-=dealt;
     // Hostile hits show a number and make a sound; rear-armor hits stand out and count toward the Flanker medal.
-    if(unit!==this.player&&unit.team!=='ally'&&dealt>0){const weak=multiplier>1;if(weak)this.rearHits++;const at=unit.visual.root.position;this.hits.add(unit,dealt,this.hitPoint.set(at.x,at.y+2.3,at.z),weak,unit.hp<=0);if(unit.hp>0)this.sfx.play(weak?'weak':'hit',.75);}
+    if(unit!==this.player&&unit.team!=='ally'&&dealt>0){const weak=multiplier>1;if(weak)this.rearHits++;const at=unit.visual.root.position;this.hits.add(unit,dealt,this.hitPoint.set(at.x,at.y+2.3,at.z),weak,unit.hp<=0,ambush);if(unit.hp>0)this.sfx.play(weak?'weak':'hit',.75);}
     if(this.isInfantry(unit))noteHit(unit,this.elapsed);
     const impact=unit.visual.root.position.clone();impact.y+=1.4;if(hitEffect)this.world.fx.impact(impact);
     if(unit===this.player){this.hurtTimer=.2;this.sfx.play('hurt');this.world.shake(Math.min(.45,.12+damage/120));}

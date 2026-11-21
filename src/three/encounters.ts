@@ -6,6 +6,7 @@ import type {Point} from './rules';
 import {distance,segmentBox} from './rules';
 import {projectRoute} from './stage-layout';
 import {holdsBack} from './screens';
+import {sightRange} from './surprise';
 
 export interface EncounterOrder {group:number;anchor:Point;meters:number;active:boolean;wakeAt?:number;}
 /** Trunk/obstacle footprints block sight; destroyed cover immediately opens a firing lane. */
@@ -14,7 +15,7 @@ export function clearSight(g:Game,from:Point,to:Point,ignore?:Cover){
  return !g.world.covers.some(c=>c.hp>0&&c!==ignore&&segmentBox(from,to,c,.08)!==null);
 }
 export function seesTarget(g:Game,unit:Unit,target:Point){
- return distance(unit.visual.root.position,target)<(g.isInfantry(unit)?ENEMY_SIGHT.infantry:unit.role==='boss'?ENEMY_SIGHT.boss:ENEMY_SIGHT.vehicle)&&clearSight(g,unit.visual.root.position,target,unit.perch?.cover);
+ return distance(unit.visual.root.position,target)<sightRange(g,unit,g.isInfantry(unit)?ENEMY_SIGHT.infantry:unit.role==='boss'?ENEMY_SIGHT.boss:ENEMY_SIGHT.vehicle)&&clearSight(g,unit.visual.root.position,target,unit.perch?.cover);
 }
 export class RouteEncounters {
  progress=0;scanAt=0;view?:Point;convoyView?:Point;revision=-1;

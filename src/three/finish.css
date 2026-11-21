@@ -7,6 +7,8 @@
 .hit-layer b{position:absolute;left:0;top:0;font:800 16px/1 Barlow Condensed,Barlow,system-ui,sans-serif;letter-spacing:.02em;color:#fff;-webkit-text-stroke:3px #0b1a23;paint-order:stroke fill;text-shadow:0 2px 8px #0009;will-change:transform,opacity;white-space:nowrap}
 .hit-layer b.weak{font-size:20px;color:#ffd866}
 .hit-layer b.kill{font-size:23px;color:#ff9a4d}
+.hit-layer b.ambush{font-size:22px;color:#7dffb4}
+.hit-layer b.ambush::before{content:"AMBUSH ";font-size:12px;letter-spacing:.12em;color:#fff}
 
 /* ---------- Mission title card ---------- */
 #title-card{position:fixed;left:50%;top:27%;z-index:4;width:min(84vw,460px);display:grid;gap:6px;justify-items:center;text-align:center;pointer-events:none;transform:translate(-50%,-50%);padding:14px 18px;background:linear-gradient(90deg,#0b1a2300,#0b1a23d9 18%,#0b1a23d9 82%,#0b1a2300);border-block:1px solid #f0c98399}

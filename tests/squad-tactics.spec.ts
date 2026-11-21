@@ -26,7 +26,7 @@ test('squad tactics: anvil and Easy keep the default, flankers stop once outside
  const r=await page.evaluate(new Function(squad+`
   return import('/src/three/squad-tactics.ts').then(({squadTactic})=>{
    const a=make(-2,20),b=make(2,20),behind=make(0,-16);g.enemies=[a,b,behind];
-   const out={anvil:squadTactic(g,a,0,20),flanker:squadTactic(g,b,1,20),settled:squadTactic(g,behind,2,16)};
+   const out={anvil:squadTactic(g,a,0,20),flanker:squadTactic(g,b,1,30),settled:squadTactic(g,behind,2,16)};
    b.hp=b.max*.3;out.hurt=squadTactic(g,b,1,15);out.hurtFar=squadTactic(g,b,1,30);
    const heavy=g.makeUnit(4,20,'heavy');heavy.encounter={group:0,anchor:{x:4,z:20},meters:0,active:true};heavy.hp=heavy.max*.2;g.enemies=[a,heavy];out.heavy=squadTactic(g,heavy,1,20);
    const rifle=g.makeUnit(6,20,'rifleman');out.rifle=squadTactic(g,rifle,1,20);

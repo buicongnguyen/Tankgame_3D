@@ -2,7 +2,7 @@ import {setHtml,locale,setText} from './i18n';
 import {MISSIONS} from './campaign';
 const KEY='steel-front-leaderboard-v1',PILOT='steel-front-pilot-v1';
 /** 3: Normal hull 1.25×, armor faces the gun, defense won by holding the uplink (2026-10). */
-export const RULES_VERSION=3;
+export const RULES_VERSION=4;
 export interface RecordEntry {rules?:number;pilot:string;mission:number;level:number;difficulty:string;score:number;seconds:number;health:number;date:string}
 export function scoreRun(seconds:number,health:number,target:number){
  if(![seconds,health,target].every(Number.isFinite)||seconds<0||health<0||health>100||target<0)throw new Error('Invalid result');

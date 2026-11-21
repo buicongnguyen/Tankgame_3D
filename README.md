@@ -161,6 +161,14 @@ The eight icons are Blender renders from `tools/blender/build_ui_icons.py`: cred
 
 The arc: *The Road* (stages 1-6) breaks the siege; *The Network* (7-13) reveals that Warden is Meridian's own road-control network, still obeying its last order to close every road; *Citadel* (14-16) carries in the order that opens them.
 
+## Aim, distance and surprise
+
+- **Aim setting** (Settings, `aim-mode.ts`): *Manual* goes exactly where you point. *Assist* (the default) settles a stick within 12° or a mouse pointer within 7° of a visible enemy on it, leading a moving target. *Auto* does the same and, with no aim input (no stick, keys, or mouse movement for 1.5 s), picks the nearest visible enemy within 36 m. Firing is always a deliberate press. The choice is a device setting kept outside the save. Scripted runs (`?e2e`) start on Manual.
+- **Kite window** (`surprise.ts`): on Easy and Normal, enemy tanks (raiders and heavies) stop advancing at 24 m (Easy) or 26 m (Normal) and fire only inside 32 m or 35 m, so a player who keeps 34-40 m can shoot without being shot. Hard, Crazy, bosses, infantry, skirmish and training are unchanged.
+- **Calm opening:** the group nearest the start notices the tank from 15% (Easy) or 8% (Normal) closer.
+- **Ambush:** the first hit on an enemy that has not noticed the tank does 50% more damage on Easy and Normal, shown as a green AMBUSH number. Fences and the hold-back rule give the player the chance.
+- The leaderboard moved to rules version 4.
+
 ## Pacing and plank fences
 
 `src/three/screens.ts`:
