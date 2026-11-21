@@ -3,6 +3,8 @@ import {awardStage} from '../src/three/results';
 import {freshSave} from '../src/three/campaign';
 test('health star thresholds reward survival without changing earned credits',()=>{for(const [hp,stars] of [[1,1],[39,1],[40,2],[74,2],[75,3],[100,3]])expect(awardStage(freshSave(),0,45,hp,100,0).stars).toBe(stars);});
 for(const viewport of [{width:320,height:568},{width:1440,height:900},{width:390,height:844},{width:844,height:390}])test(`clear menu and categorized shop ${viewport.width}`,async({browser})=>{
+ // Four screens, a battle and three full-page screenshots: 96-120 s on CI runners, so 2 min was too tight.
+ test.setTimeout(240000);
  const context=await browser.newContext({viewport,hasTouch:viewport.width<1000,isMobile:viewport.width<1000});const page=await context.newPage();const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/?e2e');await expect(page.locator('[data-action=deploy]')).toBeVisible();await expect(page.locator('[data-action=difficulty]')).toHaveCount(4);await expect(page.locator('[data-action=level]')).toHaveCount(3);await expect(page.locator('[data-action=quality]')).toBeHidden();await page.screenshot({path:`test-results/menu-${viewport.width}.png`,fullPage:true});
  await page.locator('[data-action=difficulty][data-value=hard]').click();await expect(page.locator('[data-action=difficulty][data-value=hard]')).toHaveAttribute('aria-pressed','true');
  await page.locator('.dock-settings>summary').click();await page.locator('[data-action=sound]').click();await expect(page.locator('.dock-settings')).toHaveAttribute('open','');
