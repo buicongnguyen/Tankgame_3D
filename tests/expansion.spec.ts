@@ -46,7 +46,7 @@ test('mud slows and sinks tanks but traction recovery allows escape',async({page
 });
 for(const width of [390,844])test(`four modes and three levels fit mobile ${width}`,async({browser})=>{
  const context=await browser.newContext({viewport:{width,height:width===390?844:390},isMobile:true,hasTouch:true});const page=await context.newPage();await page.goto('/?e2e');
- await page.locator('.mission-setup>summary').click();for(const difficulty of DIFFICULTIES){await page.locator(`[data-action="difficulty"][data-value="${difficulty}"]`).tap();await expect(page.locator(`[data-action="difficulty"][data-value="${difficulty}"]`)).toHaveAttribute('aria-pressed','true');}
+ for(const difficulty of DIFFICULTIES){await page.locator(`[data-action="difficulty"][data-value="${difficulty}"]`).tap();await expect(page.locator(`[data-action="difficulty"][data-value="${difficulty}"]`)).toHaveAttribute('aria-pressed','true');}
  await expect(page.locator('[data-action="level"]')).toHaveCount(3);await expect(page.locator('[data-action="level"][data-value="1"]')).toBeDisabled();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/expansion-menu-${width}.png`,fullPage:true});await context.close();
 });
 

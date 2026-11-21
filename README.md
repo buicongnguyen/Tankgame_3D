@@ -161,6 +161,21 @@ The eight icons are Blender renders from `tools/blender/build_ui_icons.py`: cred
 
 The arc: *The Road* (stages 1-6) breaks the siege; *The Network* (7-13) reveals that Warden is Meridian's own road-control network, still obeying its last order to close every road; *Citadel* (14-16) carries in the order that opens them.
 
+## Command screen cover
+
+The command screen shows the war across the Meridian system.
+
+- **The sky** is painted once by `src/three/cover.ts` with Canvas 2D: a nebula, stars, a ringed gas giant, a moon, a burning war world, distant fleets and the ocean planet the tank stands on. It is stored as the CSS variable `--cover-sky`, and repainted only when the screen shape changes.
+- **Animated details** live in `src/three/cover.css`: twinkle, tracer fire, flashes, a holographic orbit around the tank with one planet per stage, and a plasma sheen on the primary button. They use transform and opacity only, and stop under reduced motion.
+- **Rendering cost:** while the cover is up, the battlefield behind it renders at 10 FPS.
+
+Every choice is one tap:
+- Difficulty and level are button rows on the mission card.
+- Stages are a strip of planet buttons. It swipes on phones, and a mouse wheel scrolls it.
+- The dock has five direct tiles: Shop, Skin, Skirmish, Ranks and Settings. Settings opens straight to every toggle.
+
+Painted art can replace the procedural sky later. The brief and the exact prompt for an image model are in [docs/COVER_ART_PROMPTS.md](docs/COVER_ART_PROMPTS.md).
+
 ## Never stuck, always rewarded
 
 Players said the game was too hard and could not see the fun. `fun.ts` (plan: `docs/FUN_PASS_2026-11.md`) adds, on Easy and Normal campaign stages only:

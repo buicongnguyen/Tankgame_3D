@@ -46,17 +46,17 @@ for(const view of VIEWS)for(const fallback of view.touch?[false,true]:[false])te
  const tap=async(selector:string)=>{const l=page.locator(selector).first();await l.scrollIntoViewIfNeeded();view.touch?await l.tap():await l.click();};
  const screens:Record<string,Awaited<ReturnType<typeof audit>>>={};
  screens.menu=await audit(page);
- await tap('.dock-more>summary');await tap('.menu-settings>summary');await expect(page.locator('[data-action=quality]')).toBeVisible();screens.settings=await audit(page);
+ await tap('.dock-settings>summary');await expect(page.locator('[data-action=quality]')).toBeVisible();screens.settings=await audit(page);
  // The settings sheet is a list of full-width rows; the graphics help sits directly under its row.
  const sheet=await page.evaluate(()=>{const box=document.querySelector('.menu-settings .settings')!.getBoundingClientRect(),rows=[...document.querySelectorAll('.menu-settings .settings>button')].map(b=>{const r=b.getBoundingClientRect();return {full:Math.abs(r.width-box.width)<2,tall:r.height>=44};});
   const quality=document.querySelector('.menu-settings [data-action=quality]')!,help=document.querySelector('.menu-settings #graphics-help')!;
   return {rows,helpBelow:Math.abs(help.getBoundingClientRect().top-quality.getBoundingClientRect().bottom)<2,divider:getComputedStyle(quality).borderBottomStyle};});
  expect(sheet.rows.length).toBeGreaterThanOrEqual(4);for(const row of sheet.rows)expect(row).toEqual({full:true,tall:true});expect(sheet).toMatchObject({helpBelow:true,divider:'none'});
  await page.keyboard.press('Escape');await expect(page.locator('details.chip-sheet[open]')).toHaveCount(0);
- // The command dock: four equal tiles on one row, always on screen.
+ // The command dock: five equal direct tiles, always on screen (one row; two on the smallest landscape phones).
  const tiles=await page.evaluate(()=>[...document.querySelectorAll('.command-dock .dock-tile')].map(e=>{const r=e.getBoundingClientRect();return {y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),bottom:r.bottom<=innerHeight+1};}));
- expect(tiles).toHaveLength(4);expect(Math.max(...tiles.map(t=>t.w))-Math.min(...tiles.map(t=>t.w))).toBeLessThanOrEqual(1);expect(new Set(tiles.map(t=>t.y)).size).toBe(1);for(const t of tiles){expect(t.h).toBeGreaterThanOrEqual(44);expect(t.bottom).toBe(true);}
- await tap('.dock-more>summary');await tap('[data-action=leaderboard]');await expect(page.locator('#rank-back')).toBeVisible();screens.leaderboard=await audit(page);await tap('#rank-back');
+ expect(tiles).toHaveLength(5);expect(Math.max(...tiles.map(t=>t.w))-Math.min(...tiles.map(t=>t.w))).toBeLessThanOrEqual(1);expect(new Set(tiles.map(t=>t.y)).size).toBeLessThanOrEqual(page.viewportSize()!.width<700&&page.viewportSize()!.height<500?2:1);for(const t of tiles){expect(t.h).toBeGreaterThanOrEqual(44);expect(t.bottom).toBe(true);}
+ await tap('[data-action=leaderboard]');await expect(page.locator('#rank-back')).toBeVisible();screens.leaderboard=await audit(page);await tap('#rank-back');
  await tap('.command-dock [data-action=shop]');await expect(page.getByRole('heading',{name:'Field shop'})).toBeVisible();
  expect(await iconsLoad(page,'.shop-tabs button','::before')).toEqual(Array(4).fill('160x160'));
  expect(await iconsLoad(page,'.credit-total','::before')).toEqual(['160x160']);

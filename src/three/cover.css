@@ -1,0 +1,193 @@
+/* Cover (2026-11-21): the command screen as a war across the Meridian system.
+   - Sky: painted once by cover.ts into --cover-sky (nebula, stars, ringed giant, moons, a burning world, the
+     planet horizon under the tank). CSS gradients stand in until it is ready.
+   - Life: a few cheap CSS layers (twinkle, tracer fire, flashes, the holographic orbit). Transform/opacity
+     only; all of it stops with prefers-reduced-motion.
+   - Flat controls: difficulty, level and stage are direct buttons on the card; the dock has five direct
+     tiles. Nothing important sits behind a second tap.
+   - No backdrop-filter: blurring over animated layers costs a full re-blur every frame on phones.
+   Loaded last (main.ts imports it after ui-polish). */
+
+:root{
+ --neon:#5fe6ff;--neon-soft:#5fe6ff40;--violet:#a46bff;--plasma:#ff4fa0;--ember:#ffb44a;
+ --glass:linear-gradient(160deg,#0e1a3ef0,#080d26f2 58%,#140a2ef2);
+ --sky-fallback:radial-gradient(ellipse at 78% 18%,#6a2a12 0,transparent 22%),radial-gradient(ellipse at 60% 35%,#4a1060 0,transparent 45%),radial-gradient(ellipse at 25% 100%,#0b3a6a 0,transparent 55%),linear-gradient(180deg,#02030b,#070a22 60%,#0a0820);
+}
+
+/* ---------- Sky behind the menu screens and the loading screen ---------- */
+body[data-phase=menu] #overlay,.loading{background-color:#03040d;background-image:var(--cover-sky,none),var(--sky-fallback);background-size:cover;background-position:center;background-repeat:no-repeat}
+.loading{color:#eef6ff}
+.loading .eyebrow{color:var(--neon);text-shadow:0 0 10px #5fe6ff88}
+.loading h1{text-shadow:0 0 24px #5fe6ff55,0 2px 0 #000}
+.loading::before{content:'';width:92px;height:92px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#9ff0ff,#1d6fb8 42%,#06204a 70%,#020818);box-shadow:0 0 44px #2fb6ff88,0 0 0 12px #5fe6ff10,0 0 0 13px #5fe6ff55,0 0 0 30px #5fe6ff08,0 0 0 31px #a46bff33;animation:cover-pulse 2.4s ease-in-out infinite}
+@keyframes cover-pulse{50%{transform:scale(1.06);box-shadow:0 0 70px #2fb6ffaa,0 0 0 14px #5fe6ff14,0 0 0 15px #5fe6ff77,0 0 0 34px #5fe6ff0a,0 0 0 35px #a46bff55}}
+
+/* ---------- Animated layer: behind every control, never takes a tap ---------- */
+.command-screen>.cover-fx{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict}
+.cover-fx .twinkle{position:absolute;inset:0;background-image:radial-gradient(1.6px 1.6px at 12% 18%,#fff,transparent),radial-gradient(1.4px 1.4px at 37% 9%,#cfe6ff,transparent),radial-gradient(1.8px 1.8px at 66% 31%,#fff,transparent),radial-gradient(1.3px 1.3px at 88% 7%,#ffe2c4,transparent),radial-gradient(1.5px 1.5px at 52% 22%,#bfefff,transparent),radial-gradient(1.4px 1.4px at 21% 41%,#fff,transparent),radial-gradient(1.7px 1.7px at 79% 44%,#cfe6ff,transparent);animation:cover-twinkle 3.8s ease-in-out infinite alternate}
+@keyframes cover-twinkle{from{opacity:.25}to{opacity:1}}
+/* Tracer fire between the fleets near the gas giant. */
+.cover-fx .tracer{position:absolute;left:42%;top:36%;width:22vmax;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,#6ff0ff 60%,#fff);opacity:0;transform-origin:0 50%;animation:cover-tracer 6.5s linear infinite}
+.cover-fx .tracer:nth-child(2){top:31%;left:56%;background:linear-gradient(90deg,transparent,#ff4d6a 60%,#fff);transform:rotate(172deg);animation-delay:1.7s;animation-duration:7.3s}
+.cover-fx .tracer:nth-child(3){top:41%;left:36%;animation-delay:3.4s;animation-duration:8.1s}
+.cover-fx .tracer:nth-child(4){top:27%;left:60%;background:linear-gradient(90deg,transparent,#ff4d6a 60%,#fff);transform:rotate(186deg);animation-delay:5.1s;animation-duration:6.9s}
+@keyframes cover-tracer{0%{opacity:0;translate:-6vmax 0;scale:.3 1}4%{opacity:1}12%{opacity:0;translate:10vmax 0;scale:1 1}100%{opacity:0;translate:10vmax 0}}
+.cover-fx .flash{position:absolute;left:52%;top:33%;width:7vmin;height:7vmin;margin:-3.5vmin;border-radius:50%;background:radial-gradient(circle,#fff 0,#ffd27a 22%,#ff6a2a55 50%,transparent 70%);opacity:0;animation:cover-flash 5.2s ease-out infinite}
+.cover-fx .flash:nth-child(6){left:44%;top:39%;animation-delay:2.1s;animation-duration:6.6s}
+.cover-fx .flash:nth-child(7){left:57%;top:29%;animation-delay:3.9s;animation-duration:7.7s}
+@keyframes cover-flash{0%,100%{opacity:0;transform:scale(.2)}3%{opacity:1;transform:scale(1)}12%{opacity:0;transform:scale(1.5)}}
+@media (orientation:portrait){.cover-fx .tracer{left:40%;top:22%}.cover-fx .tracer:nth-child(2){left:62%;top:15%}.cover-fx .tracer:nth-child(3){left:30%;top:27%}.cover-fx .tracer:nth-child(4){left:70%;top:10%}.cover-fx .flash{left:66%;top:18%}.cover-fx .flash:nth-child(6){left:44%;top:24%}.cover-fx .flash:nth-child(7){left:82%;top:9%}}
+
+/* ---------- Header ---------- */
+.command-screen>.brand{border-bottom:1px solid transparent;border-image:linear-gradient(90deg,#5fe6ff66,#a46bff44 45%,transparent) 1}
+.command-screen .brand-mark{color:var(--neon);text-shadow:0 0 14px #5fe6ffcc,0 0 30px #5fe6ff66;display:inline-block;animation:cover-spin 14s linear infinite}
+@keyframes cover-spin{to{transform:rotate(360deg)}}
+.command-screen .brand small{color:#9fc4e8}
+
+/* ---------- Title ---------- */
+.command-screen .hero>.eyebrow{color:var(--neon);text-shadow:0 0 10px #5fe6ff88}
+.command-screen .hero>.eyebrow::before{content:'';display:inline-block;vertical-align:1px;margin-right:8px;width:7px;height:7px;border-radius:50%;background:#ff4f6a;box-shadow:0 0 10px #ff4f6a;animation:cover-blink 1.6s steps(2,jump-none) infinite}
+@keyframes cover-blink{50%{opacity:.25}}
+.command-screen .hero h1{background:linear-gradient(176deg,#ffffff 8%,#e4eeff 36%,#7f97c4 50%,#f4f8ff 58%,#b4c6ea 92%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 16px #4fd8ff4d) drop-shadow(0 3px 0 #0a1230)}
+.command-screen .hero h1 em{background:linear-gradient(100deg,#ffe38a,#ff9a3c 45%,#ff4f8b);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.command-screen .hero h1>span{color:var(--neon);-webkit-text-fill-color:var(--neon);text-shadow:0 0 12px #5fe6ffaa}
+.command-screen .menu-tagline{color:#c8d8f4;text-shadow:0 1px 6px #000}
+.command-screen .showcase-caption{z-index:3;border-left-color:var(--neon);background:linear-gradient(90deg,#030818d9,#03081800);padding-right:28px;text-shadow:0 1px 4px #000}
+.command-screen .showcase-caption .eyebrow{color:var(--neon)}
+
+/* ---------- Holographic orbit around the tank, one planet per campaign stage ---------- */
+.command-screen .tank-showcase .showcase-ring{border:1px solid #5fe6ff77;background:radial-gradient(ellipse,#2ad4ff2e,#2ad4ff0a 55%,transparent 70%);box-shadow:0 0 0 14px #5fe6ff08,0 0 0 15px #5fe6ff2e,0 0 26px #2ad4ff40,inset 0 0 30px #2ad4ff33}
+.command-screen .tank-showcase .showcase-ring::after{content:'';position:absolute;inset:-1px;border-radius:50%;border:2px solid transparent;border-top-color:#bff6ff;filter:drop-shadow(0 0 6px #5fe6ff);animation:cover-spin 5s linear infinite}
+.showcase-orbit{position:absolute;left:12%;top:26%;width:76%;height:60%;pointer-events:none}
+.orbit-world{position:absolute;width:12px;height:12px;margin:-6px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--hi),var(--lo) 72%,#02040c);box-shadow:0 0 8px color-mix(in srgb,var(--hi) 55%,transparent);opacity:.6}
+.orbit-world.cleared{opacity:1}
+.orbit-world.front{z-index:2}
+.orbit-world.current{width:22px;height:22px;margin:-11px;opacity:1;box-shadow:0 0 0 2px #fff,0 0 18px var(--hi)}
+.orbit-world.current::after{content:'';position:absolute;inset:-7px;border-radius:50%;border:1px solid var(--hi);animation:cover-ping 2s ease-out infinite}
+@keyframes cover-ping{from{transform:scale(.7);opacity:1}to{transform:scale(1.7);opacity:0}}
+.command-screen .tank-showcase>img{filter:drop-shadow(0 18px 16px #000a) drop-shadow(0 0 22px #2ad4ff33)}
+
+/* ---------- Mission card: glass, neon edge, corner brackets ---------- */
+.command-screen .briefing{background:var(--glass);border:1px solid #6fe2ff38;border-top:1px solid #6fe2ff38;border-radius:6px;box-shadow:0 24px 70px #000b,inset 0 0 60px #2a7bff17,inset 0 1px 0 #ffffff12}
+.command-screen .briefing::before{content:'';position:absolute;left:0;right:0;top:-1px;height:2px;border-radius:6px 6px 0 0;background:linear-gradient(90deg,var(--neon),var(--violet) 50%,var(--plasma));box-shadow:0 0 14px #5fe6ff88}
+.command-screen .briefing::after{content:'';position:absolute;inset:-5px;pointer-events:none;background:linear-gradient(var(--neon),var(--neon)) 0 0/14px 2px,linear-gradient(var(--neon),var(--neon)) 0 0/2px 14px,linear-gradient(var(--plasma),var(--plasma)) 100% 100%/14px 2px,linear-gradient(var(--plasma),var(--plasma)) 100% 100%/2px 14px;background-repeat:no-repeat;opacity:.9}
+.command-screen .briefing .panel-top .eyebrow{color:var(--neon);text-shadow:0 0 8px #5fe6ff88}
+.command-screen .briefing h2{color:#fff;text-shadow:0 0 18px #6fb8ff55}
+.command-screen .mission-task{border-left:2px solid var(--ember);background:linear-gradient(90deg,#ffb44a1a,transparent);border-radius:0 4px 4px 0}
+.command-screen .mission-task span{color:var(--ember)}
+
+/* The card body holds the setup rows; on short screens it scrolls, DEPLOY stays put. */
+.command-screen .card-body{display:flex;flex-direction:column;gap:12px;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin:0 -4px;padding:0 4px}
+.command-screen .card-body>*{flex-shrink:0}
+.command-screen .mission-setup{display:grid;gap:10px}
+.command-screen .setup-row{display:grid;gap:6px}
+.command-screen .setup-label{margin:0;font-size:11px;font-weight:700;letter-spacing:.16em;color:#9fc4e8}
+.command-screen .mission-setup .difficulty{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0}
+.command-screen .mission-setup .level-select{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0}
+.command-screen .mission-setup .difficulty button,.command-screen .mission-setup .level-select button{min-height:44px;margin:0;padding:6px 4px;border:1px solid #6fe2ff33;border-radius:6px;background:#0b1636;color:#d8e6ff;font-size:12px;font-weight:700;line-height:1.15;letter-spacing:.04em;text-transform:none;white-space:normal;overflow-wrap:anywhere}
+.command-screen .mission-setup .difficulty button{text-transform:uppercase}
+.command-screen .mission-setup .difficulty button:hover:not(:disabled),.command-screen .mission-setup .level-select button:hover:not(:disabled){border-color:#6fe2ff99;background:#12224a}
+.command-screen .mission-setup button[aria-pressed=true]{border-color:var(--neon);background:linear-gradient(180deg,#1b4f7a,#10305a);color:#fff;box-shadow:0 0 0 1px #5fe6ff55,0 0 16px #2ad4ff44,inset 0 1px 0 #ffffff22}
+.command-screen .mode-hint{display:block;font-size:12px;line-height:1.4;color:#a9bddc}
+
+/* Stage strip: one planet button per stage, scrolls sideways, the chosen one is centred on open. */
+.command-screen .campaign-route{grid-column:auto;margin:0;padding:0;border:0;background:none}
+.command-screen .campaign-route .route-heading{display:flex;justify-content:space-between;gap:8px;padding:0;border:0;font-size:11px;letter-spacing:.12em;color:#9fc4e8}
+.command-screen .campaign-route .route-heading .eyebrow{font-size:11px;color:#9fc4e8}
+.command-screen .campaign-route .route-list{position:relative;display:flex;gap:8px;margin:6px 0 0;padding:6px 4px 10px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:#5fe6ff55 transparent;max-height:none}
+.command-screen .campaign-route .route-item{position:relative;flex:0 0 48px;width:48px;height:48px;min-height:48px;margin:0;padding:0;display:grid;place-items:center;border:1px solid #ffffff2e;border-radius:50%;background:radial-gradient(circle at 34% 30%,var(--hi),var(--lo) 70%,#02040c);box-shadow:inset -6px -8px 14px #000a,0 0 10px color-mix(in srgb,var(--hi) 35%,transparent);scroll-snap-align:center}
+.command-screen .campaign-route .route-item>span:not(.route-index){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.command-screen .campaign-route .route-index{font:800 16px/1 'Barlow Condensed','Arial Narrow',sans-serif;color:#fff;text-shadow:0 1px 3px #000,0 0 6px #000}
+.command-screen .campaign-route .route-item.selected{border-color:#fff;background:radial-gradient(circle at 34% 30%,var(--hi),var(--lo) 70%,#02040c);box-shadow:inset -6px -8px 14px #0009,0 0 0 3px #5fe6ff,0 0 20px var(--hi)}
+.command-screen .campaign-route .route-item:disabled{opacity:.38;filter:grayscale(.7)}
+.command-screen .campaign-route .route-item:hover:not(:disabled){transform:scale(1.07)}
+.command-screen .medal-sheet{margin:0}
+.command-screen .medal-sheet>summary{font-size:11px;font-weight:700;letter-spacing:.16em;color:#9fc4e8;min-height:44px;display:flex;align-items:center}
+.command-screen .medal-sheet .medal-goals{margin:6px 0 0}
+
+/* ---------- Primary action: a plasma charge ---------- */
+.command-screen button.primary{position:relative;overflow:hidden;border:1px solid #ffe0a8;border-radius:6px;background:linear-gradient(100deg,#ffd76b,#ff9a3c 52%,#ff5e7a);color:#1c0c12;text-shadow:0 1px 0 #ffffff55;box-shadow:0 0 0 1px #ffb35c44,0 8px 30px #ff7a3c55,0 0 50px #ff4fa033}
+.command-screen button.primary:hover:not(:disabled){background:linear-gradient(100deg,#ffe28a,#ffaa52 52%,#ff7090);box-shadow:0 0 0 1px #ffd08a88,0 8px 36px #ff7a3c88,0 0 60px #ff4fa055}
+.command-screen button.primary::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,#ffffffa0 50%,transparent 65%);transform:translateX(-110%);animation:cover-sheen 4.2s ease-in-out infinite;pointer-events:none}
+@keyframes cover-sheen{0%,55%{transform:translateX(-110%)}85%,100%{transform:translateX(110%)}}
+.command-screen .mission-actions>.quiet{border:1px solid #6fe2ff55;border-radius:6px;background:#0b1636cc;color:#dff6ff;font-weight:700;letter-spacing:.12em}
+.command-screen .mission-actions>.quiet:hover{background:#12224a}
+
+/* ---------- Dock: five direct tiles ---------- */
+.command-dock{grid-template-columns:repeat(5,minmax(0,1fr))}
+.dock-settings{display:contents}
+.command-screen .command-dock .dock-tile{border:1px solid #6fe2ff40;border-radius:10px;background:linear-gradient(180deg,#12204af0,#080f2af5);box-shadow:inset 0 1px 0 #ffffff14,inset 0 -2px 0 #5fe6ff55,0 10px 30px #0009;color:#eef6ff}
+.command-screen .command-dock .dock-tile:hover{border-color:#6fe2ffaa;background:linear-gradient(180deg,#183064f0,#0b1438f5);box-shadow:inset 0 1px 0 #ffffff1c,inset 0 -2px 0 var(--neon),0 0 22px #2ad4ff44}
+.command-screen .command-dock .dock-tile[data-action=shop]{border-color:#ffc46a88;background:linear-gradient(180deg,#3d2412f0,#1c0f08f5);box-shadow:inset 0 1px 0 #ffffff14,inset 0 -2px 0 #ffb44a88,0 10px 30px #0009}
+.command-screen .command-dock .dock-tile small{color:#ffcf7a}
+.command-screen .dock-settings[open]>summary.dock-tile{border-color:var(--neon);box-shadow:inset 0 -2px 0 var(--neon),0 0 22px #2ad4ff55}
+.dock-ranks{background:linear-gradient(#ffd36b,#ff9a3c) 50% 100%/30% 84% no-repeat,linear-gradient(#e8f4ff,#8fb4e0) 10% 100%/28% 58% no-repeat,linear-gradient(#ffb07a,#c0603a) 90% 100%/28% 40% no-repeat;filter:drop-shadow(0 0 4px #ffb44a88)}
+
+/* Settings sheet: one tap on SETTINGS shows every toggle at once. */
+.command-screen .dock-settings>.sheet.menu-settings{margin:0;min-width:0;max-width:none;flex:none;padding:18px 16px max(18px,env(safe-area-inset-bottom));border:1px solid #6fe2ff55;border-bottom:0;background:linear-gradient(180deg,#0f1c44,#080d26);box-shadow:0 -12px 50px #000c,0 -1px 0 #5fe6ff88}
+.command-screen .dock-settings>.sheet .mobile-fullscreen button{width:100%;margin:0 0 8px}
+.command-screen .dock-settings>.sheet>details{margin:12px 0 0}
+.command-screen .dock-settings>.sheet>details>summary{display:flex;align-items:center;min-height:44px;font-size:13px;font-weight:700;letter-spacing:.06em;color:#dff6ff}
+.command-screen .dock-settings .settings>button b{border-color:#5fe6ff66;background:#5fe6ff17;color:var(--neon)}
+
+/* ---------- Layouts ---------- */
+/* The card never grows past its grid slot (it used to cover the language picker at 1280 x 800); its body scrolls. */
+.command-screen>.briefing{max-height:100%;min-height:0;overflow:hidden}
+/* Landscape screens: the card takes the whole right column, so laptops (1366 x 768) show every row without scrolling. */
+@media (orientation:landscape) and (min-width:901px) and (min-height:501px){
+ .command-screen{grid-template-areas:"brand card" "hero card" "dock card"}
+ .command-screen>.briefing{align-self:center}
+}
+@media (orientation:landscape) and (min-width:901px) and (max-width:1180px) and (min-height:501px){.command-screen>.brand>span:not(.brand-mark){display:none}}
+@media (min-width:601px) and (max-height:900px) and (min-height:501px){
+ .command-screen>.briefing{gap:9px;padding:18px}
+ .command-screen .briefing h2{font-size:32px;line-height:1.05}
+ .command-screen .mission-task{padding:8px 12px}
+ .command-screen .card-body,.command-screen .mission-setup{gap:8px}
+ .command-screen .setup-row{gap:4px}
+ .command-screen .campaign-route .route-list{margin-top:2px;padding:4px 4px 6px}
+}
+@media (max-width:600px) and (orientation:portrait){
+ .command-screen{grid-template-rows:auto auto minmax(0,1fr) auto}
+ .command-screen>.briefing{align-self:end;max-height:100%;overflow:hidden}
+ .command-screen .briefing h2{font-size:24px;line-height:1.05}
+ .command-screen>.briefing{gap:8px;padding:12px}
+ .command-screen .briefing .panel-top,.command-screen .mission-task span{display:none}
+ .command-screen .mission-task{padding:7px 10px}
+ .command-screen .card-body,.command-screen .mission-setup{gap:8px}
+ .command-screen .setup-row{gap:4px}
+ .command-screen .mode-hint{font-size:11px}
+ .command-screen .showcase-orbit,.command-screen .tank-showcase .showcase-ring::after{display:none}
+ .command-dock{gap:6px}
+ .command-screen .command-dock .dock-tile{min-height:62px;padding:6px 2px;font-size:11px;letter-spacing:.04em}
+ .command-screen .command-dock .dock-tile small{font-size:11px}
+ .command-dock .dock-icon{width:26px;height:26px}
+}
+@media (orientation:landscape) and (max-height:500px){
+ .command-screen>.briefing{overflow:hidden;display:flex}
+ .command-dock{gap:6px}
+ .command-screen .command-dock .dock-tile{min-height:52px;padding:4px 2px;font-size:11px;letter-spacing:.03em}
+ .command-dock .dock-icon{width:22px;height:22px}
+ .command-screen .showcase-orbit{display:none}
+ .command-screen>.briefing{gap:8px}
+ .command-screen .briefing .panel-top{display:none}
+ .command-screen .briefing h2{font-size:22px;line-height:1.05}
+ .command-screen .mission-task{padding:7px 10px}
+ .command-screen .mission-task span{display:none}
+ .command-screen .mode-hint{display:none}
+ .command-screen .card-body{gap:8px}
+ .command-screen .mission-setup{gap:8px}
+ .command-screen .setup-row{gap:4px}
+ .command-screen .campaign-route .route-list{margin-top:2px;padding:4px 4px 6px}
+ .command-screen .campaign-route .route-item{flex-basis:44px;width:44px;height:44px;min-height:44px}
+ .mission-actions{grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+ .command-screen .mission-actions>button.primary,.command-screen .mission-actions>button.quiet{min-height:48px;font-size:13px;letter-spacing:.06em;padding:8px 10px}
+ .command-screen .mission-setup .level-select button{font-size:11px}
+}
+@media (orientation:landscape) and (max-height:500px) and (max-width:700px){
+ .command-dock{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion:reduce){
+ .cover-fx,.loading::before,.command-screen .brand-mark,.command-screen .hero>.eyebrow::before,.command-screen .tank-showcase .showcase-ring::after,.orbit-world.current::after,.command-screen button.primary::after{animation:none!important}
+ .cover-fx .tracer,.cover-fx .flash{display:none}
+}
