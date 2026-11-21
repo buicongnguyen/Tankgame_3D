@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+// Low-detail switches wait up to 60 s: the download alone took over 15 s on busy CI runners (2026-11-21).
 import {freshSave,parseSave,MISSIONS,levelMission} from '../src/three/campaign';
 import {terrainSpeed,tractionMotion,ICE,SAND} from '../src/three/terrain';
 import {awardStage} from '../src/three/results';
@@ -72,7 +73,7 @@ for(const mission of [9,10,11,12,13,14,15])test(`frontier ${mission+1} looks dis
  const counts=await page.evaluate(i=>{const g=(window as any).__steel;g.start(i);g.frame=()=>{};g.hazards.clock=999;if(i===10){g.player.visual.root.position.set(-26,0,-20);g.hazards.warn(g,{x:-20,z:-18});g.hazards.update(g,1.6);}g.world.target.copy(g.player.visual.root.position);g.world.update(1,g.player.visual.root.position);g.updateHud();return {trees:g.world.covers.filter((c:any)=>c.kind==='jungle-tree').length,blocks:g.world.covers.filter((c:any)=>c.kind==='cityblock').length};},mission);
  if(mission===12)expect(counts.trees).toBeGreaterThan(30);if(mission===13)expect(counts.blocks).toBeGreaterThanOrEqual(8);
  await page.screenshot({path:`test-results/frontier-${mission+1}-phone-detailed.png`});
- await page.locator('#pause').tap();await page.locator('[data-action="quality"]').tap();await expect(page.locator('[data-action="quality"]')).toHaveAttribute('aria-pressed','true');await page.getByRole('button',{name:'RESUME OPERATION'}).tap();
+ await page.locator('#pause').tap();await page.locator('[data-action="quality"]').tap();await expect(page.locator('[data-action="quality"]')).toHaveAttribute('aria-pressed','true',{timeout:60000});await page.getByRole('button',{name:'RESUME OPERATION'}).tap();
  await page.evaluate(()=>{const g=(window as any).__steel;g.world.update(0,g.player.visual.root.position);g.updateHud();});await page.screenshot({path:`test-results/frontier-${mission+1}-phone-low.png`});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect(errors).toEqual([]);await context.close();
 });

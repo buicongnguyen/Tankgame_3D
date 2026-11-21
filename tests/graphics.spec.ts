@@ -1,4 +1,5 @@
 import MODEL_NAMES from '../src/three/model-catalog.json' with {type:'json'};
+// Low-detail switches wait up to 60 s: the download alone took over 15 s on busy CI runners (2026-11-21).
 import {test,expect,webkit} from '@playwright/test';
 
 for(const viewport of [{width:390,height:844},{width:844,height:390}])test(`mobile detail selection reduces geometry and survives reload ${viewport.width}`,async({browser})=>{
@@ -6,10 +7,10 @@ for(const viewport of [{width:390,height:844},{width:844,height:390}])test(`mobi
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/?e2e');await page.locator('.dock-settings>summary').click();const graphics=page.locator('[data-action="quality"]');await expect(graphics).toHaveText('GRAPHICS HIGH DETAIL');await expect(graphics).toHaveAttribute('aria-pressed','false');
  const sample=()=>page.evaluate(()=>{const g=(window as any).__steel,w=g.world;let triangles=0;g.player.visual.root.traverse((o:any)=>{if(o.isMesh)triangles+=(o.geometry.index?.count??o.geometry.attributes.position.count)/3;});return {triangles,ratio:w.renderer.getPixelRatio(),shadow:w.renderer.shadowMap.enabled,reflection:!!w.scene.environment,width:document.documentElement.scrollWidth,phase:g.phase};});
- const high=await sample();await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','true');const low=await sample();
+ const high=await sample();await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','true',{timeout:60000});const low=await sample();
  expect(low.triangles).toBeLessThan(high.triangles*.4);expect(low.ratio).toBeLessThanOrEqual(.8);expect(low.shadow||low.reflection).toBe(false);expect(low.width).toBeLessThanOrEqual(viewport.width);expect(low.phase).toBe('menu');
  await graphics.scrollIntoViewIfNeeded();await page.screenshot({path:`test-results/mobile-graphics-${viewport.width}.png`});
- const requests:string[]=[];page.on('request',r=>{if(r.url().endsWith('.glb'))requests.push(r.url());});await page.evaluate(()=>(window as any).__steel.storage.flush());await page.reload();await page.locator('.dock-settings>summary').click();await expect(graphics).toHaveAttribute('aria-pressed','true');
+ const requests:string[]=[];page.on('request',r=>{if(r.url().endsWith('.glb'))requests.push(r.url());});await page.evaluate(()=>(window as any).__steel.storage.flush());await page.reload();await page.locator('.dock-settings>summary').click();await expect(graphics).toHaveAttribute('aria-pressed','true',{timeout:60000});
  expect(requests).toHaveLength(MODEL_NAMES.length+6);expect(requests.every(url=>url.includes('/models/low/')||url.includes('/models/pickup-'))).toBe(true);expect((await sample()).triangles).toBe(low.triangles);
  // Switching back from a cold low-detail start must also restore every surface.
  await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','false');expect((await sample()).triangles).toBe(high.triangles);
@@ -23,7 +24,7 @@ test('pause switches all models without changing battle state or rig references'
  const rocket=g.world.rocket();g.world.entities.add(rocket);
  (window as any).qualityRefs={player:g.player,hull:g.player.visual.hull,turret:g.player.visual.turret,muzzle:g.player.visual.muzzle,rocket,cover:g.world.covers[0]};
  const point=g.player.visual.muzzle.getWorldPosition(g.aimPoint.clone());return {hp:g.player.hp,elapsed:g.elapsed,ammo:g.specialAmmo,position:g.player.visual.root.position.toArray(),muzzle:point.toArray(),enemies:g.enemies.length};});
- const graphics=page.locator('[data-action="quality"]');await graphics.click();await expect(graphics).toHaveAttribute('aria-pressed','true');
+ const graphics=page.locator('[data-action="quality"]');await graphics.click();await expect(graphics).toHaveAttribute('aria-pressed','true',{timeout:60000});
  const after=await page.evaluate(()=>{const g=(window as any).__steel,r=(window as any).qualityRefs;const boss=g.enemies.find((e:any)=>e.role==='boss');let allMatch=true;const geometries=new Set();for(const root of g.world.templates.values())root.traverse((o:any)=>{if(o.isMesh)geometries.add(o.geometry);});g.world.scene.traverse((o:any)=>{if(o.isMesh&&o.userData.modelAsset&&!geometries.has(o.geometry))allMatch=false;});
  return {state:{hp:g.player.hp,elapsed:g.elapsed,ammo:g.specialAmmo,position:g.player.visual.root.position.toArray(),muzzle:g.player.visual.muzzle.getWorldPosition(g.aimPoint.clone()).toArray(),enemies:g.enemies.length},refs:r.player===g.player&&r.hull===g.player.visual.hull&&r.turret===g.player.visual.turret&&r.muzzle===g.player.visual.muzzle&&r.cover===g.world.covers[0],allMatch,skin:g.player.visual.root.userData.skin,core:boss.visual.root.getObjectByName('Core').visible,exhaust:!!r.rocket.getObjectByName('Exhaust'),phase:g.phase};});
  expect(after.state).toEqual(before);expect(after.refs&&after.allMatch&&after.core&&after.exhaust).toBe(true);expect(after.skin).toBe('inferno');expect(after.phase).toBe('paused');
@@ -35,13 +36,13 @@ test('failed detail download keeps current graphics and allows retry',async({pag
  await page.goto('/?e2e');await page.locator('.dock-settings>summary').click();const graphics=page.locator('[data-action="quality"]');await expect(graphics).toBeVisible();
  await page.route('**/models/low/*.glb',route=>route.abort());await graphics.click();await expect(page.locator('#graphics-help')).toContainText('Tap to retry');await expect(graphics).toHaveAttribute('aria-pressed','false');
  expect(await page.evaluate(()=>{const g=(window as any).__steel;return g.save.low||g.world.low||g.qualityChanging;})).toBe(false);
- await page.unroute('**/models/low/*.glb');await graphics.click();await expect(graphics).toHaveAttribute('aria-pressed','true');
+ await page.unroute('**/models/low/*.glb');await graphics.click();await expect(graphics).toHaveAttribute('aria-pressed','true',{timeout:60000});
 });
 
 test('iPhone WebKit can select low detail from pause and resume',async()=>{
  const browser=await webkit.launch({args:[]});const context=await browser.newContext({viewport:{width:375,height:667},isMobile:true,hasTouch:true,deviceScaleFactor:3});const page=await context.newPage();const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/?e2e');await page.keyboard.press('Escape');await page.getByRole('button',{name:'DEPLOY'}).tap();await page.locator('#pause').tap();
- const graphics=page.locator('[data-action="quality"]');await expect(graphics).toHaveAttribute('aria-pressed','false');await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','true');
+ const graphics=page.locator('[data-action="quality"]');await expect(graphics).toHaveAttribute('aria-pressed','false');await graphics.tap();await expect(graphics).toHaveAttribute('aria-pressed','true',{timeout:60000});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  // Windows WebKit screenshots can omit the composited WebGL canvas; inspect
  // the actual drawing buffer as well as checking the native-resolution UI.
