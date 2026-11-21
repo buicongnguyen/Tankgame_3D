@@ -161,6 +161,16 @@ The eight icons are Blender renders from `tools/blender/build_ui_icons.py`: cred
 
 The arc: *The Road* (stages 1-6) breaks the siege; *The Network* (7-13) reveals that Warden is Meridian's own road-control network, still obeying its last order to close every road; *Citadel* (14-16) carries in the order that opens them.
 
+## Never stuck, always rewarded
+
+Players said the game was too hard and could not see the fun. `fun.ts` (plan: `docs/FUN_PASS_2026-11.md`) adds, on Easy and Normal campaign stages only:
+- **Revive at checkpoint.** When the tank is destroyed, the defeat card offers *Revive at checkpoint* (Easy 2, Normal 1 per level): full hull and a 4 s shield at the last spot with no awake enemy within 35 m, or the deployment point if enemies have moved in. Losing the transport, uplink or rescued tanks still ends the level. Revived runs are not entered on the leaderboard.
+- **Field support.** After two defeats in a row on the same level, enemy fire does 25% less damage there until the level is won, and the radio says so.
+- **Tips at the right moment**, once per device and at most one every 12 s: a fence with unaware enemies behind it, an enemy tank in the kite window, a crowd while a strike is ready, the first ambush, and hull under 35%. PC tips name keys, touch tips name buttons.
+- **Finale** (every campaign win): the last kill sets off a big blast, effects and camera play at 40% speed during the 1.5 s finish, and an AREA CLEAR banner shows the credits earned. Reduced motion keeps the banner only.
+
+Scripted runs (`?e2e`) keep all of this off unless a test sets `g.helpers = true`.
+
 ## Aim, distance and surprise
 
 - **Aim setting** (Settings, `aim-mode.ts`): *Manual* goes exactly where you point. *Assist* (the default) settles a stick within 12° or a mouse pointer within 7° of a visible enemy on it, leading a moving target. *Auto* does the same and, with no aim input (no stick, keys, or mouse movement for 1.5 s), picks the nearest visible enemy within 36 m. Firing is always a deliberate press. The choice is a device setting kept outside the save. Scripted runs (`?e2e`) start on Manual.

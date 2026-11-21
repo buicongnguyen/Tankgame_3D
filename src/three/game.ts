@@ -16,6 +16,7 @@ import {grantBackgroundStrikes} from './strike-bank';
 import {AutoMissiles,buyAutoPack} from './auto-missiles';
 import {ammoCapacity, perkSkin, skinPerks, skinBonusText} from './skins';
 import {ramCover} from './screens';
+import {FunLayer, REVIVE_LINE} from './fun';
 import {AMBUSH_MULTIPLIER, fireRange, holdDistance, isAmbush} from './surprise';
 import {AIM_LABEL, AIM_HELP, ASSIST_ANGLE, AUTO_RANGE, MOUSE_IDLE, loadAimMode, nextAimMode, storeAimMode} from './aim-mode';
 import type {AimMode} from './aim-mode';
@@ -116,6 +117,8 @@ export class Game {
   readonly counter=new Counterattack();
   /** Story scenes and radio beats. Scripted test runs (?e2e) switch them on only where they test them. */
   storyScenes=!new URLSearchParams(location.search).has('e2e');
+  /** Tips, revives, field support and the finale (fun.ts). Scripted runs switch them on only where they test them. */
+  helpers=!new URLSearchParams(location.search).has('e2e');fun=new FunLayer();reviveReady=false;
   scene:{lines:Line[];index:number;then:()=>void;last:string}|null=null;
   private beats={early:false,half:false,initial:0};
   /** Seconds the simulation holds still after a tank or boss kill, so the hit lands. */
@@ -298,6 +301,7 @@ export class Game {
     if(action==='story-next'&&this.scene){if(this.scene.index<this.scene.lines.length-1){this.scene.index++;this.showScene();}else this.endScene();}
     if(action==='story-skip'&&this.scene)this.endScene();
     if(action==='resume')this.resume();
+    if(action==='revive'){if(this.phase==='failed'&&this.reviveReady)this.revive();return;}
     if(action==='retry'){if(this.training)this.startTraining(this.training.id);else if(this.skirmish)this.startSkirmishBattle();else this.start(this.mission,this.level);}
     if(action==='menu'){this.leaveTraining();this.prepare(this.save.mission);this.showMenu();}
     if(action==='mission'){const i=Number(value),frontier=this.save.cleared.indexOf(false);if(Number.isInteger(i)&&i>=0&&i<MISSIONS.length&&(frontier<0||i<=frontier)){this.prepare(i);this.showMenu();}}
@@ -387,7 +391,7 @@ export class Game {
     this.elapsed=0;this.capture=0;this.kills=0;this.shotsFired=0;this.tacticCalls={};this.rearHits=0;this.supportCalls=0;this.hitStop=0;this.hits.clear();this.reload=0;this.weapon=this.save.equippedWeapon;this.shieldTime=0;this.shieldCooldown=0;this.relayMax=Math.round(300*objectiveHealth(this.save.difficulty));this.relayHealth=this.relayMax;this.convoyMax=Math.round(ESCORT.health*objectiveHealth(this.save.difficulty));this.convoyHealth=this.convoyMax;this.convoyHitAt=-Infinity;this.contact=false;this.escortDeploying=false;this.deployShieldUntil=0;
     // Skirmish starts mid-map so teams can come from every side; spawn search keeps it clear of cover and mines.
     this.fenceCalled=false;
-    const route=this.world.layout,spawn=this.skirmish?{x:0,z:0}:route.spawn;this.player=this.makeUnit(spawn.x,spawn.z,'player');this.player.heading=this.player.aim=route.heading;this.world.applySkin(this.player.visual.root,this.save.skin,this.save.flag);
+    const route=this.world.layout,spawn=this.skirmish?{x:0,z:0}:route.spawn;this.player=this.makeUnit(spawn.x,spawn.z,'player');this.player.heading=this.player.aim=route.heading;this.world.applySkin(this.player.visual.root,this.save.skin,this.save.flag);this.fun.reset(this);this.reviveReady=false;
     if(m.kind==='escort'){this.convoy=this.world.clone('transport');this.convoy.position.set(route.points[0].x,0,route.points[0].z);this.convoy.rotation.y=route.heading;this.world.entities.add(this.convoy);const field=this.world.shield.clone();field.name='ConvoyShield';field.position.set(0,1.1,0);field.scale.set(1.2,.9,1.6);field.visible=false;this.convoy.add(field);}
     // Skirmish battles replace the campaign encounters with their own teams (deployed below).
     const encounter=this.skirmish?{armor:0,riflemen:0,rocketeers:0,infantry:0,jeeps:0,bosses:0}:this.training?{armor:this.training.definition.tanks,riflemen:this.training.definition.rifles,rocketeers:0,infantry:this.training.definition.rifles,jeeps:0,bosses:0}:encounterSize(index,this.level,this.save.difficulty),count=encounter.armor,bosses=encounter.bosses;this.armoredGoal=count+bosses+encounter.jeeps;
@@ -644,7 +648,8 @@ export class Game {
     if(this.airborne(unit)&&!antiAir)return;
     if(unit===this.player&&this.shieldTime>0)this.contact=true;   // a blocked hit ends the deployment hold
     if(unit.dead||unit.pending||unit===this.player&&this.shieldTime>0)return;
-    let ambush=false;if(unit!==this.player&&unit.team!=='ally'&&damage>0){ambush=isAmbush(this,unit);if(ambush)damage*=AMBUSH_MULTIPLIER;this.encounters.alert(this,unit,source);}
+    let ambush=false;if(unit!==this.player&&unit.team!=='ally'&&damage>0){ambush=isAmbush(this,unit);if(ambush){damage*=AMBUSH_MULTIPLIER;this.fun.tip(this,'ambush');}this.encounters.alert(this,unit,source);}
+    if(unit===this.player)damage*=this.fun.playerDamageScale();
     // The player's armor faces where the gun points (twin-stick driving turns the hull toward travel, so retreating
     // would always show the rear). Bosses have their own armored/exposed phases instead of facing armor.
     const multiplier=this.isInfantry(unit)||unit.role==='jeep'||unit.role==='airlift'||unit.role==='boss'?1:armorMultiplier(unit.visual.root.position,unit===this.player?unit.aim:unit.heading,source);
@@ -658,6 +663,7 @@ export class Game {
       if(this.isInfantry(unit))this.sfx.play('hit');else{this.sfx.play(unit.role==='boss'?'bossKill':'kill');if(unit!==this.player&&unit.team!=='ally'&&!reducedMotion())this.hitStop=Math.max(this.hitStop,unit.role==='boss'?.11:.045);}
       if(unit!==this.player&&unit.team!=='ally'&&!this.isInfantry(unit)){this.kills++;if(unit.role!=='jeep'&&!this.training)this.dropSalvage(unit.visual.root.position);
       }
+      if(unit!==this.player&&unit.team!=='ally')this.fun.noteKill(unit);
       this.syncVisual(unit);if(unit!==this.player)this.world.retireTank(unit.visual);
     }
   }
@@ -787,7 +793,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   step(dt:number){
     if(this.phase==='finishing'){this.finishDelay=Math.max(0,this.finishDelay-dt);if(this.finishDelay<1e-6){if(this.training){this.showTrainingResult();return;}if(this.skirmish){this.showSkirmishResult();return;}if(this.level!==2||!this.playScene('after','CONTINUE',()=>this.showResults()))this.showResults();}return;}
     if(this.phase!=='playing')return;
-    this.trailClock-=dt;this.elapsed+=dt;this.repairConvoy(dt);this.hazards.update(this,dt);if(this.player.dead){this.fail();return;}this.updatePlayer(dt);this.updateEnemies(dt);this.updateShots(dt);this.updateActivities(dt);this.special.update(this,dt);this.flame.update(this,dt);if(this.trailClock<=0)this.trailClock=.06;
+    this.trailClock-=dt;this.elapsed+=dt;this.repairConvoy(dt);this.hazards.update(this,dt);if(this.player.dead){this.fail();return;}this.updatePlayer(dt);this.fun.update(this);this.updateEnemies(dt);this.updateShots(dt);this.updateActivities(dt);this.special.update(this,dt);this.flame.update(this,dt);if(this.trailClock<=0)this.trailClock=.06;
     for(const unit of [this.player,...this.enemies,...this.allies.active])if(!this.isInfantry(unit))unit.visual.turret.position.y+=((unit.role==='jeep'?1.64:unit.visual.turret.userData.restY??1.17)-unit.visual.turret.position.y)*Math.min(1,dt*12);
     this.syncVisual(this.player);
     const m=this.missionData(),p=this.player.visual.root.position;
@@ -877,9 +883,9 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     if(this.skirmish){this.skirmish.record(this);this.finishDelay=1.5;this.finishDeadline=performance.now()+1500;this.setPhase('finishing');this.updateHud();for(const enemy of this.enemies)enemy.visual.beam.visible=false;this.tone(660,.22,.06);return;}
     this.stageResult={...awardStage(this.save,this.mission,this.elapsed,this.player.hp,this.player.max,this.level),tanks:this.kills,infantry:this.infantryKills};
     if(this.missionData().kind==='rescue'&&this.allies.survivors===2){this.save.credits+=40;this.stageResult.total+=40;}
-    recordRun(this.mission,this.level,this.save.difficulty,this.stageResult.time,this.stageResult.healthPercent,this.stageResult.target,this.profileName(this.profiles.active));this.awardMedals();this.lastReward=this.stageResult.total;this.persist();this.finishDelay=1.5;this.finishDeadline=performance.now()+1500;this.setPhase('finishing');this.updateHud();
+    if(!this.fun.revived)recordRun(this.mission,this.level,this.save.difficulty,this.stageResult.time,this.stageResult.healthPercent,this.stageResult.target,this.profileName(this.profiles.active));this.awardMedals();this.lastReward=this.stageResult.total;this.persist();this.finishDelay=1.5;this.finishDeadline=performance.now()+1500;this.setPhase('finishing');this.updateHud();
     for(const enemy of this.enemies)enemy.visual.beam.visible=false;
-    this.sfx.play('win');
+    this.sfx.play('win');this.fun.won(this);this.fun.startFinale(this,this.stageResult.total);
   }
   /** Score the three optional goals for this level; each new medal pays a one-time bonus. */
   awardMedals(){const m=this.missionData(),r=this.stageResult!,defs=medalsFor(m.kind,r.target);
@@ -967,8 +973,10 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     setHtml(this.overlay,`<section class="panel depot-panel"><div class="debrief-title"><h1>Tank skins</h1><span class="credit-total">${this.save.credits}<small>CREDITS</small></span></div>${this.shopNavigation()}<div class="flag-picker"><span id="flag-preview">${flagPreview(this.save.flag)}</span><label for="tank-flag">Country flag<small>Optional · cosmetic</small></label><select id="tank-flag">${TANK_FLAGS.map(f=>`<option value="${f.id}" ${this.save.flag===f.id?'selected':''}>${f.name}</option>`).join('')}</select></div><p>Buy once. Equip one. Skins change paint only.</p><div class="skin-grid">${SKINS.map(skin=>{const owned=this.save.skins.includes(skin.id),selected=this.save.skin===skin.id;return `<article class="skin-card ${selected?'selected':''}"><img src="${import.meta.env.BASE_URL}skins/${skin.id}.png?v=vivid-2" alt="${skin.name} tank paint"/><h2>${skin.name}</h2>${'stars' in skin?`<span style="color:${'starColor' in skin?skin.starColor:'#ffe588'}" class="skin-stars" aria-label="${skin.stars} stars">${'★'.repeat(skin.stars)}</span>`:''}<p>${skinBonusText(this.save,skin.id)}</p><button data-action="${owned?'skin-equip':'skin-buy'}" data-value="${skin.id}" aria-label="${selected?'Equipped':owned?'Equip':'Buy and equip'} ${skin.name}${owned?'':` for ${skin.price} credits`}" ${selected||!owned&&this.save.credits<skin.price?'disabled':''}>${selected?'EQUIPPED':owned?'EQUIP':coin(skin.price)}</button></article>`;}).join('')}</div><button class="primary" data-action="shop-back">DONE →</button></section>`);
   }
   buy(id:Upgrade){if(!UPGRADES.includes(id))return;const result=purchase(this.save.credits,this.save.upgrades[id]);if(!result)return;this.save.credits=result.credits;this.save.upgrades[id]=result.level;this.persist();this.sfx.play('buy');this.showShop();}
-  fail(){this.hazards.clear();this.clearLesson();this.setPhase('failed');this.sfx.play('fail');this.showFailed();}
-  showFailed(){if(this.skirmish){setHtml(this.overlay,skirmishFailed(this.skirmish));this.focusPrimary();return;}const seconds=Math.ceil(this.elapsed),left=this.enemies.filter(e=>!e.dead).length;setHtml(this.overlay,`<section class="panel pause-panel defeat-panel"><span class="eyebrow">OPERATION INTERRUPTED</span><h1>We go again.</h1><p class="defeat-cause">${this.missionData().kind==='rescue'&&this.allies.saved===2&&this.allies.survivors===0?'Both rescued tanks were lost. Clear threats before restoring the crews.':this.convoyHealth<=0?'The rescue transport was lost. Stay close and intercept the ambushers.':this.relayHealth<=0?'The uplink was destroyed. Intercept enemies before they reach the relay.':'Kestrel is disabled. Use hard cover, keep your front toward incoming fire, and activate your shield before crossing a firing lane.'}</p>${this.training?'':`<div class="stage-metrics defeat-stats"><span>TIME<strong>${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}</strong></span><span>TANKS<strong>${this.kills}</strong></span><span>SOLDIERS<strong>${this.infantryKills}</strong></span><span>HOSTILES<strong>${left}</strong></span></div>`}<button class="primary" data-action="retry">RETRY ${this.missionData().name.toUpperCase()} →</button>${this.training?'':'<button data-action="shop">SHOP · UPGRADES & WEAPONS →</button>'}<button class="quiet" data-action="menu">Return to command</button><small>Your purchased upgrades and unlocked operations are safe.</small></section>`);this.focusPrimary();}
+  fail(){this.hazards.clear();this.clearLesson();this.reviveReady=this.fun.defeated(this,(this.player.dead||this.player.hp<=0)&&this.convoyHealth>0&&this.relayHealth>0);this.setPhase('failed');this.sfx.play('fail');this.showFailed();}
+  /** Back to the last safe spot with full hull and a short shield (fun.ts). */
+  revive(){const at=this.fun.revivePoint(this),p=this.player;this.reviveReady=false;this.fun.revivesLeft--;this.fun.revived++;p.dead=false;p.hp=p.max;p.velocity.x=p.velocity.z=0;p.visual.root.position.set(at.x,0,at.z);this.shieldTime=4;this.syncVisual(p);setHtml(this.overlay,'');this.setPhase('playing');this.last=performance.now();this.accumulator=0;this.updateHud();this.radioMessage(REVIVE_LINE,3);}
+  showFailed(){if(this.skirmish){setHtml(this.overlay,skirmishFailed(this.skirmish));this.focusPrimary();return;}const seconds=Math.ceil(this.elapsed),left=this.enemies.filter(e=>!e.dead).length;setHtml(this.overlay,`<section class="panel pause-panel defeat-panel"><span class="eyebrow">OPERATION INTERRUPTED</span><h1>We go again.</h1><p class="defeat-cause">${this.missionData().kind==='rescue'&&this.allies.saved===2&&this.allies.survivors===0?'Both rescued tanks were lost. Clear threats before restoring the crews.':this.convoyHealth<=0?'The rescue transport was lost. Stay close and intercept the ambushers.':this.relayHealth<=0?'The uplink was destroyed. Intercept enemies before they reach the relay.':'Kestrel is disabled. Use hard cover, keep your front toward incoming fire, and activate your shield before crossing a firing lane.'}</p>${this.training?'':`<div class="stage-metrics defeat-stats"><span>TIME<strong>${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}</strong></span><span>TANKS<strong>${this.kills}</strong></span><span>SOLDIERS<strong>${this.infantryKills}</strong></span><span>HOSTILES<strong>${left}</strong></span></div>`}${this.reviveReady?'<button class="primary" data-action="revive">REVIVE AT CHECKPOINT →</button><small class="revive-note">Full hull and a short shield.</small>':''}<button class="${this.reviveReady?'':'primary'}" data-action="retry">RETRY ${this.missionData().name.toUpperCase()} →</button>${this.training?'':'<button data-action="shop">SHOP · UPGRADES & WEAPONS →</button>'}<button class="quiet" data-action="menu">Return to command</button><small>Your purchased upgrades and unlocked operations are safe.</small></section>`);this.focusPrimary();}
   showVictory(){setHtml(this.overlay,`<section class="panel victory-panel"><span class="eyebrow">MERIDIAN / SIGNAL RESTORED</span><div class="victory-symbol">◈</div><h1>Everyone<br>comes home.</h1><p>${MISSIONS[this.mission].debrief}</p>${this.resultSummary()}${this.medalSummary()}<span class="eyebrow">${this.mission===5?'VALLEY SECURED · RECOVERY ROUTE OPEN':this.mission===8?'MERIDIAN CONNECTED · FRONTIER CAMPAIGN UNLOCKED':`${MISSIONS.length} STAGES · ${MISSIONS.length*3} LEVELS · EVERY SIGNAL CONNECTED`}</span><button class="primary" data-action="menu">${this.mission<MISSIONS.length-1?'CONTINUE CAMPAIGN →':'RETURN TO COMMAND →'}</button><button data-action="shop">SHOP · UPGRADES & WEAPONS →</button><small>Choose unlocked operations from the command route.</small></section>`);this.focusPrimary();if(!this.debriefSeen){this.debriefSeen=true;this.debriefChimes();}}
   tone(frequency:number,duration:number,volume:number){this.sfx.tone(frequency,duration,volume);}
   frame(now:number){
@@ -986,7 +994,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     this.flame.render(this,this.phase!=='paused'?dt:0);
     // Draw moving things between the last two steps, then put the exact logic transforms back.
     const smooth=this.phase==='playing';if(smooth)this.smoother.apply(this.accumulator*60);
-    try{this.budget.beforeRender(this);this.world.update(this.phase!=='paused'?dt:0,this.player.visual.root.position,this.phase==='menu');}finally{if(smooth)this.smoother.restore();}this.threats.update(this);
+    try{this.budget.beforeRender(this);this.world.update(this.phase!=='paused'?dt*(this.phase==='finishing'?this.fun.drawSpeed(dt):1):0,this.player.visual.root.position,this.phase==='menu');}finally{if(smooth)this.smoother.restore();}this.threats.update(this);
     if(!this.hud.hidden)this.hits.update(this.phase==='paused'?0:dt,this.world.camera,innerWidth,innerHeight);
     this.budget.afterRender(this);
     this.projectRelay();requestAnimationFrame(t=>this.frame(t));
