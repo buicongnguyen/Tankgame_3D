@@ -131,6 +131,10 @@ Each is a single stylized planet sphere:
 
 ---
 
+## Wiring (done 2026-11-21)
+
+Variant B is live for both shapes; to switch, change `COVER_ART` in `src/three/cover.ts`. Notes from the plan:
+
 ## Notes for wiring (Claude, later)
 
 - **Key art:** set `--cover-sky` to `url(cover/key-art-landscape.webp)` or `url(cover/key-art-portrait.webp)` according to orientation, in `refreshCover()`. Keep the painted canvas as the instant first paint, then swap in the image once it has decoded (no 404 if it is missing: check `manifest.json`, or ship the files first).

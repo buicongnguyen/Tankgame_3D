@@ -212,10 +212,33 @@ export function refreshCover() {
   else done(canvas.toDataURL('image/jpeg', .9));
 }
 
+/** Painted key art (docs/COVER_ART_PROMPTS.md, public/cover/). Variant B was chosen for both shapes. */
+export const COVER_ART = { landscape: 'cover/key-art-landscape-b.webp', portrait: 'cover/key-art-portrait-b.webp', logo: 'cover/logo-steel-front.webp' };
+let artWanted = '';
+/** Show the painted cover for this screen shape once it has decoded; the procedural sky stays underneath. */
+export function refreshArt() {
+  const root = document.documentElement, portrait = innerHeight > innerWidth * 1.15;
+  const src = import.meta.env.BASE_URL + (portrait ? COVER_ART.portrait : COVER_ART.landscape);
+  if (src === artWanted) return; artWanted = src;
+  const img = new Image(); img.decoding = 'async'; img.src = src;
+  img.decode().then(() => {
+    if (artWanted !== src) return;
+    root.style.setProperty('--cover-art', `url("${src}")`); root.dataset.coverArt = portrait ? 'portrait' : 'landscape';
+  }).catch(() => { if (artWanted === src) artWanted = ''; });
+}
+function loadLogo() {
+  const root = document.documentElement, src = import.meta.env.BASE_URL + COVER_ART.logo, img = new Image();
+  img.decoding = 'async'; img.src = src;
+  img.decode().then(() => { root.style.setProperty('--cover-logo', `url("${src}")`); root.dataset.coverLogo = 'ready'; }).catch(() => {});
+}
+/** Small stage-planet picture for stage index i (0-based). */
+export const worldArt = (i: number) => `${import.meta.env.BASE_URL}cover/world-${String(i + 1).padStart(2, '0')}-sm.webp`;
+
 let installed = false;
 export function installCover() {
   if (installed) return; installed = true;
-  const go = () => refreshCover();
+  loadLogo();
+  const go = () => { refreshCover(); refreshArt(); };
   requestAnimationFrame(go);
   let timer = 0; addEventListener('resize', () => { clearTimeout(timer); timer = window.setTimeout(go, 250); });
   // A mouse wheel scrolls the stage strip sideways (touch screens swipe it).

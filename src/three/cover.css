@@ -187,6 +187,36 @@ body[data-phase=menu] #overlay,.loading{background-color:#03040d;background-imag
 @media (orientation:landscape) and (max-height:500px) and (max-width:700px){
  .command-dock{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
+/* ---------- Painted key art (public/cover, wired 2026-11-21) ----------
+   cover.ts sets --cover-art and data-cover-art only after the picture has decoded, so the procedural sky shows
+   first and the painting fades in over it. The painting already has the Cobalt Kestrel standing on the planet,
+   so the menu's own tank picture and orbit step aside while it is up. A soft dark pool behind the title keeps
+   the logo and menu text readable over the bright nebula. */
+body[data-phase=menu] #overlay::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0;transition:opacity .7s ease;background:radial-gradient(ellipse 42% 36% at 16% 24%,#020412b3,#02041200 72%),var(--cover-art,none);background-size:auto,cover;background-position:0 0,50% 50%;background-repeat:no-repeat}
+:root[data-cover-art] body[data-phase=menu] #overlay::before{opacity:1}
+/* Phone portrait: lift the painting so the tank sits in the hero space above the mission card. */
+:root[data-cover-art=portrait] body[data-phase=menu] #overlay::before{background:radial-gradient(ellipse 60% 22% at 22% 14%,#020412b3,#02041200 72%),var(--cover-art,none);background-size:auto,116% auto;background-position:0 0,0 -11vh;background-repeat:no-repeat}
+.loading{background-image:var(--cover-art,none),var(--cover-sky,none),var(--sky-fallback)}
+:root[data-cover-art] .command-screen .tank-showcase{visibility:hidden}
+:root[data-cover-art] .command-screen .profile-chip{background:#070c24e6;box-shadow:0 4px 18px #0008}
+@media (orientation:landscape) and (max-height:500px){:root[data-cover-art] .command-screen>.hero{align-self:start;align-content:start;padding-top:4px}}
+
+/* Title: the painted STEEL FRONT wordmark. The words stay in the heading for screen readers; LAST SIGNAL stays
+   live text so it can be translated. The logo file has wide transparent margins; the negative margins trim them. */
+:root[data-cover-logo] .command-screen .hero h1{--logo-w:min(560px,40vw);line-height:1;filter:none;background:none;-webkit-text-fill-color:currentColor}
+.command-screen .hero h1>.title-words{font-weight:inherit}
+:root[data-cover-logo] .command-screen .hero h1>.title-words{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+:root[data-cover-logo] .command-screen .hero h1::before{content:'';display:block;width:var(--logo-w);aspect-ratio:2048/640;margin:calc(var(--logo-w)*-.1) 0 calc(var(--logo-w)*-.08) calc(var(--logo-w)*-.02);background:var(--cover-logo) center/contain no-repeat;filter:drop-shadow(0 6px 18px #000a)}
+:root[data-cover-logo] .command-screen .hero h1>span{margin-top:6px;line-height:1.4}
+@media (max-width:600px) and (orientation:portrait){:root[data-cover-logo] .command-screen .hero h1{--logo-w:min(78vw,340px)}}
+@media (orientation:landscape) and (max-height:500px){:root[data-cover-logo] .command-screen .hero h1{--logo-w:min(300px,34vw)}}
+
+/* Stage strip: each button is that stage's painted planet. */
+.command-screen .campaign-route .route-item,.command-screen .campaign-route .route-item.selected{background:var(--world,none) center/122% no-repeat,radial-gradient(circle at 34% 30%,var(--hi),var(--lo) 70%,#02040c)}
+.command-screen .campaign-route .route-item{box-shadow:0 0 10px color-mix(in srgb,var(--hi) 35%,transparent)}
+.command-screen .campaign-route .route-item.selected{box-shadow:0 0 0 3px #5fe6ff,0 0 20px var(--hi)}
+.command-screen .campaign-route .route-index{text-shadow:0 1px 2px #000,0 0 6px #000,0 0 10px #000}
+
 @media (prefers-reduced-motion:reduce){
  .cover-fx,.loading::before,.command-screen .brand-mark,.command-screen .hero>.eyebrow::before,.command-screen .tank-showcase .showcase-ring::after,.orbit-world.current::after,.command-screen button.primary::after{animation:none!important}
  .cover-fx .tracer,.cover-fx .flash{display:none}

@@ -174,7 +174,7 @@ Every choice is one tap:
 - Stages are a strip of planet buttons. It swipes on phones, and a mouse wheel scrolls it.
 - The dock has five direct tiles: Shop, Skin, Skirmish, Ranks and Settings. Settings opens straight to every toggle.
 
-Painted art can replace the procedural sky later. The brief and the exact prompt for an image model are in [docs/COVER_ART_PROMPTS.md](docs/COVER_ART_PROMPTS.md).
+Painted art (made by Codex from [docs/COVER_ART_PROMPTS.md](docs/COVER_ART_PROMPTS.md); files and prompts in `public/cover/`) sits on top once it has decoded: key art variant B for landscape and portrait, the STEEL FRONT wordmark as the title (the words stay in the heading for screen readers), and a painted planet on every stage button (128 px copies, `world-NN-sm.webp`, about 83 KB for all sixteen). The painting already shows the Cobalt Kestrel, so the menu tank picture steps aside. The procedural sky remains the instant first paint and the fallback. `app-icon.webp` also gives the web app its icons (`icon-192.png`, `icon-512.png`, `apple-touch-icon.png`). `tests/cover-art.spec.ts` fails if any of these files goes missing.
 
 ## Never stuck, always rewarded
 
