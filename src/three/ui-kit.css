@@ -1,0 +1,141 @@
+/* UI kit (2026-11-21): one modern sci-fi look for every message box and button, matching the space cover.
+   Loaded last (main.ts, after cover.css). Visual only: layout, sizes and text stay where the other files put them,
+   so the touch-size and 11 px audits keep holding.
+   - Panels: deep glass, hairline neon edge, a gradient accent rail on top, corner brackets drawn as background
+     layers (no pseudo-elements, so no clash with older rules). Tone per panel: defeat = coral, victory = gold.
+   - Buttons: three tiers. Primary = plasma gradient with chamfered corners and a light sheen; secondary = glass
+     with a neon edge; quiet = text link. Focus rings are real outlines (keyboard users need them), drawn inside the chamfered primary.
+   - Battle messages: the radio becomes a comms card with a speaker badge (data-who / data-initial from game.ts);
+     the stage title becomes a cinematic band. */
+
+:root{
+ --kit-glass:linear-gradient(165deg,#101d46f5,#0a1132f7 55%,#150b32f7);
+ --kit-edge:#6fe2ff45;--kit-edge-hi:#9ff0ffaa;--kit-neon:#5fe6ff;--kit-violet:#a46bff;--kit-plasma:#ff4fa0;
+ --kit-text:#eef6ff;--kit-dim:#a9bddc;--kit-gold:#ffd36b;--kit-coral:#ff6b6b;
+ --kit-rail:linear-gradient(90deg,var(--kit-neon),var(--kit-violet) 50%,var(--kit-plasma));
+ --kit-bracket:var(--kit-neon);--kit-cut:10px;
+}
+
+/* ---------- Backdrop behind dialogs during play ---------- */
+body:not([data-phase=menu]) #overlay:not([hidden]){background:radial-gradient(ellipse at 50% 40%,#0a1438b3,#03051ae6 75%)}
+
+/* ---------- Panels ---------- */
+#overlay .panel:not(.briefing){
+ position:relative;color:var(--kit-text);border:1px solid var(--kit-edge);border-radius:10px;
+ background:
+  var(--kit-rail) 0 0/100% 3px no-repeat,
+  linear-gradient(var(--kit-bracket),var(--kit-bracket)) 5px 7px/14px 2px no-repeat,
+  linear-gradient(var(--kit-bracket),var(--kit-bracket)) 5px 7px/2px 14px no-repeat,
+  linear-gradient(var(--kit-bracket),var(--kit-bracket)) calc(100% - 5px) calc(100% - 5px)/14px 2px no-repeat,
+  linear-gradient(var(--kit-bracket),var(--kit-bracket)) calc(100% - 5px) calc(100% - 5px)/2px 14px no-repeat,
+  radial-gradient(ellipse at 50% 0,#2a7bff22,transparent 60%),
+  var(--kit-glass);
+ box-shadow:0 30px 90px #000d,0 0 0 1px #00000080,inset 0 1px 0 #ffffff1a,inset 0 0 70px #2a7bff12;
+}
+#overlay .panel:not(.briefing) .eyebrow,#overlay .panel:not(.briefing)>.eyebrow{color:var(--kit-neon);text-shadow:0 0 10px #5fe6ff66;letter-spacing:.2em}
+#overlay .panel:not(.briefing) :is(h1,h2){color:#fff;text-shadow:0 0 22px #6fb8ff44,0 2px 0 #0008}
+#overlay .panel:not(.briefing)>p{color:var(--kit-dim)}
+/* Tones */
+#overlay .panel.defeat-panel{--kit-rail:linear-gradient(90deg,#ff8a5c,var(--kit-coral) 50%,#ff3d6e);--kit-bracket:var(--kit-coral);border-color:#ff6b6b55}
+#overlay .panel.defeat-panel .eyebrow{color:#ff9a84;text-shadow:0 0 10px #ff6b6b66}
+#overlay .panel.victory-panel{--kit-rail:linear-gradient(90deg,#fff1b0,var(--kit-gold) 45%,#ff9a3c);--kit-bracket:var(--kit-gold);border-color:#ffd36b55}
+#overlay .panel.victory-panel .eyebrow{color:var(--kit-gold);text-shadow:0 0 10px #ffd36b66}
+/* Stat tiles in debriefs read as instrument readouts. */
+#overlay .panel :is(.result-stats,.stage-metrics){border-color:#6fe2ff2e}
+#overlay .panel :is(.result-stats,.stage-metrics) strong{color:#fff;text-shadow:0 0 12px #6fb8ff55}
+
+/* ---------- Buttons: primary ---------- */
+:is(#overlay,#hud) button.primary,#overlay [data-action=shop-back]{
+ position:relative;overflow:hidden;border:0;border-radius:4px;color:#1c0c12;
+ background:linear-gradient(100deg,#ffd76b,#ff9a3c 52%,#ff5e7a);
+ clip-path:polygon(var(--kit-cut) 0,100% 0,100% calc(100% - var(--kit-cut)),calc(100% - var(--kit-cut)) 100%,0 100%,0 var(--kit-cut));
+ box-shadow:inset 0 1px 0 #ffffff80,inset 0 -3px 0 #00000033;
+ font-weight:800;letter-spacing:.14em;text-transform:uppercase;text-shadow:0 1px 0 #ffffff55;
+ transition:filter .15s,transform .1s;
+}
+:is(#overlay,#hud) button.primary:hover:not(:disabled),#overlay [data-action=shop-back]:hover{background:linear-gradient(100deg,#ffe28a,#ffaa52 52%,#ff7090);filter:brightness(1.05)}
+:is(#overlay,#hud) button.primary:active:not(:disabled),#overlay [data-action=shop-back]:active{transform:translateY(1px);filter:brightness(.95)}
+:is(#overlay,#hud) button.primary:focus-visible,#overlay [data-action=shop-back]:focus-visible{outline:2px solid #fff;outline-offset:-5px}
+#overlay .panel button.primary::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,#ffffff8c 50%,transparent 65%);transform:translateX(-110%);animation:kit-sheen 4.6s ease-in-out infinite;pointer-events:none}
+@keyframes kit-sheen{0%,60%{transform:translateX(-110%)}90%,100%{transform:translateX(110%)}}
+
+/* ---------- Buttons: secondary (direct actions in a panel) ---------- */
+#overlay .panel:not(.briefing)>button:not(.primary):not(.quiet):not([data-action=shop-back]),
+#overlay .panel:not(.briefing) :is(.panel-actions,.victory-actions,.defeat-actions,.story-actions)>button:not(.primary):not(.quiet),
+#overlay .panel:not(.briefing) :is(form,.leaderboard-tools)>button:not(.primary){
+ border:0;border-radius:8px;color:var(--kit-text);
+ background:linear-gradient(180deg,#18295cf0,#0d1640f5);
+ box-shadow:inset 0 0 0 1px #6fe2ff66,inset 0 1px 0 #ffffff1a;
+ font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+}
+#overlay .panel:not(.briefing)>button:not(.primary):not(.quiet):not([data-action=shop-back]):hover:not(:disabled),
+#overlay .panel:not(.briefing) :is(.panel-actions,.victory-actions,.defeat-actions,.story-actions)>button:not(.primary):not(.quiet):hover:not(:disabled),
+#overlay .panel:not(.briefing) :is(form,.leaderboard-tools)>button:not(.primary):hover:not(:disabled){background:linear-gradient(180deg,#203674f0,#122050f5);box-shadow:inset 0 0 0 1px var(--kit-edge-hi),inset 0 1px 0 #ffffff26,inset 0 0 24px #2ad4ff33}
+#overlay .panel:not(.briefing) button:not(.primary):focus-visible{outline:2px solid var(--kit-neon);outline-offset:2px}
+#overlay .panel.defeat-panel>button:not(.primary):not(.quiet){box-shadow:inset 0 0 0 1px #ff8a7a66,inset 0 1px 0 #ffffff1a}
+
+/* ---------- Buttons: quiet (text links) ---------- */
+#overlay .panel:not(.briefing) .quiet,#overlay .panel:not(.briefing) button.quiet{background:none;border:0;color:var(--kit-dim);letter-spacing:.08em;text-decoration:underline;text-decoration-color:#a9bddc55;text-underline-offset:4px}
+#overlay .panel:not(.briefing) .quiet:hover{color:#fff;text-decoration-color:var(--kit-neon)}
+
+/* ---------- Settings rows ---------- */
+#overlay .settings>button{border-bottom-color:#6fe2ff22!important}
+#overlay .settings>button b{border:1px solid #5fe6ff77;background:linear-gradient(180deg,#5fe6ff26,#5fe6ff0d);color:var(--kit-neon);box-shadow:0 0 12px #2ad4ff22}
+#overlay .settings>button[data-action=sound] b{position:relative;padding-left:22px}
+#overlay .settings>button[data-action=sound] b::before{content:'';position:absolute;left:9px;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+
+/* ---------- Story scenes ---------- */
+#overlay .story-line .portrait{background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--who,#5fe6ff) 45%,#fff 0%),color-mix(in srgb,var(--who,#5fe6ff) 35%,#050a20) 70%);color:#fff;border:2px solid var(--who,#5fe6ff);box-shadow:0 0 16px color-mix(in srgb,var(--who,#5fe6ff) 50%,transparent),inset 0 -6px 10px #0006;text-shadow:0 1px 3px #000}
+#overlay .story-line.current p{color:#fff}
+
+/* ---------- Battle: radio comms card ---------- */
+#hud .radio{--who:var(--kit-neon);padding-left:58px;min-height:52px;display:flex;align-items:center;border:1px solid var(--kit-edge);border-left:3px solid var(--who);border-radius:6px;
+ background:linear-gradient(90deg,color-mix(in srgb,var(--who) 20%,transparent),transparent 45%),linear-gradient(100deg,#0e1c46f2,#0a1232eb);
+ box-shadow:0 12px 30px #0009,inset 0 1px 0 #ffffff14;color:var(--kit-text);transform:translateX(-8px);transition:opacity .3s,transform .3s}
+#hud .radio.visible{transform:none}
+#hud .radio::before{content:attr(data-initial);position:absolute;left:10px;top:50%;width:36px;height:36px;margin-top:-18px;border-radius:50%;display:grid;place-items:center;
+ background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--who) 60%,#fff 0%),color-mix(in srgb,var(--who) 30%,#050a20) 72%);
+ border:2px solid var(--who);color:#fff;font:800 16px/1 'Barlow Condensed','Arial Narrow',sans-serif;text-shadow:0 1px 3px #000;box-shadow:0 0 12px color-mix(in srgb,var(--who) 55%,transparent)}
+#hud .radio:not([data-initial])::before{content:'\25C9'}
+#hud .radio[data-who=ivo]{--who:#8fd3ff}
+#hud .radio[data-who=mara],#hud .radio[data-who=kestrel]{--who:var(--kit-gold)}
+#hud .radio[data-who=warden]{--who:var(--kit-coral)}
+#hud .radio:is([data-who=voice],[data-who=convoy],[data-who=rescue]){--who:#7dffb0}
+#hud .radio:is([data-who=armory],[data-who=supply],[data-who=auto]){--who:#c9a6ff}
+#hud .radio[data-who=earthquake]{--who:#ff9a3c}
+@media (max-width:600px),(max-height:500px){#hud .radio{padding-left:46px;min-height:42px}#hud .radio::before{left:7px;width:30px;height:30px;margin-top:-15px;font-size:14px}}
+
+/* ---------- Battle: stage title band ---------- */
+#title-card{background:linear-gradient(90deg,transparent,#0a1232e6 18%,#0a1232e6 82%,transparent),linear-gradient(90deg,transparent,var(--kit-neon) 30%,var(--kit-violet) 50%,var(--kit-plasma) 70%,transparent) 0 0/100% 2px no-repeat,linear-gradient(90deg,transparent,#5fe6ff66,transparent) 0 100%/100% 1px no-repeat;border:0}
+#title-card .eyebrow{color:var(--kit-neon);text-shadow:0 0 10px #5fe6ff88}
+#title-card strong{color:#fff;text-shadow:0 0 24px #6fb8ff66,0 2px 0 #0008}
+
+/* ---------- Inside panels: option buttons, fields, cards, tabs ----------
+   Price chips, skin and field-pack buttons keep their gold/teal/grey purchase states (tests/ui-polish.spec.ts);
+   settings rows keep their flat list style. */
+#overlay .panel:not(.briefing) button:not(.primary):not(.quiet):not(.price-button):not([data-action=shop-back]):not(.language-choice):is(.skirmish-maps button,.skirmish-choice button,.profile-actions button,.shop-tabs button,.difficulty button,.level-select button,.leaderboard-tools button,form button){
+ border:1px solid #6fe2ff40;border-radius:8px;color:var(--kit-text);background:linear-gradient(180deg,#14234ef0,#0b1438f5);box-shadow:inset 0 1px 0 #ffffff12;clip-path:none}
+#overlay .panel:not(.briefing) button:not(.primary):not(.quiet):not(.price-button):not([data-action=shop-back]):not(.language-choice):is(.skirmish-maps button,.skirmish-choice button,.profile-actions button,.shop-tabs button,.difficulty button,.level-select button,.leaderboard-tools button,form button):hover:not(:disabled):not([aria-pressed=true]):not(.active):not(.selected){border-color:#9ff0ffaa;background:linear-gradient(180deg,#1b2f66f0,#10204cf5)}
+#overlay .panel:not(.briefing) button:not(.primary):not(.quiet):not(.price-button):not([data-action=shop-back]):not(.language-choice):is(.skirmish-maps button,.skirmish-choice button,.shop-tabs button,.difficulty button,.level-select button):is([aria-pressed=true],.active,.selected){
+ border-color:var(--kit-neon);color:#fff;background:linear-gradient(180deg,#1b4f7a,#10305a);box-shadow:0 0 0 1px #5fe6ff55,0 0 16px #2ad4ff40,inset 0 1px 0 #ffffff26}
+#overlay .depot-panel .shop-tabs{background:none;border-color:#6fe2ff22}
+#overlay .panel:not(.briefing) :is(input[type=text],input:not([type]),select){border:1px solid #6fe2ff40;border-radius:8px;background:#070d28;color:var(--kit-text)}
+#overlay .panel:not(.briefing) :is(input[type=text],input:not([type]),select):focus-visible{outline:none;border-color:var(--kit-neon);box-shadow:0 0 0 3px #5fe6ff33}
+#overlay .panel:not(.briefing) :is(.profile-card,.upgrade-card,.skin-card,.leaderboard-empty,.leaderboard-row,.skirmish-strategy){border-color:#6fe2ff2e;background:linear-gradient(180deg,#0f1b44cc,#0a1232cc)}
+#overlay .panel:not(.briefing) .profile-card.active{border-color:var(--kit-neon);box-shadow:0 0 0 1px #5fe6ff44,0 0 24px #2ad4ff26}
+#overlay .panel:not(.briefing) .profile-tag{background:var(--kit-neon);color:#06102a}
+/* Language picker (menu header and pause): the chosen language lights in neon. */
+:is(#overlay) .language-options{border-color:#6fe2ff40;background:#070d28cc}
+:is(#overlay) .language-choice{background:linear-gradient(180deg,#14234ef0,#0b1438f5);color:var(--kit-text)}
+:is(#overlay) .language-choice[aria-pressed=true]{background:linear-gradient(180deg,#1b4f7a,#10305a);color:#fff;box-shadow:inset 0 0 0 1px var(--kit-neon),0 0 14px #2ad4ff40}
+
+/* ---------- Battle HUD cards and buttons: the same navy glass ---------- */
+body #hud :is(.mission-hud,.hull-block,.weapon-block,#pause,.abilities button){
+ background:linear-gradient(180deg,#101d46e6,#0a1232eb);border-color:#6fe2ff40;box-shadow:0 10px 26px #0008,inset 0 1px 0 #ffffff14}
+body #hud .mission-hud{border-left:3px solid var(--kit-neon)}
+body #hud .mission-hud .eyebrow{color:var(--kit-neon)}
+body #hud :is(#pause,.abilities button):hover:not(:disabled){border-color:#9ff0ffaa;background:linear-gradient(180deg,#16285ae6,#0d1640eb)}
+
+/* Phones hide a focus ring that no key asked for (ui-polish.css rule); keep that true for the kit outlines. */
+@media(pointer:coarse){html:not([data-input=keys]) :is(#overlay,#hud) button:focus-visible{outline:none!important}}
+@media (prefers-reduced-motion:reduce){#overlay .panel button.primary::after{animation:none}#hud .radio{transition:opacity .3s}}

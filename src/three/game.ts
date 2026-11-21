@@ -819,7 +819,9 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     this.hudTimer+=dt;if(this.hudTimer>.1){this.hudTimer=0;this.updateHud();}
     this.radioTimer-=dt;this.radio.classList.toggle('visible',this.radioTimer>0);
   }
-  radioMessage(text:string,duration=5){delete this.radio.dataset.who;setText(this.radio,text);this.radioTimer=duration;this.radio.classList.add('visible');}
+  /** Speaker badge for the radio comms card (ui-kit.css): the callsign of a "WHO / text" line, or none. */
+  speaker(who?:string,initial?:string){const r=this.radio;if(who){r.dataset.who=who;r.dataset.initial=(initial??who[0]).toUpperCase();}else{delete r.dataset.who;delete r.dataset.initial;}}
+  radioMessage(text:string,duration=5){const call=/^([A-Z][A-Z ]{1,14}?) \/ /.exec(text);this.speaker(call?call[1].toLowerCase().replace(/ /g,'-'):undefined);setText(this.radio,text);this.radioTimer=duration;this.radio.classList.add('visible');}
   updateHud(){
     if(!this.player)return;
     const m=this.missionData();setText(this.el('mission-number'),this.skirmish?`SKIRMISH ${this.skirmish.round+1}/${this.skirmish.battles}${this.skirmish.scale>1?' · LARGE':''} · ${AI_SPEEDS[this.skirmish.config.speed].label.toUpperCase()} AI · ${MODES[normalizeDifficulty(this.save.difficulty)??'normal'].label.toUpperCase()}`:`STAGE ${String(this.mission+1).padStart(2,'0')} · LEVEL ${this.level+1}/3 · ${MODES[normalizeDifficulty(this.save.difficulty)??'normal'].label.toUpperCase()}`);setText(this.el('mission-name'),m.name);
@@ -923,7 +925,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
   /** Two radio lines per stage carry the story during the first level: one early, one when half the patrol is down. */
   storyBeats(){if(!this.storyScenes||this.level!==0||this.beats.half)return;const story=STORY[this.mission];
     const living=this.enemies.filter(e=>!e.dead&&!e.pending).length;if(!this.beats.initial)this.beats.initial=living;
-    const say=(line:Line)=>{this.radio.replaceChildren(document.createTextNode(`${CAST[line[0]].name} / ${this.storyText(line)}`));this.radio.dataset.who=line[0];this.radioTimer=6.5;this.radio.classList.add('visible');};
+    const say=(line:Line)=>{this.radio.replaceChildren(document.createTextNode(`${CAST[line[0]].name} / ${this.storyText(line)}`));this.speaker(line[0],CAST[line[0]].name[0]);this.radioTimer=6.5;this.radio.classList.add('visible');};
     if(!this.beats.early&&this.elapsed>=14&&this.radioTimer<=0){this.beats.early=true;say(story.early);}
     else if(this.beats.early&&this.elapsed>=30&&living<=Math.ceil(this.beats.initial/2)&&this.radioTimer<=0){this.beats.half=true;say(story.half);}}
   /** A three-second banner over the battlefield (mission title, counterattack warning). It never takes a tap. */

@@ -13,6 +13,7 @@ installFullscreen();
 import { Game } from './three/game';
 import './three/ui-polish';
 import './three/cover.css';
+import './three/ui-kit.css';
 import {installCover} from './three/cover';
 installCover();
 const app=document.querySelector<HTMLDivElement>('#app')!;
