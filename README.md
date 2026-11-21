@@ -186,6 +186,27 @@ Players said the game was too hard and could not see the fun. `fun.ts` (plan: `d
 
 Scripted runs (`?e2e`) keep all of this off unless a test sets `g.helpers = true`.
 
+## No crowds: a steady line of duels
+
+Players found that campaign enemies all drove to the tank's position and piled into a crowd too big to shoot down. On campaign Easy and Normal, `src/three/crowd.ts` now changes how they fight.
+
+- **Attack slots:** only 3 hostiles (Easy) or 4 (Normal) press the attack at once, chosen by distance with a little stickiness. The rest close in to an outer ring (30 m for infantry, 38 m for vehicles, inside their sight) and hold fire. They still shoot if the tank drives within 16 m. When an attacker falls, the next one steps in.
+- **Spread:** each attacker stops 3.5 m further out than the one before, and attackers push apart to stay at least 4.5 m from each other.
+- **Searching:** an enemy that lost the tank stops 5 m short of the last seen spot instead of driving onto it.
+- **Going home:** a guard whose search ends walks back to its post and goes back on watch, instead of piling up behind the tank.
+
+Hard, Crazy, training, skirmish, defense and capture missions are unchanged. Escorts keep the old rush (the danger there is the transport), and bosses are never held back.
+
+These rules were checked with a seeded balance bot across 144 missions per version, comparing the change with the previous build. It plays with varied range, aim error and target choice.
+
+| Measure | Easy before | Easy after | Normal before | Normal after |
+|---|---|---|---|---|
+| Enemies shooting at once, worst moment | 4.4 | 3.5 | 5.75 | 4.6 |
+| Hull lost | 18% | 14% | 78% | 78% |
+| Losses | 0 | 0 | 59 | 59 |
+
+`tests/crowd-control.spec.ts` covers the slots, self-defense, spacing, the search stop and walking home.
+
 ## Aim, distance and surprise
 
 - **Aim setting** (Settings, `aim-mode.ts`): *Manual* goes exactly where you point. *Assist* (the default) settles a stick within 12° or a mouse pointer within 7° of a visible enemy on it, leading a moving target. *Auto* does the same and, with no aim input (no stick, keys, or mouse movement for 1.5 s), picks the nearest visible enemy within 36 m. Firing is always a deliberate press. The choice is a device setting kept outside the save. Scripted runs (`?e2e`) start on Manual.

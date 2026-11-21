@@ -17,6 +17,7 @@ import {AutoMissiles,buyAutoPack} from './auto-missiles';
 import {ammoCapacity, perkSkin, skinPerks, skinBonusText} from './skins';
 import {ramCover} from './screens';
 import {orbitWorlds,WORLD_COLORS,worldArt} from './cover';
+import {CrowdControl,SELF_DEFENSE,WAIT_RING} from './crowd';
 import {FunLayer, REVIVE_LINE} from './fun';
 import {AMBUSH_MULTIPLIER, fireRange, holdDistance, isAmbush} from './surprise';
 import {AIM_LABEL, AIM_HELP, ASSIST_ANGLE, AUTO_RANGE, MOUSE_IDLE, loadAimMode, nextAimMode, storeAimMode} from './aim-mode';
@@ -86,7 +87,7 @@ export class Game {
   player!:Unit; enemies:Unit[]=[]; shots:Shot[]=[];
   finishDelay=0;finishDeadline=0;stageResult:StageResult|null=null;
   elapsed=0; capture=0; kills=0; shotsFired=0; lastReward=0;
-  bosses=new BossCombat();hazards=new BiomeHazards();encounters=new RouteEncounters();salvageDrops=0;lootRandom=()=>Math.random();
+  bosses=new BossCombat();hazards=new BiomeHazards();encounters=new RouteEncounters();crowd=new CrowdControl();salvageDrops=0;lootRandom=()=>Math.random();
   flame=new Flamethrower();special=new SpecialWeapons();specialAmmo=[0,0,0,0];infantryKills=0;
   /** Where each vehicle stood at the last dust tick (dust trails only while it moves). */
   private dustSeen=new WeakMap<Unit,Point>();
@@ -392,7 +393,7 @@ ${this.settings()}<details><summary>Briefing & controls</summary><p class="brief
     this.budget?.newBattle(this);
     this.level=clamp(level,0,2);this.mission=index;const m=this.missionData();this.allies.clear();this.waves.reset();this.clearLesson();
     this.finishDelay=0;this.finishDeadline=0;this.stageResult=null;this.medalResult=null;this.debriefSeen=false;
-    this.airSupport.clear();this.hazards.reset(index);this.bosses.clear();this.airlifts.clear();this.flame.clear();this.special.clear();this.auto.clear();this.specialAmmo=ammoCaps(perkSkin(this.save)).map((cap,i)=>this.save.weapons.includes(WEAPONS.findIndex(w=>w.ammoSlot===i))?cap:0);this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.clearBarrage();this.mission=index;if(this.training)this.world.buildCompact(this.training.id);else if(this.skirmish){this.world.fences=false;this.world.build(index,'assault',this.level,this.save.difficulty,this.skirmish.scale);this.world.ring.visible=false;}else if(index===0&&this.level===0&&this.save.difficulty==='easy')this.world.buildCompact(3);else{this.world.fences=true;this.world.build(index,m.kind,this.level,this.save.difficulty);};this.encounters.reset();this.salvageDrops=0;this.shots=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;this.convoyDistance=0;this.convoyReverse=null;this.world.loopReverse=false;
+    this.airSupport.clear();this.hazards.reset(index);this.bosses.clear();this.airlifts.clear();this.flame.clear();this.special.clear();this.auto.clear();this.specialAmmo=ammoCaps(perkSkin(this.save)).map((cap,i)=>this.save.weapons.includes(WEAPONS.findIndex(w=>w.ammoSlot===i))?cap:0);this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.clearBarrage();this.mission=index;if(this.training)this.world.buildCompact(this.training.id);else if(this.skirmish){this.world.fences=false;this.world.build(index,'assault',this.level,this.save.difficulty,this.skirmish.scale);this.world.ring.visible=false;}else if(index===0&&this.level===0&&this.save.difficulty==='easy')this.world.buildCompact(3);else{this.world.fences=true;this.world.build(index,m.kind,this.level,this.save.difficulty);};this.encounters.reset();this.crowd.reset();this.salvageDrops=0;this.shots=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;this.convoyDistance=0;this.convoyReverse=null;this.world.loopReverse=false;
     this.elapsed=0;this.capture=0;this.kills=0;this.shotsFired=0;this.tacticCalls={};this.rearHits=0;this.supportCalls=0;this.hitStop=0;this.hits.clear();this.reload=0;this.weapon=this.save.equippedWeapon;this.shieldTime=0;this.shieldCooldown=0;this.relayMax=Math.round(300*objectiveHealth(this.save.difficulty));this.relayHealth=this.relayMax;this.convoyMax=Math.round(ESCORT.health*objectiveHealth(this.save.difficulty));this.convoyHealth=this.convoyMax;this.convoyHitAt=-Infinity;this.contact=false;this.escortDeploying=false;this.deployShieldUntil=0;
     // Skirmish starts mid-map so teams can come from every side; spawn search keeps it clear of cover and mines.
     this.fenceCalled=false;
@@ -603,7 +604,7 @@ ${this.settings()}<details><summary>Briefing & controls</summary><p class="brief
   }
   updateEnemies(dt:number){
     const m=this.missionData(),playerPos=this.player.visual.root.position;
-    if(this.training)this.training.update(this);else if(this.skirmish)this.skirmish.update(this,dt);else {this.waves.update(this);this.encounters.update(this);this.counter.update(this);this.storyBeats();}
+    if(this.training)this.training.update(this);else if(this.skirmish)this.skirmish.update(this,dt);else {this.waves.update(this);this.encounters.update(this);this.crowd.update(this);this.counter.update(this);this.storyBeats();}
     this.airlifts.update(this,dt);
     for(let i=0;i<this.enemies.length;i++){
       const e=this.enemies[i];if(e.dead||e.pending||e.role==='airlift')continue;if(e.encounter&&!e.encounter.active){if(!this.training)updatePatrol(this,e,dt);
@@ -620,25 +621,33 @@ ${this.settings()}<details><summary>Briefing & controls</summary><p class="brief
       else if(e.lastSeen&&(e.searchUntil??0)>this.elapsed&&distance(p,e.lastSeen)>2)target=e.lastSeen;
       // Skirmish teams move on their commander's orders; aiming and firing below stay shared.
       const ordered=!!this.skirmish&&this.skirmish.steer(this,e,dt,playerVisible);
+      const home=!target&&!ordered?this.crowd.homeFor(this,e):null;
+      if(home){const hp=e.visual.root.position,blocked=this.world.covers.some(c=>c.hp>0&&segmentBox(hp,home,c,this.unitRadius(e)+.2)!==null),step=(blocked?this.navigation.next(this.world,hp,home):null)??home,dir=Math.atan2(step.x-hp.x,step.z-hp.z),sp=this.enemySpeed(e)*.7*dt;
+        e.cooldown=Math.max(e.cooldown,AIM_WARNING_SECONDS);e.visual.beam.visible=false;this.moveUnit(e,Math.sin(dir)*sp,Math.cos(dir)*sp,dt);e.heading=turnToward(e.heading,dir,dt*2);this.syncVisual(e);continue;}
+      if(!target&&!ordered&&e.encounter&&this.crowd.backOnWatch(this,e))e.encounter.active=false;
       if(!target){e.cooldown=Math.max(e.cooldown,AIM_WARNING_SECONDS);if(e.patrol&&e.encounter){e.encounter.active=false;e.patrol.index=0;e.patrol.returning=true;e.patrol.wait=.6;e.patrol.waypoint=undefined;}e.visual.beam.visible=false;if(!ordered)this.moveUnit(e,0,0,dt);this.syncVisual(e);continue;}
       const investigating=target===e.lastSeen,capturing=objectiveTarget&&m.kind==='capture';
+      // Crowd control (crowd.ts): only a few press the attack; the rest wait out of range with their guns quiet.
+      const waiting=!investigating&&!capturing&&target===playerPos&&!this.skirmish&&!this.training&&this.crowd.waiting(this,e);
       const dist=distance(p,target),desired=Math.atan2(target.x-p.x,target.z-p.z);
       e.aim=turnToward(e.aim,desired,dt*2*(this.skirmish?.pace??1));
       const obstruction=this.world.covers.some(c=>c.hp>0&&c!==e.perch?.cover&&segmentBox(p,target,c,this.unitRadius(e)+.2)!==null);
       if(!ordered&&!e.perch&&(e.role!=='sentry'||dist>26||obstruction)){
         // Tanks with the player in sight fight as a squad: one holds the line, the rest flank, the wounded fall back.
-        const tactic=!obstruction&&!investigating&&!capturing&&target===playerPos&&!this.skirmish&&!this.training?squadTactic(this,e,i,dist):null;
-        const advance=tactic?tactic.advance:dist>(investigating?2:capturing?4:holdDistance(this,e,17))||obstruction?1:dist<10&&!investigating&&!capturing?-.55:0;
-        const side=tactic?tactic.side:investigating||capturing?0:e.role==='raider'?.5:obstruction?.7:0;
-        const detour=obstruction?this.navigation.next(this.world,p,target):null;
+        const tactic=!waiting&&!obstruction&&!investigating&&!capturing&&target===playerPos&&!this.skirmish&&!this.training?squadTactic(this,e,i,dist):null;
+        const advance=tactic?tactic.advance:waiting?(dist>(this.isInfantry(e)?WAIT_RING.infantry:WAIT_RING.vehicle)?.7:0):dist>(investigating?this.crowd.searchStop(this):capturing?4:this.crowd.hold(this,e,holdDistance(this,e,17)))||obstruction?1:dist<10&&!investigating&&!capturing?-.55:0;
+        const side=tactic?tactic.side:waiting||investigating||capturing?0:e.role==='raider'?.5:obstruction?.7:0;
+        const detour=obstruction&&!waiting?this.navigation.next(this.world,p,target):null;
         const direction=detour?Math.atan2(detour.x-p.x,detour.z-p.z):desired+Math.sin(this.elapsed*.8+i)*.2;
         const speed=this.enemySpeed(e);
-        const dx=(Math.sin(direction)*advance+Math.cos(direction)*(detour?0:side))*speed*dt,dz=(Math.cos(direction)*advance-Math.sin(direction)*(detour?0:side))*speed*dt;
+        // Squad manoeuvres (flank, fall back) already spread tanks on purpose; spacing would fight them.
+        const sep=tactic?{x:0,z:0}:this.crowd.separation(this,e);
+        const dx=((Math.sin(direction)*advance+Math.cos(direction)*(detour?0:side))+sep.x*.8)*speed*dt,dz=((Math.cos(direction)*advance-Math.sin(direction)*(detour?0:side))+sep.z*.8)*speed*dt;
         this.moveUnit(e,dx,dz,dt);if(Math.abs(dx)+Math.abs(dz)>.001)e.heading=turnToward(e.heading,Math.atan2(dx,dz),dt*2);
       }
       if(!ordered&&e.role==='sentry'&&dist<=26&&!obstruction&&terrainAt(this.world.environment.biome,p)==='ice')this.moveUnit(e,0,0,dt);
       const canFire=(target===playerPos||target===this.convoy?.position||this.allies.active.some(a=>target===a.visual.root.position)||objectiveTarget&&!capturing)&&clearSight(this,p,target,e.perch?.cover);
-      const range=objectiveTarget?24:fireRange(this,e,38);
+      const range=objectiveTarget?24:waiting&&dist>SELF_DEFENSE?0:fireRange(this,e,38);
       if(dist<range&&canFire)e.cooldown-=dt;else e.cooldown=Math.max(e.cooldown,AIM_WARNING_SECONDS);
       const beam=e.visual.beam;beam.visible=canFire&&e.cooldown<AIM_WARNING_SECONDS&&dist<range;beam.scale.z=dist;beam.position.set(p.x+Math.sin(e.aim)*dist/2,.12,p.z+Math.cos(e.aim)*dist/2);beam.rotation.y=e.aim;
       this.syncVisual(e);

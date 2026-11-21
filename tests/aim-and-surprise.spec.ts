@@ -46,7 +46,10 @@ test('a player who keeps 36 m from an Easy tank is never shot, while one at 28 m
  const r=await page.evaluate(()=>{const g=(window as any).__steel;g.save.difficulty='easy';g.start(0,1);g.clearOpening();for(const c of g.world.covers)c.hp=0;g.world.navigationRevision++;
   const tank=g.enemies.find((e:any)=>!e.dead&&(e.role==='raider'||e.role==='heavy'));if(!tank)return null;for(const e of g.enemies)if(e!==tank)e.dead=true;
   g.player.hp=g.player.max=9999;const p=g.player.visual.root.position;p.set(0,0,0);tank.visual.root.position.set(36,0,0);tank.encounter&&(tank.encounter.active=true);tank.cooldown=0;
-  const hold=(gap:number)=>{g.player.hp=9999;tank.cooldown=0;const hp0=g.player.hp;for(let i=0;i<600;i++){p.x=tank.visual.root.position.x-gap;p.z=0;g.step(1/60);}return hp0-g.player.hp;};
+  // The tank stays put and reinforcements stay out: this checks the Easy fire range only. (Chasing pinned the
+  // player against the map edge at 23 m, and level 2 sends reinforcements; it passed only while their shots missed.)
+  g.enemySpeed=()=>0;
+  const hold=(gap:number)=>{g.player.hp=9999;tank.cooldown=0;const hp0=g.player.hp;for(let i=0;i<600;i++){for(const e of g.enemies)if(e!==tank)e.dead=true;p.x=tank.visual.root.position.x-gap;p.z=0;g.step(1/60);}return hp0-g.player.hp;};
   return {far:hold(36),near:hold(28)};});
  expect(r).not.toBeNull();expect(r!.far).toBe(0);expect(r!.near).toBeGreaterThan(0);
 });

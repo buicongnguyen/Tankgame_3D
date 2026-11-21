@@ -2,7 +2,7 @@ import type { Game, Unit } from './game';
 
 /** Rules that give distance and surprise value on Easy and Normal. Hard and Crazy keep the old behaviour, and
  *  the tutorial and skirmish matches are never touched, so scripted runs there stay identical. */
-const SOFT = (g: Game) => !g.skirmish && !g.training && (g.save.difficulty === 'easy' || g.save.difficulty === 'normal');
+export const SOFT = (g: Game) => !g.skirmish && !g.training && (g.save.difficulty === 'easy' || g.save.difficulty === 'normal');
 const isTank = (u: Unit) => u.role === 'raider' || u.role === 'heavy';
 
 /** Metres at which a hostile tank stops advancing, and the range inside which it fires. The gap lets a player
