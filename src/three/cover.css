@@ -217,6 +217,7 @@ body[data-phase=menu] #overlay::before{content:'';position:fixed;inset:0;z-index
 .command-screen .campaign-route .route-item.selected{box-shadow:0 0 0 3px #5fe6ff,0 0 20px var(--hi)}
 .command-screen .campaign-route .route-index{text-shadow:0 1px 2px #000,0 0 6px #000,0 0 10px #000}
 
+:root[data-cover-quiet] .command-screen>.cover-fx{display:none}
 @media (prefers-reduced-motion:reduce){
  .cover-fx,.loading::before,.command-screen .brand-mark,.command-screen .hero>.eyebrow::before,.command-screen .tank-showcase .showcase-ring::after,.orbit-world.current::after,.command-screen button.primary::after{animation:none!important}
  .cover-fx .tracer,.cover-fx .flash{display:none}

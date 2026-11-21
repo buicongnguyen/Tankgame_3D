@@ -237,8 +237,13 @@ export const worldArt = (i: number) => `${import.meta.env.BASE_URL}cover/world-$
 let installed = false;
 export function installCover() {
   if (installed) return; installed = true;
-  loadLogo();
-  const go = () => { refreshCover(); refreshArt(); };
+  // Scripted test runs (?e2e) leave the painted art, logo and cover animations off, like the other cosmetic
+  // helpers: CI composites in software and a full-screen painting under animated layers at 3x pixel density
+  // pushed slow menu tests past their limits. ?e2e&art turns them on (tests/cover-art.spec.ts).
+  const query = new URLSearchParams(location.search), art = !query.has('e2e') || query.has('art');
+  if (!art) document.documentElement.dataset.coverQuiet = '';
+  if (art) loadLogo();
+  const go = () => { refreshCover(); if (art) refreshArt(); };
   requestAnimationFrame(go);
   let timer = 0; addEventListener('resize', () => { clearTimeout(timer); timer = window.setTimeout(go, 250); });
   // A mouse wheel scrolls the stage strip sideways (touch screens swipe it).
