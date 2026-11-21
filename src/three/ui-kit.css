@@ -160,6 +160,14 @@ body #hud .mission-hud{border-left:1px solid #5fe6ff4d}
 body #hud .mission-hud .eyebrow{color:var(--kit-neon)}
 body #hud :is(#pause,.abilities button):hover:not(:disabled){border-color:var(--kit-edge-hi);background:linear-gradient(160deg,#163650e6,#0e2438eb)}
 
+/* Phone ability buttons (mockup: round, glowing icon buttons). Shape and ring only: sizes and positions stay as
+   compact.css sets them, so the touch-size and overlap tests keep holding. */
+@media(pointer:coarse){
+ body #hud .abilities button{border-radius:22px;border:1px solid #5fe6ff80;background:radial-gradient(ellipse at 50% 0,#5fe6ff26,transparent 70%),linear-gradient(160deg,#112a3df0,#0b1b2cf2);box-shadow:0 6px 16px #0008,0 0 0 1px #0a1626,inset 0 1px 0 #ffffff1a}
+ body #hud .abilities button:active:not(:disabled){box-shadow:0 0 0 2px var(--kit-neon),0 0 18px #2ad4ff66;transform:scale(.97)}
+ body #hud .abilities button .ab-icon{filter:drop-shadow(0 0 5px #ffd76b66)}
+ body #hud .abilities button:disabled{opacity:.55}
+}
 /* Phones hide a focus ring that no key asked for (ui-polish.css rule); keep that true for the kit outlines. */
 @media(pointer:coarse){html:not([data-input=keys]) :is(#overlay,#hud) button:focus-visible{outline:none!important}}
 @media (prefers-reduced-motion:reduce){#overlay .panel button.primary::after{animation:none}#hud .radio{transition:opacity .3s}}
