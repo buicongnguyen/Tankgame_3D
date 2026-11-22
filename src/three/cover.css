@@ -188,16 +188,15 @@ body[data-phase=menu] #overlay,.loading{background-color:#03040d;background-imag
  .command-dock{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 /* ---------- Painted key art (public/cover, wired 2026-11-21) ----------
-   cover.ts sets --cover-art and data-cover-art only after the picture has decoded, so the procedural sky shows
-   first and the painting fades in over it. The painting already has the Cobalt Kestrel standing on the planet,
-   so the menu's own tank picture and orbit step aside while it is up. A soft dark pool behind the title keeps
-   the logo and menu text readable over the bright nebula. */
-body[data-phase=menu] #overlay::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0;transition:opacity .7s ease;background:radial-gradient(ellipse 42% 36% at 16% 24%,#020412b3,#02041200 72%),var(--cover-art,none);background-size:auto,cover;background-position:0 0,50% 50%;background-repeat:no-repeat}
+   The pending and decoded states both suppress the old hero. Only a failed initial load uses the procedural scene. */
+body[data-phase=menu] #overlay::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0;background:radial-gradient(ellipse 42% 36% at 16% 24%,#020412b3,#02041200 72%),var(--cover-art,none);background-size:auto,cover;background-position:0 0,50% 50%;background-repeat:no-repeat}
 :root[data-cover-art] body[data-phase=menu] #overlay::before{opacity:1}
 /* Phone portrait: lift the painting so the tank sits in the hero space above the mission card. */
 :root[data-cover-art=portrait] body[data-phase=menu] #overlay::before{background:radial-gradient(ellipse 60% 22% at 22% 14%,#020412b3,#02041200 72%),var(--cover-art,none);background-size:auto,116% auto;background-position:0 0,0 -11vh;background-repeat:no-repeat}
+:root[data-cover-art=portrait] .loading{background-size:116% auto,cover,cover;background-position:0 -11vh,center,center}
 .loading{background-image:var(--cover-art,none),var(--cover-sky,none),var(--sky-fallback)}
-:root[data-cover-art] .command-screen .tank-showcase{visibility:hidden}
+:root:is([data-cover-art],[data-cover-pending]) .loading::before{visibility:hidden}
+:root:is([data-cover-art],[data-cover-pending]) .command-screen .tank-showcase{visibility:hidden}
 :root[data-cover-art] .command-screen .profile-chip{background:#070c24e6;box-shadow:0 4px 18px #0008}
 @media (orientation:landscape) and (max-height:500px){:root[data-cover-art] .command-screen>.hero{align-self:start;align-content:start;padding-top:4px}}
 

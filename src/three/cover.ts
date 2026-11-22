@@ -219,16 +219,24 @@ export function refreshCover() {
 export const publicUrl = (path: string) => new URL(import.meta.env.BASE_URL + path, document.baseURI).href;
 export const COVER_ART = { landscape: 'cover/key-art-landscape-b.webp', portrait: 'cover/key-art-portrait-b.webp', logo: 'cover/logo-steel-front.webp' };
 let artWanted = '';
-/** Show the painted cover for this screen shape once it has decoded; the procedural sky stays underneath. */
+/** Show the painted cover for this screen shape once decoded. Only paint the procedural fallback if the first cover fails. */
 export function refreshArt() {
   const root = document.documentElement, portrait = innerHeight > innerWidth * 1.15;
   const src = publicUrl(portrait ? COVER_ART.portrait : COVER_ART.landscape);
-  if (src === artWanted) return; artWanted = src;
-  const img = new Image(); img.decoding = 'async'; img.src = src;
+  if (src === artWanted) return;
+  artWanted = src;
+  if (!root.dataset.coverArt) root.dataset.coverPending = '';
+  const img = new Image(); img.decoding = 'async'; img.fetchPriority = 'high'; img.src = src;
   img.decode().then(() => {
     if (artWanted !== src) return;
     root.style.setProperty('--cover-art', `url("${src}")`); root.dataset.coverArt = portrait ? 'portrait' : 'landscape';
-  }).catch(() => { if (artWanted === src) artWanted = ''; });
+    delete root.dataset.coverPending;
+  }).catch(() => {
+    if (artWanted !== src) return;
+    artWanted = '';
+    delete root.dataset.coverPending;
+    if (!root.dataset.coverArt) refreshCover();
+  });
 }
 function loadLogo() {
   const root = document.documentElement, src = publicUrl(COVER_ART.logo), img = new Image();
@@ -247,8 +255,8 @@ export function installCover() {
   const query = new URLSearchParams(location.search), art = !query.has('e2e') || query.has('art');
   if (!art) document.documentElement.dataset.coverQuiet = '';
   if (art) loadLogo();
-  const go = () => { refreshCover(); if (art) refreshArt(); };
-  requestAnimationFrame(go);
+  const go = art ? refreshArt : refreshCover;
+  if (art) go(); else requestAnimationFrame(go);
   let timer = 0; addEventListener('resize', () => { clearTimeout(timer); timer = window.setTimeout(go, 250); });
   // A mouse wheel scrolls the stage strip sideways (touch screens swipe it).
   addEventListener('wheel', e => {

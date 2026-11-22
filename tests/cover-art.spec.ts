@@ -34,3 +34,26 @@ test('scripted runs keep the cover quiet: no painted art, logo or cover animatio
  expect(await page.locator('.cover-fx').evaluate(e=>getComputedStyle(e).display)).toBe('none');
  expect(requested).toEqual([]);
 });
+
+test('a delayed cover never displays the old tank, and failure restores the fallback',async({page})=>{
+ let release!:()=>void;
+ const waiting=new Promise<void>(resolve=>release=resolve);
+ await page.route('**/cover/key-art-landscape-b.webp',async route=>{await waiting;await route.abort();});
+ await page.goto('/?e2e&art',{waitUntil:'domcontentloaded'});
+ const tank=page.locator('.tank-showcase');
+ try {
+   await page.locator('[data-action=deploy]').waitFor();
+   await expect(tank).toHaveCSS('visibility','hidden');
+   expect(await page.evaluate(()=>document.documentElement.dataset.coverUrl)).toBeUndefined();
+ } finally {release();}
+ await expect(tank).toHaveCSS('visibility','visible');
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.dataset.cover)).toBe('ready');
+});
+test('a repeat visit keeps the painted artwork without generating a fallback',async({page})=>{
+ await page.goto('/?e2e&art');
+ for(let visit=0;visit<2;visit++){
+   if(visit)await page.reload();
+   await expect.poll(()=>page.evaluate(()=>document.documentElement.dataset.coverArt)).toBe('landscape');
+   expect(await page.evaluate(()=>document.documentElement.dataset.coverUrl)).toBeUndefined();
+ }
+});
