@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { SAND, MUD, ICE, tractionMotion } from '../src/three/terrain';
 
 test('Overdrive escapes traps without changing ice grip or enemy recovery', () => {
-  function distance(biome: Parameters<typeof tractionMotion>[0], p: {x:number;z:number}, pace: 'standard'|'overdrive'|'easyEnemy', recovery=false) {
+  function distance(biome: Parameters<typeof tractionMotion>[0], p: {x:number;z:number}, pace: 'standard'|'overdrive'|'enemy', recovery=false) {
     return tractionMotion(biome,p,{x:0,z:0},1,0,.1,recovery,pace).x;
   }
   expect(distance('desert',SAND[0],'standard')).toBeCloseTo(.7);
@@ -10,8 +10,8 @@ test('Overdrive escapes traps without changing ice grip or enemy recovery', () =
   expect(distance('marsh',MUD[0],'standard',true)).toBeCloseTo(.65);
   expect(distance('marsh',MUD[0],'overdrive',true)).toBeCloseTo(1.5);
   expect(distance('desert',SAND[0],'overdrive')).toBeCloseTo(1.5);
-  expect(distance('desert',SAND[0],'easyEnemy')).toBeCloseTo(.25);
-  expect(distance('marsh',MUD[0],'easyEnemy')).toBeCloseTo(.18);
+  expect(distance('desert',SAND[0],'enemy')).toBeCloseTo(.25);
+  expect(distance('marsh',MUD[0],'enemy')).toBeCloseTo(.18);
   expect(distance('glacier',ICE[0],'overdrive')).toBeCloseTo(1.5*distance('glacier',ICE[0],'standard'));
   expect(tractionMotion('glacier',ICE[0],{x:9,z:0},0,0,.1,false,'overdrive').x).toBeCloseTo(.9*Math.exp(-.4));
 });

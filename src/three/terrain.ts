@@ -18,12 +18,12 @@ export function terrainSpeed(biome:Biome,x:number,z:number){
  return 1;
 }
 /** Velocity is in meters/second; callers provide the requested displacement. */
-export function tractionMotion(biome:Biome,p:Point,velocity:Point,dx:number,dz:number,dt:number,recovery=false,pace:'standard'|'overdrive'|'easyEnemy'='standard'):Point{
+export function tractionMotion(biome:Biome,p:Point,velocity:Point,dx:number,dz:number,dt:number,recovery=false,pace:'standard'|'overdrive'|'enemy'='standard'):Point{
  if(dt<=0)return {x:0,z:0};
  const kind=terrainAt(biome,p), ice=kind==='ice';
  let speed=terrainSpeed(biome,p.x,p.z);
- if(pace==='easyEnemy' && kind==='sand') speed=.25;
- if(pace==='easyEnemy' && kind==='mud') speed=.18;
+ if(pace==='enemy' && kind==='sand') speed=.25;
+ if(pace==='enemy' && kind==='mud') speed=.18;
  if(recovery && kind==='mud') speed=.65;
  if(pace==='overdrive') speed=(kind==='sand'||kind==='mud'?1:speed)*1.5;
  const response=ice?1-Math.exp(-dt*4):1;

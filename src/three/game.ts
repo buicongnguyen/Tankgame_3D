@@ -151,7 +151,7 @@ export class Game {
       <button class="weapon-block" id="weapon"><span id="weapon-label"></span><strong id="reload-label"></strong><div class="reload-track"><i id="reload-fill"></i></div><small class="switch-gun-label">SWITCH GUN <span>· C / 1–9</span> ▴</small></button>
       <div class="abilities"><button id="fire" class="pc-fire"><kbd>SPACE / F</kbd>FIRE</button><button id="overdrive" type="button" aria-keyshortcuts="V" hidden><kbd aria-hidden="true">V</kbd><span class="overdrive-caption"><span>OVERDRIVE</span><small id="overdrive-state">READY</small></span></button><div class="support-pair"><button id="artillery" data-support="support-strike" aria-label="Strike: guided missiles (R)"><kbd>R</kbd><i class="ab-icon ab-strike" aria-hidden="true"></i><span id="artillery-label">STRIKE</span></button><button id="drop" data-support="support-drop" aria-label="Drop: supply crate (T)"><kbd>T</kbd><i class="ab-icon ab-drop" aria-hidden="true"></i><span id="drop-label">DROP</span></button></div><button id="shield"><kbd>Q</kbd><i class="ab-icon ab-shield" aria-hidden="true"></i><span id="shield-label">SHIELD</span></button><button id="auto" aria-label="Auto: guided vehicle missile (E)"><kbd>E</kbd><i class="ab-icon ab-auto" aria-hidden="true"></i><span id="auto-label">AUTO 0</span></button></div></div>
       <div class="touch-pad move-pad" id="move-pad" aria-label="Drive joystick"><span class="stick-nub"></span><small>DRIVE</small></div><div class="touch-pad aim-pad" id="aim-pad" aria-label="Aim and fire joystick"><span class="stick-nub"></span><small>AIM / FIRE</small></div>
-      <div id="title-card" hidden></div><div id="lesson-hint" role="status" hidden></div><div id="relay-label" hidden></div><div id="weapon-picker" class="weapon-picker" hidden role="group" aria-label="Choose weapon"></div><div class="radio" id="radio" role="status"></div><div class="desktop-hint">WASD <span>drive</span> · IJKL / MOUSE <span>aim</span> · SPACE / F <span>fire</span> · C / 1–9 <span>guns</span> · R / T <span>strike / drop</span> · Q <span>shield</span> · E <span>auto missile</span></div>
+      <div id="title-card" hidden></div><div id="lesson-hint" role="status" hidden></div><div id="relay-label" hidden></div><div id="weapon-picker" class="weapon-picker" hidden role="group" aria-label="Choose weapon"></div><div class="radio" id="radio" role="status"></div><div class="desktop-hint">WASD <span>drive</span> · IJKL / MOUSE <span>aim</span> · SPACE / F <span>fire</span> · C / 1–9 <span>guns</span> · R / T <span>strike / drop</span> · Q <span>shield</span> · E <span>auto missile</span><bdi id="hint-overdrive" hidden> · V <span>overdrive</span></bdi></div>
     </div><div id="overlay"></div><div class="loading" id="loading"><span class="eyebrow">KESTREL // CONNECTING</span><h1>Establishing uplink<span class="blink">_</span></h1><p>Loading the valley and armored units.</p></div>`);
     this.overlay=this.el('overlay');this.hud=this.el('hud');this.hits=new HitFeedback(this.hud);this.radio=this.el('radio');this.mini=this.el('minimap') as HTMLCanvasElement;
     this.world=new World(this.el('battlefield'),this.save.low);this.input=new Input(this.world.renderer.domElement);
@@ -473,10 +473,9 @@ ${this.settings()}<details><summary>Briefing & controls</summary><p class="brief
     const mud=this.world.terrainKind(p)==='mud';unit.mudTime=mud?(unit.mudTime??0)+dt:0;
     const recovery=mud&&(unit.mudTime??0)%4>2.8;
     const boosted = unit === this.player && this.overdriveTime > 0;
-    const keepEnemyPace = unit !== this.player && unit.team !== 'ally' &&
-      (this.save.difficulty === 'easy' || this.save.difficulty === 'normal');
+    const keepEnemyPace = unit !== this.player && unit.team !== 'ally'; // every difficulty: only the player gets the easier ground
     const motion = tractionMotion(this.world.firmRoad(p) ? 'grove' : this.world.environment.biome,
-      p, unit.velocity, dx, dz, dt, recovery, boosted ? 'overdrive' : keepEnemyPace ? 'easyEnemy' : 'standard');
+      p, unit.velocity, dx, dz, dt, recovery, boosted ? 'overdrive' : keepEnemyPace ? 'enemy' : 'standard');
     if(!this.isInfantry(unit))p.y+=((mud&&!recovery?-.45:0)-p.y)*Math.min(1,dt*4);
     // Short accepted segments preserve wall sliding and prevent contact through cover.
     const steps=Math.max(1,Math.ceil(Math.max(Math.abs(motion.x),Math.abs(motion.z))/.35)),sx=motion.x/steps,sz=motion.z/steps,stepTime=dt/steps;
@@ -878,7 +877,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     if(boss){setText(bossCompact,`${this.enemies.filter(e=>e.role==='boss'&&!e.dead).length} boss · ${Math.ceil(boss.hp/boss.max*100)}% · ${boss.encounter&&!boss.encounter.active?'AHEAD':this.bosses.status(boss)}`);setAttribute(bossCompact,'aria-label',readout.textContent!);}
     this.radio.style.top=(this.el('mission-name').parentElement!.getBoundingClientRect().bottom+8)+'px';
     setText(this.el('health-label'),`${Math.ceil(this.player.hp)} / ${Math.ceil(this.player.max)}`);this.el('health-fill').style.width=`${this.player.hp/this.player.max*100}%`;
-    setText(this.el('status-line'),this.shieldTime>0?(this.elapsed<this.deployShieldUntil?`DEPLOYMENT SHIELD · ${Math.ceil(this.shieldTime)}s`:'PROTECTIVE FIELD ACTIVE'):this.hazards.quaking?'EARTHQUAKE · TRACKS LOCKED':this.hazards.quakeWarning?'TREMOR WARNING · TAKE COVER':this.player.hp<this.player.max*.3?'HULL CRITICAL — SEEK COVER':this.hazards.danger(this.player.visual.root.position)?'ROCKFALL · LEAVE THE RED CIRCLE':this.world.firmRoad(this.player.visual.root.position)?(this.world.layout.closed?'FIRM TRACK · EITHER WAY':'FIRM TRACK · FOLLOW THE CHEVRONS'):terrainLabel(this.world.environment.biome,this.player.visual.root.position));
+    setText(this.el('status-line'),this.shieldTime>0?(this.elapsed<this.deployShieldUntil?`DEPLOYMENT SHIELD · ${Math.ceil(this.shieldTime)}s`:'PROTECTIVE FIELD ACTIVE'):this.hazards.quaking?'EARTHQUAKE · TRACKS LOCKED':this.hazards.quakeWarning?'TREMOR WARNING · TAKE COVER':this.player.hp<this.player.max*.3?'HULL CRITICAL — SEEK COVER':this.hazards.danger(this.player.visual.root.position)?'ROCKFALL · LEAVE THE RED CIRCLE':this.overdriveTime>0?'OVERDRIVE · 150% SPEED':this.world.firmRoad(this.player.visual.root.position)?(this.world.layout.closed?'FIRM TRACK · EITHER WAY':'FIRM TRACK · FOLLOW THE CHEVRONS'):terrainLabel(this.world.environment.biome,this.player.visual.root.position));
     const available=Math.max(this.fieldWeaponCount,weaponCount(this.save));
     this.el('weapon').setAttribute('aria-expanded',String(this.weaponPickerOpen));
     const picker=this.el('weapon-picker');picker.hidden=!this.weaponPickerOpen;
@@ -889,6 +888,7 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     setText(this.el('weapon-label'),(this.weapon===5?(barrels(this.save,5)===4?'Quad machine gun':'Twin machine gun'):info.name)+(ammo!==undefined?' · '+this.specialAmmo[ammo]+(this.weapon===7?' volleys':this.weapon===8?' fuel':''):'')+' ▴');setAttribute(this.el('weapon'),'aria-label','Choose weapon: '+info.name);setText(this.el('reload-label'),this.reload>0?`${this.reload.toFixed(1)}s`:'READY');this.el('reload-fill').style.width=`${(1-clamp(this.reload/this.reloadDuration(),0,1))*100}%`;
     const boost = this.el('overdrive') as HTMLButtonElement;
     boost.hidden = !this.overdriveAvailable;
+    this.el('hint-overdrive').hidden = boost.hidden;
     if (!boost.hidden) {
       const active = this.overdriveTime > 0, cooling = this.overdriveCooldown > 0;
       boost.disabled = active || cooling;

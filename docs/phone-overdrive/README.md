@@ -1,6 +1,6 @@
 # Steel Front phone terrain and Overdrive
 
-On sand the player now drives at 70% of normal speed, up from 25%. Mud rises from 18% to 55%, with the existing 65% recovery window. Easy and Normal enemies retain their original pace in these traps. The campaign briefing, Vietnamese translations and terrain readout reflect the new values.
+On sand the player now drives at 70% of normal speed, up from 25%. Mud rises from 18% to 55%, with the existing 65% recovery window. Enemies on every difficulty retain their original pace in these traps. The campaign briefing, Vietnamese translations and terrain readout reflect the new values.
 
 Overdrive is available at the third level of a stage and at any level on Hard or Crazy. Training keeps its existing controls. Tap the button beside Fire or press V. The tank accelerates to 1.5× for 2.5 seconds, then recharges for 12 seconds of game time. Sand and mud stop slowing the player during that burst. Ice still slides. Weapon damage and boss warning times use the existing combat rules.
 
