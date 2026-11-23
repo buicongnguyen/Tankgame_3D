@@ -7,7 +7,7 @@ test('track contact requires actual speed, respects cover and counts only infant
   let e=setup();const activities=g.world.activities.length;g.moveUnit(g.player,7,0,.7);const fast=e.dead&&g.infantryKills===1&&g.kills===0&&g.world.activities.length===activities;g.moveUnit(g.player,-7,0,.7);const once=g.infantryKills===1;
   e=setup();g.player.visual.root.position.set(-1.7,0,0);g.moveUnit(g.player,0,0,.1);const still=!e.dead;g.moveUnit(g.player,.15,0,.1);const slow=!e.dead;
   e=setup();g.world.covers=[{x:-1,z:0,w:.5,d:6,hp:Infinity}];g.moveUnit(g.player,7,0,.7);const wall=!e.dead&&g.player.visual.root.position.x<-2;
-  e=setup(11);g.player.visual.root.position.set(-25,0,30);e.visual.root.position.set(-23,0,30);g.moveUnit(g.player,4.5,0,.5);const sand=!e.dead&&g.player.visual.root.position.x<-24;
+  e=setup(11);g.player.visual.root.position.set(-25,0,30);e.visual.root.position.set(-23,0,30);g.moveUnit(g.player,2,0,.5);const sand=!e.dead&&g.player.visual.root.position.x<-24;
   e=setup(9);g.player.visual.root.position.set(-25,0,30);e.visual.root.position.set(-23.5,0,30);g.player.velocity={x:9,z:0};g.moveUnit(g.player,0,0,.1);const ice=e.dead;
   e=setup();g.pause();g.moveUnit(g.player,7,0,.7);const paused=!e.dead;
   e=setup();const tank=g.enemies.find((u:any)=>!g.isInfantry(u));tank.dead=false;tank.visual.root.position.set(-4,0,0);g.player.visual.root.position.set(50,0,50);g.moveUnit(tank,7,0,.7);const allies=!e.dead;
