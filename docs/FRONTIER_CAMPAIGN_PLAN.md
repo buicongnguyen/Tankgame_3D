@@ -12,7 +12,7 @@ The current game already has water crossings, off-road snow, mud, destructible t
 | --- | --- | --- | --- | --- | --- |
 | 10 | White Horizon | Polar ice field | Hold the research relay for 22 seconds | Blue ice sheets carry momentum; steer early, stop on exposed road, use glacier outcrops for cover | 440 CR |
 | 11 | Cinderfall | Active volcanic basin | Eliminate six armored patrols | Eruption rocks land in marked danger circles and damage either side; lure armor into impacts | 460 CR |
-| 12 | Dune Lifeline | Desert settlements | Escort the relief transport through the pass | Clearly bounded sand traps slow movement to exactly one quarter; the central convoy road stays clear | 480 CR |
+| 12 | Dune Lifeline | Desert settlements | Escort the relief transport through the pass | Clearly bounded sand traps slow movement to 70% of player speed; the central convoy road stays clear | 480 CR |
 | 13 | Canopy Hold | Dense tropical forest | Defend the relay for 50 seconds | Broadleaf trees block shells and can be destroyed to open sight lines; enemies approach from the map corners | 500 CR |
 | 14 | Citadel Dawn | Occupied city | Defeat the command Rail Titan | Streets, intersections, apartment blocks and barricades create cover and flanking choices | 600 CR |
 
@@ -45,10 +45,10 @@ The story follows a newly received distress call beyond the restored Meridian ne
 ### Desert sand traps
 
 - Add several fixed circular/elliptical pockets with darker centers and concentric wind marks, visually distinct from normal sand.
-- Inside a trap, movement is multiplied by exactly 0.25, independently of the selected graphics mode. Crossing the boundary restores ordinary speed.
-- Apply the modifier to enemies as well as the player. Skin speed bonuses multiply the base speed before terrain, so a faster tank is still slowed to one quarter of its usual speed.
+- Inside a trap, movement is multiplied by 0.70 for the player, independently of the selected graphics mode. Crossing the boundary restores ordinary speed.
+- Easy and Normal opponents retain their previous terrain pace. Skin speed bonuses multiply the player’s base speed before terrain. Mud applies a 0.55 multiplier, with brief 0.65 recovery windows.
 - Keep an uninterrupted central escort route. Side caches invite deliberate detours; repair centers remain reachable without trapping the convoy.
-- Show the short status `SAND TRAP · ¼ SPEED` only while inside a trap. Draw trap boundaries on the minimap.
+- Show the short status `SAND TRAP · 70% SPEED` only while inside a trap. Draw trap boundaries on the minimap.
 
 ### Jungle and city
 
@@ -84,7 +84,7 @@ The story follows a newly received distress call beyond the restored Meridian ne
 - Validate detailed/low GLBs, budgets and matching surfaces; build TypeScript/Vite.
 - Test six-stage and nine-stage save migration, including completed campaigns and owned equipment; reject corrupt progression gaps.
 - Check all fourteen starting layouts for unit/cover overlap and flood-fill reachability to objectives, living enemies, repair centers and weapon caches. Check the full escort corridor.
-- Measure quarter-speed displacement for player/enemy on sand, normal speed outside, ice coasting/exit and collision cancellation.
+- Measure terrain-adjusted displacement for player/enemy on sand, normal speed outside, ice coasting/exit and collision cancellation.
 - Verify rock warning delay, fixed target, damage to both sides and cover, shield interaction, exactly one impact, active-object bounds, pause/resume and cleanup on success/failure/retry.
 - Exercise each new objective and the true final stage. Verify rewards and next-stage navigation, including the old chapter boundary.
 - Inspect desktop and phone screenshots for all five biomes in Detailed and Low detail; verify readable terrain/hazard status and no menu/HUD overflow.
@@ -96,7 +96,7 @@ The story follows a newly received distress call beyond the restored Meridian ne
 Plan written before implementation. All five operations and their Blender artwork are implemented.
 
 - Added mission metadata for biome, boss and time target; campaign and capture HUD no longer assume nine missions or an 18-second hold. Historical six- and nine-stage saves retain credits, equipment, skins, upgrades and graphics preference.
-- Glacier sheets share exact bounds with the traction model and minimap. Sand applies a 0.25 multiplier to actual player/enemy movement, including speed skins. Both escort routes and service pads remain reachable.
+- Glacier sheets share exact bounds with the traction model and minimap. Sand applies a 0.70 multiplier to player movement, including speed skins. In level 3 and on Hard or Crazy, Overdrive gives 1.5× speed for 2.5 seconds, ignores sand and mud, then recharges for 12 seconds. Ice retains its sliding response. Both escort routes and service pads remain reachable.
 - Rockfalls lock their target before flight, damage both sides and cover once, respect shields, pause with the game, and clear on success/failure/retry. They remain readable in Low detail.
 - Review adjustments: moved the volcano into the active battlefield view; replaced ice rings with a pale rim and thin cracks; cleared generic outer props to fit more city buildings; kept new terrain patches off the central road. A 25-second simulated jungle battle checks that attackers leave the corners and approach the relay.
 - Actual Blender export totals: 25 detailed models, 2,331,216 bytes and 27,384 triangles; 25 Low detail models, 1,175,396 bytes and 9,059 triangles (67% fewer). Existing 3 MB / 1.2 MB tier limits are unchanged.

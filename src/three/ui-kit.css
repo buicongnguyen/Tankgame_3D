@@ -171,3 +171,38 @@ body #hud :is(#pause,.abilities button):hover:not(:disabled){border-color:var(--
 /* Phones hide a focus ring that no key asked for (ui-polish.css rule); keep that true for the kit outlines. */
 @media(pointer:coarse){html:not([data-input=keys]) :is(#overlay,#hud) button:focus-visible{outline:none!important}}
 @media (prefers-reduced-motion:reduce){#overlay .panel button.primary::after{animation:none}#hud .radio{transition:opacity .3s}}
+
+/* One native button sits next to desktop Fire, or just above the touch aim/fire stick. */
+#hud #overdrive {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 78px;
+  min-height: 44px;
+  padding: 5px 8px;
+}
+#overdrive .overdrive-caption { display: grid; gap: 2px; text-align: center; line-height: 1.12; font-size: 11px; }
+#overdrive-state { color: #a6dbea; font-size: 11px; letter-spacing: .03em; font-variant-numeric: tabular-nums; }
+body #hud #overdrive:disabled { opacity: 1; color: #bfcfd8; }
+body #hud #overdrive.boosting { border-color: #8df4ff; box-shadow: inset 0 0 9px #47d8fe44; }
+#overdrive.boosting #overdrive-state { color: #a3f6ff; }
+@media (pointer: coarse) {
+  #hud #overdrive {
+    position: fixed;
+    right: calc(150px + env(safe-area-inset-right));
+    bottom: calc(42px + env(safe-area-inset-bottom));
+    width: 80px;
+    height: 44px;
+    padding: 3px;
+  }
+  #overdrive kbd { display: none; }
+}
+@media (pointer: coarse) and (max-width: 600px) and (orientation: portrait) {
+  /* Keep the centered support column clear of the fixed-position thumb control. */
+  #hud .abilities { transform: none; left: calc(50% - 62px); }
+  #hud #overdrive { right: calc(12px + env(safe-area-inset-right)); bottom: calc(138px + env(safe-area-inset-bottom)); }
+}
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 600px) {
+  #hud #overdrive { right: calc(26px + env(safe-area-inset-right)); bottom: calc(130px + env(safe-area-inset-bottom)); }
+}

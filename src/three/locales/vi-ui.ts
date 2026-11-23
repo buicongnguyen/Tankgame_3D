@@ -1,4 +1,5 @@
 export const UI:Record<string,string>={
+ 'OVERDRIVE':'TĂNG TỐC','BOOSTING':'ĐANG BẬT',
  'Performance tip':'Gợi ý hiệu năng','Running slowly on this device. Low detail plays smoother.':'Thiết bị đang chạy chậm. Giảm chi tiết để chơi mượt hơn.','Keep high detail':'Giữ chi tiết cao','KEEP':'GIỮ NGUYÊN',
  'None':'Không gắn cờ','Italy':'Ý','Ukraine':'Ukraina','Poland':'Ba Lan','Indonesia':'Indonesia','COMMAND GUARD':'HỘ VỆ CHỈ HUY',
  'Language':'Ngôn ngữ','PAUSE':'TẠM DỪNG','HULL':'GIÁP','ARMOR ONLINE':'GIÁP SẴN SÀNG','SWITCH GUN':'ĐỔI SÚNG','FIRE':'BẮN','STRIKE':'KHÔNG KÍCH','DROP':'TIẾP TẾ','SHIELD':'KHIÊN','DRIVE':'DI CHUYỂN','AIM / FIRE':'NGẮM / BẮN','drive':'di chuyển','aim':'ngắm','fire':'bắn','guns':'vũ khí','strike / drop':'không kích / tiếp tế','shield':'khiên','auto missile':'tên lửa tự dẫn',

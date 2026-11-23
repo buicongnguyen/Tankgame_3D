@@ -57,6 +57,7 @@ import { SpecialWeapons,isConcrete } from './special-weapons';
 import { World } from './world';
 import type { Cover, TankVisual } from './world';
 import { Input } from './input';
+import { OverdriveTrail } from './overdrive-trail';
 import { createActivity,refreshActivityLabels } from './activities';
 import { awardStage } from './results';
 import type { StageResult } from './results';
@@ -78,6 +79,13 @@ type Phase='menu'|'finishing'|'playing'|'paused'|'depot'|'failed'|'victory';
 export interface Unit { /** Posted on a rooftop (lookouts.ts). */ perch?:Perch; team?:'ally';squad?:number;pending?:boolean;aboard?:Unit; patrol?:PatrolOrder; burstLeft?:number; lastSeen?:Point; searchUntil?:number; encounter?:EncounterOrder; bossKind?:BossKind; mudTime?:number; velocity:Point; visual:TankVisual; hp:number; max:number; heading:number; aim:number; cooldown:number; role:'player'|'raider'|'sentry'|'heavy'|'boss'|'rifleman'|'rocketeer'|'jeep'|'airlift'; dead:boolean; }
 interface Shot { /** The shooter's own rooftop: never blocks its shot. */ ignore?:Cover; homing?:Unit;alliedSafe?:boolean; height?:{start:number;range:number;traveled:number}; mesh:T.Mesh; p:Point; from:Point; dx:number; dz:number; speed:number; damage:number; life:number; friendly:boolean; splash:number; }
 export class Game {
+  private overdriveStarted = -Infinity;
+  get overdriveAvailable() {
+    return !this.training && (this.level === 2 || this.save.difficulty === 'hard' || this.save.difficulty === 'crazy');
+  }
+  get overdriveTime() { return Math.max(0, this.overdriveStarted + 2.5 - this.elapsed); }
+  get overdriveCooldown() { return Math.min(12, Math.max(0, this.overdriveStarted + 14.5 - this.elapsed)); }
+
   training:TrainingSession|null=null;campaignSave:Save|null=null;waves=new DefenseWaves();allies=new Allies();
   /** Skirmish series state; the setup draft persists separately from the campaign save. */
   airlifts=new Airlifts();storage=new ProfileStorage();profiles=this.storage.book;profileBusy=false;saveConflict=false;
@@ -96,6 +104,7 @@ export class Game {
   /** Phone frame budget: adaptive render resolution, the ?perf readout and Low detail contact shadows. */
   budget=new FrameBudget();
   smoother=new RenderSmoother();
+  private readonly overdriveTrail = new OverdriveTrail();
   navigation=new GroundNavigation();convoyDistance=0;convoyReverse:boolean|null=null;
   weapon=0; reload=0; shieldTime=0; shieldCooldown=0; relayHealth=300; convoyHealth=ESCORT.health;
   /** Full uplink and transport health this battle (scaled by difficulty). */
@@ -140,7 +149,7 @@ export class Game {
       <div class="top-actions"><button id="pause" aria-label="Pause game">Ⅱ <span>PAUSE</span></button><canvas id="minimap" width="176" height="132" aria-label="Tactical map"></canvas></div>
       <div class="bottom-hud"><div id="weapon-shortcuts" role="group" aria-label="Weapon shortcuts"></div><div class="hull-block"><div><span>HULL</span><strong id="health-label"></strong></div><div class="hull-track"><i id="health-fill"></i></div><small id="status-line">ARMOR ONLINE</small></div>
       <button class="weapon-block" id="weapon"><span id="weapon-label"></span><strong id="reload-label"></strong><div class="reload-track"><i id="reload-fill"></i></div><small class="switch-gun-label">SWITCH GUN <span>· C / 1–9</span> ▴</small></button>
-      <div class="abilities"><button id="fire" class="pc-fire"><kbd>SPACE / F</kbd>FIRE</button><div class="support-pair"><button id="artillery" data-support="support-strike" aria-label="Strike: guided missiles (R)"><kbd>R</kbd><i class="ab-icon ab-strike" aria-hidden="true"></i><span id="artillery-label">STRIKE</span></button><button id="drop" data-support="support-drop" aria-label="Drop: supply crate (T)"><kbd>T</kbd><i class="ab-icon ab-drop" aria-hidden="true"></i><span id="drop-label">DROP</span></button></div><button id="shield"><kbd>Q</kbd><i class="ab-icon ab-shield" aria-hidden="true"></i><span id="shield-label">SHIELD</span></button><button id="auto" aria-label="Auto: guided vehicle missile (E)"><kbd>E</kbd><i class="ab-icon ab-auto" aria-hidden="true"></i><span id="auto-label">AUTO 0</span></button></div></div>
+      <div class="abilities"><button id="fire" class="pc-fire"><kbd>SPACE / F</kbd>FIRE</button><button id="overdrive" type="button" aria-keyshortcuts="V" hidden><kbd aria-hidden="true">V</kbd><span class="overdrive-caption"><span>OVERDRIVE</span><small id="overdrive-state">READY</small></span></button><div class="support-pair"><button id="artillery" data-support="support-strike" aria-label="Strike: guided missiles (R)"><kbd>R</kbd><i class="ab-icon ab-strike" aria-hidden="true"></i><span id="artillery-label">STRIKE</span></button><button id="drop" data-support="support-drop" aria-label="Drop: supply crate (T)"><kbd>T</kbd><i class="ab-icon ab-drop" aria-hidden="true"></i><span id="drop-label">DROP</span></button></div><button id="shield"><kbd>Q</kbd><i class="ab-icon ab-shield" aria-hidden="true"></i><span id="shield-label">SHIELD</span></button><button id="auto" aria-label="Auto: guided vehicle missile (E)"><kbd>E</kbd><i class="ab-icon ab-auto" aria-hidden="true"></i><span id="auto-label">AUTO 0</span></button></div></div>
       <div class="touch-pad move-pad" id="move-pad" aria-label="Drive joystick"><span class="stick-nub"></span><small>DRIVE</small></div><div class="touch-pad aim-pad" id="aim-pad" aria-label="Aim and fire joystick"><span class="stick-nub"></span><small>AIM / FIRE</small></div>
       <div id="title-card" hidden></div><div id="lesson-hint" role="status" hidden></div><div id="relay-label" hidden></div><div id="weapon-picker" class="weapon-picker" hidden role="group" aria-label="Choose weapon"></div><div class="radio" id="radio" role="status"></div><div class="desktop-hint">WASD <span>drive</span> · IJKL / MOUSE <span>aim</span> · SPACE / F <span>fire</span> · C / 1–9 <span>guns</span> · R / T <span>strike / drop</span> · Q <span>shield</span> · E <span>auto missile</span></div>
     </div><div id="overlay"></div><div class="loading" id="loading"><span class="eyebrow">KESTREL // CONNECTING</span><h1>Establishing uplink<span class="blink">_</span></h1><p>Loading the valley and armored units.</p></div>`);
@@ -394,6 +403,7 @@ ${this.settings()}<details><summary>Briefing & controls</summary><p class="brief
     this.level=clamp(level,0,2);this.mission=index;const m=this.missionData();this.allies.clear();this.waves.reset();this.clearLesson();
     this.finishDelay=0;this.finishDeadline=0;this.stageResult=null;this.medalResult=null;this.debriefSeen=false;
     this.airSupport.clear();this.hazards.reset(index);this.bosses.clear();this.airlifts.clear();this.flame.clear();this.special.clear();this.auto.clear();this.specialAmmo=ammoCaps(perkSkin(this.save)).map((cap,i)=>this.save.weapons.includes(WEAPONS.findIndex(w=>w.ammoSlot===i))?cap:0);this.infantryKills=0;this.fieldWeaponCount=1;this.artilleryCooldown=0;this.powerBoost=0;this.clearBarrage();this.mission=index;if(this.training)this.world.buildCompact(this.training.id);else if(this.skirmish){this.world.fences=false;this.world.build(index,'assault',this.level,this.save.difficulty,this.skirmish.scale);this.world.ring.visible=false;}else if(index===0&&this.level===0&&this.save.difficulty==='easy')this.world.buildCompact(3);else{this.world.fences=true;this.world.build(index,m.kind,this.level,this.save.difficulty);};this.encounters.reset();this.crowd.reset();this.salvageDrops=0;this.shots=[];this.enemies=[];this.convoy=null;this.convoyBlocked=false;this.convoyDistance=0;this.convoyReverse=null;this.world.loopReverse=false;
+    this.overdriveStarted = -Infinity;
     this.elapsed=0;this.capture=0;this.kills=0;this.shotsFired=0;this.tacticCalls={};this.rearHits=0;this.supportCalls=0;this.hitStop=0;this.hits.clear();this.reload=0;this.weapon=this.save.equippedWeapon;this.shieldTime=0;this.shieldCooldown=0;this.relayMax=Math.round(300*objectiveHealth(this.save.difficulty));this.relayHealth=this.relayMax;this.convoyMax=Math.round(ESCORT.health*objectiveHealth(this.save.difficulty));this.convoyHealth=this.convoyMax;this.convoyHitAt=-Infinity;this.contact=false;this.escortDeploying=false;this.deployShieldUntil=0;
     // Skirmish starts mid-map so teams can come from every side; spawn search keeps it clear of cover and mines.
     this.fenceCalled=false;
@@ -434,6 +444,11 @@ ${this.settings()}<details><summary>Briefing & controls</summary><p class="brief
   }
   action(action:string){
     if(this.phase!=='playing'||this.saveConflict||this.profileBusy)return;
+    if (action === 'overdrive') {
+      if (this.overdriveAvailable && this.overdriveCooldown === 0 && !this.player.dead)
+        this.overdriveStarted = this.elapsed;
+      return;
+    }
     if(this.training&&(['auto','support-drop'].includes(action)||this.training.id!==2&&['shield','support-strike','artillery'].includes(action)))return;
     if(['support-strike','artillery','support-drop','auto'].includes(action))this.contact=true;
     if(action==='fire'&&this.reload<=0){this.input.pendingFire=false;this.syncVisual(this.player);this.shoot(this.player,true);}
@@ -457,7 +472,11 @@ ${this.settings()}<details><summary>Briefing & controls</summary><p class="brief
     const p=unit.visual.root.position,r=this.unitRadius(unit),previous=p.clone();
     const mud=this.world.terrainKind(p)==='mud';unit.mudTime=mud?(unit.mudTime??0)+dt:0;
     const recovery=mud&&(unit.mudTime??0)%4>2.8;
-    const motion=tractionMotion(this.world.firmRoad(p)?'grove':this.world.environment.biome,p,unit.velocity,dx,dz,dt,recovery);
+    const boosted = unit === this.player && this.overdriveTime > 0;
+    const keepEnemyPace = unit !== this.player && unit.team !== 'ally' &&
+      (this.save.difficulty === 'easy' || this.save.difficulty === 'normal');
+    const motion = tractionMotion(this.world.firmRoad(p) ? 'grove' : this.world.environment.biome,
+      p, unit.velocity, dx, dz, dt, recovery, boosted ? 'overdrive' : keepEnemyPace ? 'easyEnemy' : 'standard');
     if(!this.isInfantry(unit))p.y+=((mud&&!recovery?-.45:0)-p.y)*Math.min(1,dt*4);
     // Short accepted segments preserve wall sliding and prevent contact through cover.
     const steps=Math.max(1,Math.ceil(Math.max(Math.abs(motion.x),Math.abs(motion.z))/.35)),sx=motion.x/steps,sz=motion.z/steps,stepTime=dt/steps;
@@ -868,6 +887,14 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     if(picker.dataset.state!==state){picker.dataset.state=state;setHtml(this.el('weapon-shortcuts'),WEAPON_ORDER.map(i=>[WEAPONS[i],i] as const).map(([w,i])=>`<button data-quick-weapon="${weaponNumber(i)}" aria-label="Weapon ${weaponNumber(i)}: ${w.name}" title="${weaponNumber(i)} · ${w.name}" aria-pressed="${this.weapon===i}" ${!this.weaponAvailable(i)?'disabled':''}>${weaponNumber(i)}</button>`).join(''));setHtml(picker,WEAPON_ORDER.map(i=>[WEAPONS[i],i] as const).map(([info,i])=>{const ammo=info.ammoSlot,available=this.weaponAvailable(i),owned=ownsWeapon(this.save,i),level=weaponLevel(this.save,i);return `<button data-weapon="${weaponNumber(i)}" aria-pressed="${this.weapon===i}" ${!available?'disabled':''}><strong>${weaponNumber(i)} · ${info.label}</strong><small>${ammo!==undefined?available?`${this.specialAmmo[ammo]} ${i===7?'volleys':i===8?'bursts':'shots'}`:owned?'Empty · next mission':i>=7?'Buy in shop':'Shop / map cache':available?i===5?`${barrels(this.save,i)} rounds together`:`LEVEL ${level} / 20`:i===1?'Clear First Light':i===2?'Clear Homeward':'Buy in shop'}</small></button>`;}).join(''));}
     const info=WEAPONS[this.weapon],ammo=info.ammoSlot;
     setText(this.el('weapon-label'),(this.weapon===5?(barrels(this.save,5)===4?'Quad machine gun':'Twin machine gun'):info.name)+(ammo!==undefined?' · '+this.specialAmmo[ammo]+(this.weapon===7?' volleys':this.weapon===8?' fuel':''):'')+' ▴');setAttribute(this.el('weapon'),'aria-label','Choose weapon: '+info.name);setText(this.el('reload-label'),this.reload>0?`${this.reload.toFixed(1)}s`:'READY');this.el('reload-fill').style.width=`${(1-clamp(this.reload/this.reloadDuration(),0,1))*100}%`;
+    const boost = this.el('overdrive') as HTMLButtonElement;
+    boost.hidden = !this.overdriveAvailable;
+    if (!boost.hidden) {
+      const active = this.overdriveTime > 0, cooling = this.overdriveCooldown > 0;
+      boost.disabled = active || cooling;
+      boost.classList.toggle('boosting', active);
+      setText(this.el('overdrive-state'), active ? 'BOOSTING' : cooling ? `${Math.ceil(this.overdriveCooldown)}s` : 'READY');
+    }
     setText(this.el('shield-label'),this.shieldCooldown>0?`SHIELD ${Math.ceil(this.shieldCooldown)}s`:'SHIELD');
     (this.el('shield') as HTMLButtonElement).disabled=this.shieldCooldown>0;
     // Cooldown sweeps over the support buttons (see theme.css); the longest wait seen is the full circle.
@@ -1014,6 +1041,8 @@ if(cover.kind==='barrel'||cover.kind==='fuelcrate'){this.explode(cover,cover.kin
     else {this.accumulator=0;if(this.phase==='menu')this.player.visual.turret.rotation.y=Math.PI+Math.sin(now*.0003)*.45;}
     this.hurtTimer=Math.max(0,this.hurtTimer-dt);document.body.classList.toggle('hurt',this.hurtTimer>0&&!reducedMotion());
     this.flame.render(this,this.phase!=='paused'?dt:0);
+    this.overdriveTrail.update(this.player.visual.hull, this.phase === 'playing' && !this.player.dead ? this.overdriveTime : 0,
+      this.player.velocity.x, this.player.velocity.z);
     // Draw moving things between the last two steps, then put the exact logic transforms back.
     const smooth=this.phase==='playing';if(smooth)this.smoother.apply(this.accumulator*60);
     try{this.budget.beforeRender(this);this.world.update(this.phase!=='paused'?dt*(this.phase==='finishing'?this.fun.drawSpeed(dt):1):0,this.player.visual.root.position,this.phase==='menu');}finally{if(smooth)this.smoother.restore();}this.threats.update(this);

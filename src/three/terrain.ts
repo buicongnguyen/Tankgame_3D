@@ -10,20 +10,25 @@ export const terrainRegions=(biome:Biome)=>biome==='glacier'?ICE:biome==='desert
 export const insideRegion=(p:Point,r:TerrainRegion)=>((p.x-r.x)/r.rx)**2+((p.z-r.z)/r.rz)**2<=1;
 export const terrainAt=(biome:Biome,p:Point)=>terrainRegions(biome).find(r=>insideRegion(p,r))?.kind;
 export function terrainSpeed(biome:Biome,x:number,z:number){
- if(terrainAt(biome,{x,z})==='sand')return .25;
- if(terrainAt(biome,{x,z})==='mud')return .18;
+ if(terrainAt(biome,{x,z})==='sand')return .7;
+ if(terrainAt(biome,{x,z})==='mud')return .55;
  if(biome==='river'&&Math.abs(z-32)<4&&![-35,0,35].some(bridge=>Math.abs(x-bridge)<4.4))return .45;
  if(biome==='snow'&&Math.abs(x)>8.5)return .72;
  if(biome==='ridge'&&Math.hypot(x-36,z-17)<10)return .6;
  return 1;
 }
 /** Velocity is in meters/second; callers provide the requested displacement. */
-export function tractionMotion(biome:Biome,p:Point,velocity:Point,dx:number,dz:number,dt:number,recovery=false):Point{
+export function tractionMotion(biome:Biome,p:Point,velocity:Point,dx:number,dz:number,dt:number,recovery=false,pace:'standard'|'overdrive'|'easyEnemy'='standard'):Point{
  if(dt<=0)return {x:0,z:0};
- const speed=recovery&&terrainAt(biome,p)==='mud'?.65:terrainSpeed(biome,p.x,p.z),ice=terrainAt(biome,p)==='ice';
+ const kind=terrainAt(biome,p), ice=kind==='ice';
+ let speed=terrainSpeed(biome,p.x,p.z);
+ if(pace==='easyEnemy' && kind==='sand') speed=.25;
+ if(pace==='easyEnemy' && kind==='mud') speed=.18;
+ if(recovery && kind==='mud') speed=.65;
+ if(pace==='overdrive') speed=(kind==='sand'||kind==='mud'?1:speed)*1.5;
  const response=ice?1-Math.exp(-dt*4):1;
  velocity.x+=(dx/dt*speed-velocity.x)*response;velocity.z+=(dz/dt*speed-velocity.z)*response;
  if(Math.abs(velocity.x)<.01)velocity.x=0;if(Math.abs(velocity.z)<.01)velocity.z=0;
  return {x:velocity.x*dt,z:velocity.z*dt};
 }
-export function terrainLabel(biome:Biome,p:Point){const kind=terrainAt(biome,p);return kind==='mud'?'MUD HOLE · STEER OUT':kind==='sand'?'SAND TRAP · ¼ SPEED':kind==='ice'?'ICE · LOW GRIP':terrainSpeed(biome,p.x,p.z)<1?'ROUGH GROUND · REDUCED SPEED':'FRONT ARMOR ONLINE';}
+export function terrainLabel(biome:Biome,p:Point){const kind=terrainAt(biome,p);return kind==='mud'?'MUD HOLE · 55% SPEED':kind==='sand'?'SAND TRAP · 70% SPEED':kind==='ice'?'ICE · LOW GRIP':terrainSpeed(biome,p.x,p.z)<1?'ROUGH GROUND · REDUCED SPEED':'FRONT ARMOR ONLINE';}

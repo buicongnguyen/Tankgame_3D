@@ -14,6 +14,7 @@ export class Input {
       if(!this.active)return;
       if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
       this.keys.add(e.code);
+      if(e.code==='KeyV' && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey)this.onAction('overdrive');
       if(!e.repeat){if(e.code==='KeyC')this.onAction('switch');if(e.code==='KeyR')this.onAction('artillery');if(e.code==='KeyT')this.onAction('support-drop');if(e.code==='KeyQ')this.onAction('shield');if(e.code==='KeyE')this.onAction('auto');if(/^(Digit|Numpad)[1-9]$/.test(e.code)){e.preventDefault();this.onAction(e.code.slice(-1));}}
     });
     window.addEventListener('keyup',e=>this.keys.delete(e.code));

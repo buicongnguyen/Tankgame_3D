@@ -7,7 +7,7 @@ import { circleBox, distance } from './rules';
 import type { EncounterOrder } from './encounters';
 import { ENCOUNTER_FRACTIONS, overlapsReservation, routeSample } from './stage-layout';
 import type { StageLayout } from './stage-layout';
-import { terrainSpeed } from './terrain';
+import { terrainAt, terrainSpeed } from './terrain';
 
 /** Plank fences: light walls beside the road, just short of each later enemy group. They hide the tank from
  *  that group (cover blocks sight), and the tank bursts through them at speed for a surprise attack. */
@@ -66,7 +66,10 @@ function fenceGeometry() {
 let shared: { geometry: T.BufferGeometry; material: T.Material } | undefined;
 /** Adds this stage's fences to the world as breakable cover. Called after the stage is built. */
 export function buildFences(world: World) {
-  const boxes = fenceBoxes(world.layout, world.bounds, world.covers.filter(c => c.hp > 0), p => terrainSpeed(world.environment.biome, p.x, p.z) > .5);
+  const boxes = fenceBoxes(world.layout, world.bounds, world.covers.filter(c => c.hp > 0), p => {
+    const kind = terrainAt(world.environment.biome, p);
+    return kind !== 'sand' && kind !== 'mud' && terrainSpeed(world.environment.biome, p.x, p.z) > .5;
+  });
   if (!boxes.length) return boxes;
   // Shared for the life of the page, so rebuilding a stage adds no geometry or material.
   shared ??= { geometry: fenceGeometry(), material: new T.MeshLambertMaterial({ vertexColors: true }) };
