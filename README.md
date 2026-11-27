@@ -1,6 +1,6 @@
 # Steel Front: Last Signal
 
-A playable 3D tank rescue campaign built with **Three.js + TypeScript**, using original assets generated in **Blender 4.5**. Based on the Tank_game 2D baseline, preserved at [legacy.html](legacy.html).
+A playable 3D tank rescue campaign built with **Three.js + TypeScript**, using original assets generated in **Blender** (rebuilt with 5.2.5 LTS). Based on the Tank_game 2D baseline, preserved at [legacy.html](legacy.html).
 
 **Play:** https://buicongnguyen.github.io/Tankgame_3D/
 
@@ -129,7 +129,7 @@ The command screen, shop, settings, pause and results panels share one design la
 The eight icons are Blender renders from `tools/blender/build_ui_icons.py`: credit coin, coin stack, trophy, gear, shells, tank, supply crate and spray can. The tank icon reuses `tank.glb` in the Cobalt Kestrel paint from `skin-palettes.ts`, and the crate icon reuses `crate.glb`. The icons are 160 px transparent WebP files in `src/three/ui-icons/`, 47 KB in total, and `npm run test:assets` checks their size and format.
 
 ```powershell
-& 'C:\Users\n\source\repos\3d_astra\.tools\blender-4.5.3-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_ui_icons.py
+& 'C:\tools\blender\blender-5.2.5-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_ui_icons.py
 ```
 
 ## Feel and finish
@@ -280,7 +280,7 @@ Each map's life is one instanced draw with no shadow. Butterflies, dragonflies a
 Editable sources include `assets/blender/steel-front.blend` and `assets/blender/frontier-environments.blend`. Generators include `tools/blender/build_assets.py`, `tools/blender/build_frontier.py` and `tools/blender/build_extreme_bosses.py`. The last generator writes four separate editable scenes for the helicopter, spider, laser tank and white pine. Runtime exports: `public/models/*.glb`. After the base and extreme boss generators, run `tools/blender/build_reinforcement_bosses.py` to create the two humanoids and missile truck and add light guns to all six older boss scenes. It saves editable meshes before merging runtime surfaces. Run `tools/blender/build_scout_jeep.py` for the crewed light jeep, then run `tools/blender/build_low_detail.py` with Blender to rebuild `public/models/low/*.glb`.
 
 ```powershell
-& 'C:\Users\n\source\repos\3d_astra\.tools\blender-4.5.3-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_assets.py
+& 'C:\tools\blender\blender-5.2.5-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_assets.py
 npm run test:assets
 ```
 
@@ -301,6 +301,7 @@ The props also carry face-weighted normals and a vertex-colour paint pass. Cycle
 Run the generator after the base, environment and frontier generators. It authors both tiers itself. The mobile variants use fewer segments with the same materials and vertex attributes, because decimation tore the rock's UV seams and dented the drum. `build_low_detail.py` therefore skips these props. The generator also runs inside a live Blender session through Blender MCP; see the module docstring. Editable scenes for both tiers are saved to `assets/blender/aaa-props.blend`.
 
 ```powershell
+$blender = 'C:\tools\blender\blender-5.2.5-windows-x64\blender.exe'  # Blender 5.2.5 LTS, shared install
 & $blender --background --factory-startup --python tools/blender/build_aaa_props.py
 npm run test:assets
 ```
@@ -415,7 +416,7 @@ Buy once with earned supply credits. Ownership and selection persist; older save
 Rebuild the artwork with your Blender executable:
 
 ```powershell
-& 'C:\Users\n\source\repos\3d_astra\.tools\blender-4.5.3-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_skins.py
+& 'C:\tools\blender\blender-5.2.5-windows-x64\blender.exe' --background --factory-startup --python tools/blender/build_skins.py
 ```
 
 The generator writes five editable `assets/blender/skin-*.blend` files, transparent `public/skins/*.png` previews and `src/three/skin-palettes.ts`. Gameplay reuses the existing tank mesh with cached materials; skins add no combat geometry or lights. Tests cover purchases, save migration, damage, shield duration, movement, material reuse and the mobile shop.

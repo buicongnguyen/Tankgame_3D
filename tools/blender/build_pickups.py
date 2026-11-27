@@ -3,7 +3,11 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 OUT=ROOT/'public/models'
 def mat(name,color):
- m=bpy.data.materials.new(name);m.diffuse_color=(*color,1);return m
+ m=bpy.data.materials.new(name);m.diffuse_color=(*color,1)
+ # Blender 5.x gives new materials a Principled BSDF that the glTF export reads instead of diffuse_color
+ for n in (m.node_tree.nodes if m.node_tree else ()):
+  if n.type=='BSDF_PRINCIPLED':n.inputs['Base Color'].default_value=m.diffuse_color;n.inputs['Metallic'].default_value=m.metallic;n.inputs['Roughness'].default_value=m.roughness
+ return m
 def box(name,p,s,m):
  bpy.ops.mesh.primitive_cube_add(size=1,location=p);o=bpy.context.object;o.name=name;o.dimensions=s;bpy.ops.object.transform_apply(location=False,rotation=False,scale=True);o.data.materials.append(m);return o
 def cross(p,m):

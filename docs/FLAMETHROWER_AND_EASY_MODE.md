@@ -41,4 +41,4 @@ One instanced draw call holds at most 96 tongues in Detailed or 36 in Low detail
 - Code review confirmed that flame visuals do not multiply damage, burn damage stops during pause, visibility is captured before fuel explosions, concrete/steel remain intact, existing ammunition slots stay stable and Easy health does not change enemy counts. Burn visuals reserve at least two thirds of the particle pool for the player's stream.
 - GitHub Pages remains gated on the complete browser suite, asset checks and production build.
 
-Rebuild the authored source and both GLBs from the repository root with Blender 4.5+: `blender --background --python tools/blender/build_flame.py`.
+Rebuild the authored source and both GLBs from the repository root with Blender 5.2.5 LTS (`C:/tools/blender/blender-5.2.5-windows-x64/blender.exe`): `blender --background --python tools/blender/build_flame.py`.

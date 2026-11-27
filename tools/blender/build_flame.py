@@ -1,4 +1,4 @@
-"""Author compact flame tongues for instanced Three.js fire. Blender 4.5+."""
+"""Author compact flame tongues for instanced Three.js fire. Blender 5.2.5 LTS."""
 import bpy, math, json
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]

@@ -20,7 +20,7 @@ Browser tests verify model loading, bounded batches, preserved moving limbs and 
 
 ## Rebuild
 
-Run the existing Blender generators from the repository root, in this order, with Blender 4.5:
+Run the existing Blender generators from the repository root, in this order, with Blender 5.2.5 LTS (`C:/tools/blender/blender-5.2.5-windows-x64/blender.exe`):
 
 1. `tools/blender/build_assets.py`
 2. `tools/blender/build_environment.py`

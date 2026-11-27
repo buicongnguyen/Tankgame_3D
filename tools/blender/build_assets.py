@@ -1,4 +1,4 @@
-"""Rebuild original Steel Front assets with Blender 4.5+. Run from repository root."""
+"""Rebuild original Steel Front assets with Blender 5.2.5 LTS. Run from repository root."""
 import bpy, math, json
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
@@ -111,6 +111,6 @@ for root in roots:
 # Space the source collection for comfortable manual editing; exports remain centered.
 for i,root in enumerate(roots): root.location.x=i*5
 bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/'steel-front.blend'))
-(OUT/'manifest.json').write_text(json.dumps({'generator':'Blender 4.5 / tools/blender/build_assets.py','assets':report},indent=2))
+(OUT/'manifest.json').write_text(json.dumps({'generator':'Blender '+bpy.app.version_string+' / tools/blender/build_assets.py','assets':report},indent=2))
 print('STEEL_FRONT_ASSETS',json.dumps(report))
 

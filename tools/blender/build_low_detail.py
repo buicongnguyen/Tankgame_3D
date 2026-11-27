@@ -1,4 +1,4 @@
-"""Generate the mobile geometry tier from the detailed GLBs. Blender 4.5+."""
+"""Generate the mobile geometry tier from the detailed GLBs. Blender 5.2.5 LTS."""
 import bpy, json, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
